@@ -34,7 +34,7 @@ Independent cities such as Otrar, Merv, Kabul, Kandahar and Rayy are held by loc
 - **Buildings:** walls, barracks, stables, bazaars, irrigation (aryks and qanats) and mosques, with three levels each.
 - **Armies:** 15 unit types, including a unique unit for each nation (Temur's Tovachi Guard, the Sarbadar Dervishes, Ghuri Highlanders and others). Generals gain stars with victories, grow old and die.
 - **War:** field battles, sieges, storming the walls and sallies. Spearmen beat cavalry, horse archers rule the steppe, and walls favour the defender.
-- **Real-time battles:** fight any battle yourself on the battlefield, or auto-resolve it.
+- **Real-time 3D battles:** fight any battle yourself on a 3D battlefield (three.js) with hundreds of individual soldiers, cavalry, arrows, dust, city walls and a free camera, or auto-resolve it. Without WebGL the game falls back to a 2D battlefield.
 - **Diplomacy:** peace, alliances, trade, royal marriages, tribute, gifts and demands to submit. Broken rulers may surrender their whole realm, as the Sarbadars did to Temur in 1381. Rulers remember betrayals.
 - **Royal decrees:** hold a feast, levy militia or raise a special tax in any of your cities.
 - **Vizier:** up to three suggested moves each turn; click one to jump there.
@@ -59,6 +59,7 @@ Independent cities such as Otrar, Merv, Kabul, Kandahar and Rayy are held by loc
 | Right-click | Move, or attack an enemy |
 | Shift + right-click | Run |
 | Ctrl + A | Select all |
+| W A S D / Q E / mouse wheel | Move, turn and zoom the camera |
 | Space | Pause |
 
 ## Historical notes

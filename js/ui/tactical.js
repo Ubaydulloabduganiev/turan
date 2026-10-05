@@ -27,7 +27,14 @@ function startTactical(b) {
     $('battle').classList.remove('hidden');
     $('busy').classList.add('hidden');
     TB.dead = []; TB.dust = [];
-    TB.ground = paintBattleGround();
+    TB.ground = paintBattleGround(!!window.THREE);
+    TB.r3 = null;
+    try { TB.r3 = make3D(); } catch (err) { console.error(err); TB.r3 = null; if ($('b3d')) $('b3d').remove(); }
+    if (!TB.r3 && window.THREE) TB.ground = paintBattleGround(false);
+    $('b-help').textContent = TB.r3
+      ? 'Drag to select · Right-click to move or attack (Shift to run) · W A S D move the camera · Q E turn · Wheel zoom · Space pause'
+      : 'Drag to select · Right-click to move or attack · Shift + right-click to run · Space to pause';
+    $('b-cam').classList.toggle('hidden', !TB.r3);
     resizeBattle();
     renderBattleTop();
     renderBattleCards();
@@ -294,6 +301,7 @@ function endTactical(winner, quiet) {
   const res = { winner, rout: left < TB.start[loserSide] * 0.3 };
   const pw = (winner === TB.playerSide);
   const done = () => {
+    if (TB.r3) { dispose3D(TB.r3); TB.r3 = null; }
     $('battle').classList.add('hidden');
     if (turnBusy) $('busy').classList.remove('hidden');
     const resolve = TB.resolve;
@@ -314,13 +322,58 @@ function resizeBattle() {
   const s = Math.min(window.innerWidth / BF.W, (window.innerHeight - top - bottom) / BF.H);
   TB.view = { s, ox: (window.innerWidth - BF.W * s) / 2, oy: top + (window.innerHeight - top - bottom - BF.H * s) / 2 };
 }
-window.addEventListener('resize', () => { if (TB) resizeBattle(); });
+window.addEventListener('resize', () => { if (TB) { resizeBattle(); if (TB.r3) resize3D(TB.r3); } });
+const toField = (sx, sy) => TB.r3 ? screenToField3D(TB.r3, sx, sy) : bToWorld(sx, sy);
+const toScreen = (x, y, up) => TB.r3 ? fieldToScreen3D(TB.r3, x, y, up) : { x: TB.view.ox + x * TB.view.s, y: TB.view.oy + y * TB.view.s };
+
+// The regiment under a point on the screen, if any
+function pickReg(sx, sy, pred) {
+  let best = null, bd = 1e9;
+  for (const r of TB.regs) {
+    if (r.gone || !pred(r)) continue;
+    const c = toScreen(r.x, r.y, 4), e = toScreen(r.x + r.r, r.y, 4);
+    if (c.behind) continue;
+    const rad = Math.max(14, Math.hypot(e.x - c.x, e.y - c.y) + 6), d = Math.hypot(c.x - sx, c.y - sy);
+    if (d < rad && d < bd) { bd = d; best = r; }
+  }
+  return best;
+}
+
+// Labels, health bars and the selection box drawn over the 3D view
+function drawOverlay3D() {
+  const c = bx;
+  c.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  c.clearRect(0, 0, innerWidth, innerHeight);
+  for (const r of TB.regs) {
+    if (r.gone) continue;
+    const p = toScreen(r.x, r.y, r.d.cls === 'cav' || r.d.cls === 'ha' ? 38 : 32);
+    if (p.behind) continue;
+    c.fillStyle = 'rgba(0,0,0,0.6)'; c.fillRect(p.x - 17, p.y, 34, 5);
+    c.fillStyle = r.rout ? '#d0503a' : r.player ? '#8fe07a' : '#ff8a70';
+    c.fillRect(p.x - 16, p.y + 1, 32 * Math.max(0, r.men) / r.max, 3);
+  }
+  if (TB.drag && TB.drag.moved) {
+    c.strokeStyle = '#ffe08a'; c.lineWidth = 1.5; c.fillStyle = 'rgba(255,224,138,0.08)';
+    const x = Math.min(TB.drag.x0, TB.drag.x1), y = Math.min(TB.drag.y0, TB.drag.y1), w = Math.abs(TB.drag.x1 - TB.drag.x0), h = Math.abs(TB.drag.y1 - TB.drag.y0);
+    c.fillRect(x, y, w, h); c.strokeRect(x, y, w, h);
+  }
+  for (const f of TB.fx) {
+    const p = f.big ? { x: innerWidth / 2, y: innerHeight / 2 } : toScreen(f.x, f.y, 20);
+    c.font = (f.big ? 92 : 20) + 'px Cinzel, Georgia, serif';
+    c.textAlign = 'center'; c.lineWidth = f.big ? 7 : 4; c.strokeStyle = 'rgba(0,0,0,0.75)'; c.fillStyle = f.color;
+    c.strokeText(f.text, p.x, p.y); c.fillText(f.text, p.x, p.y);
+  }
+  if (TB.paused && !TB.over) {
+    c.font = '28px Cinzel, Georgia, serif'; c.textAlign = 'center'; c.fillStyle = '#ffe08a'; c.strokeStyle = '#000'; c.lineWidth = 4;
+    c.strokeText('Paused — press Space', innerWidth / 2, 100); c.fillText('Paused — press Space', innerWidth / 2, 100);
+  }
+}
 const bToWorld = (x, y) => ({ x: (x - TB.view.ox) / TB.view.s, y: (y - TB.view.oy) / TB.view.s });
 
 const GROUND = { steppe: ['#8b9a52', '#7a8a46'], oasis: ['#7f9a4e', '#6e8a40'], river: ['#6f9450', '#5f8444'], desert: ['#c9ad74', '#b99c63'], mountain: ['#8a8564', '#77725a'] };
 
 // The battlefield floor, painted once: ground colour, texture, scrub, rocks or dunes, light and walls
-function paintBattleGround() {
+function paintBattleGround(for3d) {
   const c = document.createElement('canvas');
   c.width = BF.W; c.height = BF.H;
   const x = c.getContext('2d'), rnd = mulberry32(TB.b.prov.length * 977 + G.turn);
@@ -343,6 +396,17 @@ function paintBattleGround() {
       x.beginPath(); x.moveTo(px, py); x.lineTo(px - 1.5, py - 4); x.moveTo(px + 1.5, py); x.lineTo(px + 2.5, py - 5); x.stroke();
     }
   }
+  if (for3d) {
+    // In 3D the trees and rocks are real objects; the ground only needs to fade into the land around it
+    const base = (GROUND[TB.terrain] || GROUND.steppe)[0];
+    for (const [x0, y0, x1, y1] of [[0, 0, 0, 90], [0, BF.H, 0, BF.H - 90], [0, 0, 90, 0], [BF.W, 0, BF.W - 90, 0]]) {
+      const gr = x.createLinearGradient(x0, y0, x1, y1);
+      gr.addColorStop(0, base); gr.addColorStop(1, base + '00');
+      x.fillStyle = gr; x.fillRect(0, 0, BF.W, BF.H);
+    }
+    if (TB.walls) paintWalls2D(x);
+    return c;
+  }
   // Rocks, bushes or trees, kept to the edges where they will not hide the fighting
   const edge = () => { const side = rnd(); return side < 0.5 ? [rnd() < 0.5 ? rnd() * 140 : BF.W - rnd() * 140, rnd() * BF.H] : [rnd() * BF.W, rnd() < 0.5 ? rnd() * 50 : BF.H - rnd() * 50]; };
   for (let i = 0; i < 46; i++) {
@@ -356,8 +420,19 @@ function paintBattleGround() {
       x.fillStyle = 'rgba(160,190,100,0.35)'; x.beginPath(); x.arc(px - r * 0.3, py - r * 0.7, r * 0.5, 0, Math.PI * 2); x.fill();
     }
   }
-  // City walls with towers and a gate
-  if (TB.walls) {
+  if (TB.walls) paintWalls2D(x);
+  // Warm light from the upper left, and a vignette
+  const l = x.createLinearGradient(0, 0, BF.W, BF.H); l.addColorStop(0, 'rgba(255,220,160,0.18)'); l.addColorStop(1, 'rgba(40,30,60,0.2)');
+  x.fillStyle = l; x.fillRect(0, 0, BF.W, BF.H);
+  const v = x.createRadialGradient(BF.W / 2, BF.H / 2, BF.H * 0.35, BF.W / 2, BF.H / 2, BF.W * 0.7);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,6,2,0.5)');
+  x.fillStyle = v; x.fillRect(0, 0, BF.W, BF.H);
+  return c;
+}
+
+// City walls with towers and a gate, as seen from above (used by the 2D view; in 3D only their footprint)
+function paintWalls2D(x) {
+  {
     const wy = TB.playerSide === 'def' ? BF.H * 0.62 : BF.H * 0.38, inside = TB.playerSide === 'def' ? 1 : -1;
     x.fillStyle = 'rgba(0,0,0,0.3)'; x.fillRect(0, wy - 10 + inside * 14, BF.W, 22);
     const wall = x.createLinearGradient(0, wy - 16, 0, wy + 16); wall.addColorStop(0, '#d9c49a'); wall.addColorStop(1, '#8f7652');
@@ -372,13 +447,6 @@ function paintBattleGround() {
     x.fillStyle = '#3b2a18'; x.fillRect(BF.W / 2 - 26, wy - 14, 52, 28);
     x.fillStyle = '#2a8f8a'; x.fillRect(BF.W / 2 - 30, wy - 18, 60, 5);
   }
-  // Warm light from the upper left, and a vignette
-  const l = x.createLinearGradient(0, 0, BF.W, BF.H); l.addColorStop(0, 'rgba(255,220,160,0.18)'); l.addColorStop(1, 'rgba(40,30,60,0.2)');
-  x.fillStyle = l; x.fillRect(0, 0, BF.W, BF.H);
-  const v = x.createRadialGradient(BF.W / 2, BF.H / 2, BF.H * 0.35, BF.W / 2, BF.H / 2, BF.W * 0.7);
-  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,6,2,0.5)');
-  x.fillStyle = v; x.fillRect(0, 0, BF.W, BF.H);
-  return c;
 }
 
 function drawBattle() {
@@ -514,7 +582,7 @@ function battleFrame(now) {
   const dt = Math.min(0.05, (now - TB.last) / 1000);
   TB.last = now;
   if (!TB.paused && !TB.over) for (let i = 0; i < TB.speed; i++) stepBattle(dt);
-  drawBattle();
+  if (TB.r3) { render3D(TB.r3, dt); drawOverlay3D(); } else drawBattle();
   cardT -= dt;
   if (cardT <= 0 && TB) { cardT = 0.3; renderBattleTop(); renderBattleCards(); }
   if (TB) requestAnimationFrame(battleFrame);
@@ -522,28 +590,51 @@ function battleFrame(now) {
 
 // ---------- Battle input ----------
 
+const touches = new Map();
 bc.addEventListener('pointerdown', e => {
   if (!TB || TB.over) return;
+  if (TB.r3) {
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (e.button === 1 || touches.size === 2) { TB.pan = { x: e.clientX, y: e.clientY, pinch: touches.size === 2 ? touchSpan() : 0 }; TB.drag = null; e.preventDefault(); return; }
+  }
   if (e.button === 2) { battleOrder(e); return; }
   TB.drag = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY, moved: false, shift: e.shiftKey };
 });
+function touchSpan() { const [a, b] = [...touches.values()]; return Math.hypot(a.x - b.x, a.y - b.y); }
 bc.addEventListener('pointermove', e => {
-  if (!TB || !TB.drag) return;
+  if (!TB) return;
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (TB.r3 && TB.pan) {
+    const c = TB.r3.cam, k = c.dist / 700;
+    const dx = e.clientX - TB.pan.x, dy = e.clientY - TB.pan.y;
+    if (TB.pan.pinch && touches.size === 2) { const sp = touchSpan(); c.dist = clampN(c.dist * TB.pan.pinch / sp, 160, 1700); TB.pan.pinch = sp; }
+    c.tx -= (Math.cos(c.yaw) * dx + Math.sin(c.yaw) * dy) * k;
+    c.tz -= (-Math.sin(c.yaw) * dx + Math.cos(c.yaw) * dy) * k;
+    TB.pan.x = e.clientX; TB.pan.y = e.clientY;
+    return;
+  }
+  if (!TB.drag) return;
   TB.drag.x1 = e.clientX; TB.drag.y1 = e.clientY;
   if (Math.abs(TB.drag.x1 - TB.drag.x0) + Math.abs(TB.drag.y1 - TB.drag.y0) > 6) TB.drag.moved = true;
 });
 bc.addEventListener('pointerup', e => {
+  touches.delete(e.pointerId);
+  if (TB && TB.pan) { if (touches.size < 2) TB.pan = null; return; }
   if (!TB || !TB.drag) return;
   const d = TB.drag;
   TB.drag = null;
   if (e.button === 2) return;
   if (d.moved) {
-    const a = bToWorld(Math.min(d.x0, d.x1), Math.min(d.y0, d.y1)), b = bToWorld(Math.max(d.x0, d.x1), Math.max(d.y0, d.y1));
+    const x0 = Math.min(d.x0, d.x1), x1 = Math.max(d.x0, d.x1), y0 = Math.min(d.y0, d.y1), y1 = Math.max(d.y0, d.y1);
     if (!d.shift) TB.sel.clear();
-    for (const r of TB.regs) if (r.player && !r.gone && !r.rout && r.x >= a.x && r.x <= b.x && r.y >= a.y && r.y <= b.y) TB.sel.add(r.id);
+    for (const r of TB.regs) {
+      if (!r.player || r.gone || r.rout) continue;
+      const p = toScreen(r.x, r.y, 4);
+      if (!p.behind && p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1) TB.sel.add(r.id);
+    }
   } else {
-    const w = bToWorld(e.clientX, e.clientY);
-    const hit = TB.regs.find(r => !r.gone && Math.hypot(r.x - w.x, r.y - w.y) < r.r + 6);
+    const w = toField(e.clientX, e.clientY);
+    const hit = pickReg(e.clientX, e.clientY, r => r.player) || pickReg(e.clientX, e.clientY, r => !r.player);
     if (hit && hit.player) {
       if (!d.shift) TB.sel.clear();
       TB.sel.add(hit.id);
@@ -559,8 +650,8 @@ bc.addEventListener('contextmenu', e => e.preventDefault());
 
 function battleOrder(e) {
   if (!TB.sel.size) return;
-  const w = bToWorld(e.clientX, e.clientY);
-  const hit = TB.regs.find(r => !r.gone && !r.player && Math.hypot(r.x - w.x, r.y - w.y) < r.r + 6);
+  const w = toField(e.clientX, e.clientY);
+  const hit = pickReg(e.clientX, e.clientY, r => !r.player);
   if (hit) orderAttackReg(hit, e.shiftKey); else battleMoveTo(w, e.shiftKey);
 }
 function orderAttackReg(t, run) {
@@ -600,8 +691,23 @@ $('b-retreat').onclick = () => {
   for (const r of TB.regs) if (r.player && !r.gone) r.men *= 0.85; // a fighting withdrawal costs men
   endTactical(TB.playerSide === 'att' ? 'def' : 'att', true);
 };
+bc.addEventListener('wheel', e => {
+  if (!TB || !TB.r3) return;
+  e.preventDefault();
+  TB.r3.cam.dist = clampN(TB.r3.cam.dist * (e.deltaY > 0 ? 1.12 : 1 / 1.12), 160, 1700);
+}, { passive: false });
+window.addEventListener('keyup', e => { if (TB && TB.r3) TB.r3.keys[e.code] = false; });
+window.addEventListener('blur', () => { if (TB && TB.r3) TB.r3.keys = {}; });
+$('b-cam').addEventListener('click', e => {
+  const b = e.target.closest('[data-cam]');
+  if (!b || !TB || !TB.r3) return;
+  const c = TB.r3.cam, k = b.dataset.cam;
+  if (k === 'left') c.yaw += 0.5; if (k === 'right') c.yaw -= 0.5;
+  if (k === 'in') c.dist = Math.max(160, c.dist / 1.3); if (k === 'out') c.dist = Math.min(1700, c.dist * 1.3);
+});
 window.addEventListener('keydown', e => {
   if (!TB || $('battle').classList.contains('hidden')) return;
+  if (TB.r3 && !e.ctrlKey && !e.metaKey) TB.r3.keys[e.code] = true;
   if (e.code === 'Space') { TB.paused = !TB.paused; e.preventDefault(); }
   if (e.key === 'a' && e.ctrlKey) { e.preventDefault(); for (const r of TB.regs) if (r.player && !r.gone && !r.rout) TB.sel.add(r.id); renderBattleCards(); }
 });
