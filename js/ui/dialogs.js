@@ -210,6 +210,7 @@ HOOKS.offer = async o => {
     alliance: `${st.leader} proposes a military alliance. Allies may march through each other's lands and come to each other's aid.`,
     marriage: `${st.leader} proposes a marriage between our two houses, as Temur himself sealed his alliances.`,
     tribute: `${st.leader} demands a tribute of <b>${fmt(o.gold)} gold</b>. If we refuse, there may be war.`,
+    yield: `${st.leader} knows his realm cannot stand against you. He offers to <b>submit to you</b>: all the cities, armies and treasure of the ${F.full} would become yours.`,
   };
   const v = await showModal(`<div class="p-head">${flagSVG(o.from)}<div><h3>Envoy from the ${F.full}</h3></div></div><p>${texts[o.type]}</p>`,
     [{ label: o.type === 'tribute' ? 'Refuse' : 'Decline', value: false }, { label: o.type === 'tribute' ? 'Pay' : 'Accept', value: true, cls: 'big', disabled: o.type === 'tribute' && G.factions[G.player].gold < o.gold }],
@@ -238,12 +239,12 @@ function openDiplomacy(f) {
     const tribute = tributeAmount(x);
     let acts = `<div class="dip-actions"><div class="p-head">${flagSVG(x)}<div><div class="p-title">${F.full}</div><div class="p-sub">${F.blurb ? F.blurb.split('. ')[0] + '.' : ''}</div></div></div><div class="btnrow">`;
     if (r.war) {
-      acts += `<button data-d="peace" data-g="0">Offer peace</button><button data-d="peace" data-g="500" ${gold < 500 ? 'disabled' : ''}>Peace + 500 gold</button><button data-d="peace" data-g="1500" ${gold < 1500 ? 'disabled' : ''}>Peace + 1500 gold</button>`;
+      acts += `<button data-d="submit">Demand surrender</button><button data-d="peace" data-g="0">Offer peace</button><button data-d="peace" data-g="500" ${gold < 500 ? 'disabled' : ''}>Peace + 500 gold</button><button data-d="peace" data-g="1500" ${gold < 1500 ? 'disabled' : ''}>Peace + 1500 gold</button>`;
     } else {
       if (!r.trade) acts += '<button data-d="trade">Propose trade</button>'; else acts += '<button data-d="cancelTrade">Cancel trade</button>';
       if (!r.alliance) acts += '<button data-d="alliance">Propose alliance</button>'; else acts += '<button data-d="cancelAlliance">End alliance</button>';
       if (!r.married) acts += '<button data-d="marriage">Propose marriage</button>';
-      acts += `<button data-d="tribute">Demand tribute (~${fmt(tribute)})</button>`;
+      acts += `<button data-d="tribute">Demand tribute (~${fmt(tribute)})</button><button data-d="submit">Demand submission</button>`;
       acts += `<button data-d="war" class="danger">Declare war</button>`;
     }
     acts += `<button data-d="gift" data-g="200" ${gold < 200 ? 'disabled' : ''}>Gift 200 gold</button><button data-d="gift" data-g="1000" ${gold < 1000 ? 'disabled' : ''}>Gift 1000 gold</button>`;
@@ -268,6 +269,7 @@ function openDiplomacy(f) {
       $('dip-reply').textContent = res.text;
       $('dip-reply').className = res.ok ? 'good' : 'bad';
       refresh();
+      if (G.over) { closeModal(null); checkOverUI(); }
     },
   });
 }
@@ -286,7 +288,7 @@ function openRealm() {
     }).join('');
     const tax = ['Low', 'Normal', 'High'].map((t, i) => `<button data-tax="${i}" class="${st.tax === i ? 'big' : ''}">${t}</button>`).join('');
     return `<button class="modal-x small" data-close="1">Close</button><h3>The realm of ${st.leader}</h3>
-      <div class="kv"><div><span>Treasury</span>${fmt(st.gold)}</div><div><span>Provinces</span>${provs.length} / ${GAME.WIN_PROVINCES} for victory</div>
+      <div class="kv"><div><span>Treasury</span>${fmt(st.gold)}</div><div><span>Provinces</span>${provs.length}</div>
       <div><span>Income</span>${fmt(income)}</div><div><span>Army upkeep</span>${fmt(upkeep)}</div>
       <div><span>Trade agreements</span>${fmt(tradeIncome(pl))}</div><div><span>Heir</span>${st.heir || '—'}</div></div>
       <div class="p-sec"><h4>Taxes</h4><div class="btnrow">${tax}</div><p class="note">Low taxes: more order and growth, less gold. High taxes: more gold, unrest and slower growth.</p></div>
@@ -346,7 +348,9 @@ function openSaves(mode) {
 
 function helpHTML() {
   return `<h3>How to play</h3><div class="help">
-    <p>You rule one of the seven powers of Turkistan in 1370. Each turn is half a year. Win by holding <b>${GAME.WIN_PROVINCES} provinces</b>; lose if your last province falls.</p>
+    <p>You rule one of the seven nations of Turkistan in 1370. Each turn is half a year. <b>The last nation standing wins.</b> Destroy your rivals in war, or make them submit to you. You lose if your last city falls.</p>
+    <h4>The easy way to play</h4><ul><li>Click any city. If it is yours, you can issue decrees, recruit soldiers and build. If it belongs to someone else, you can attack it with any army that can reach it, or talk to its ruler: trade, alliances, marriages, tribute, or a demand to submit.</li>
+    <li>Your vizier, in the corner, suggests good moves each turn. Click a suggestion to go there.</li><li>Press <b>End turn</b> when you are done.</li></ul>
     <h4>The map</h4><ul><li>Drag to move the map, scroll or pinch to zoom.</li><li>Click a province to see its city, buildings and recruits. Click a banner to select an army.</li>
     <li>With an army selected, click a highlighted province (or right-click anywhere) to march. Green: move. Red: battle or siege. Grey: a nation you are at peace with.</li>
     <li>Armies of horsemen only can march two provinces a turn.</li></ul>
@@ -364,20 +368,16 @@ function helpHTML() {
 function openHelp() { return showModal(helpHTML(), [{ label: 'Close', value: null, cls: 'big' }], { cls: 'wide', cancel: null }); }
 
 async function checkOverUI() {
+  if (G && !G.over) checkVictory();
   if (!G || !G.over || G.overShown === G.over) return;
   G.overShown = G.over;
   const pl = G.player;
   if (G.over === 'win') {
-    const v = await showModal(`<h3>The Silk Road is yours</h3><p>${dateText()}: with ${provsOf(pl).length} provinces under your banner, the ${FACTIONS[pl].full} is the greatest power in Turkistan. Poets in Samarkand and Herat will sing of ${G.factions[pl].leader}.</p>`,
-      [{ label: 'Main menu', value: 'title' }, { label: 'Keep playing', value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
-    if (v === 'title') toTitle(); else { G.over = null; G.wonShown = true; }
+    const v = await showModal(`<h3>The last nation standing</h3><p>${dateText()}: every rival crown has fallen or bowed. The ${FACTIONS[pl].full} alone endures, ruling ${provsOf(pl).length} provinces from the Caspian to the Tian Shan. Poets in Samarkand and Herat will sing of ${G.factions[pl].leader}.</p>`,
+      [{ label: 'Main menu', value: 'title' }, { label: 'Keep ruling', value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
+    if (v === 'title') toTitle();
   } else if (G.over === 'lose') {
     await showModal(`<h3>Defeat</h3><p>The last lands of the ${FACTIONS[pl].full} have fallen. Your name will live only in the chronicles of your enemies.</p>`,
-      [{ label: 'Main menu', value: true, cls: 'big' }], { cancel: true });
-    toTitle();
-  } else if (G.over === 'time') {
-    const rank = PLAYABLE.filter(f => G.factions[f].alive).sort((a, b) => provsOf(b).length - provsOf(a).length);
-    await showModal(`<h3>The age ends</h3><p>It is ${dateText()}. Your realm holds ${provsOf(pl).length} provinces, ranking ${rank.indexOf(pl) + 1} of ${rank.length} among the surviving powers.</p>`,
       [{ label: 'Main menu', value: true, cls: 'big' }], { cancel: true });
     toTitle();
   }

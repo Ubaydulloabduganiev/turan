@@ -225,3 +225,32 @@ table.dip svg { width: 22px; height: 27px; vertical-align: middle; }
   .vs { grid-template-columns: 1fr; }
   .vs .mid { display: none; }
 }
+
+/* ---------- Ruling and diplomacy from the province panel ---------- */
+#tb-faction span { display: flex; flex-direction: column; line-height: 1.1; }
+#tb-faction small { font-size: 12px; color: var(--muted); }
+.ico.crown { border-radius: 2px; background: linear-gradient(#f3d27a, #b8913c); clip-path: polygon(0 100%, 0 25%, 25% 55%, 50% 10%, 75% 55%, 100% 25%, 100% 100%); }
+.decrees, .choices, .dipgrid { display: grid; gap: 6px; }
+.decrees { grid-template-columns: repeat(3, 1fr); }
+.dipgrid { grid-template-columns: 1fr 1fr; }
+.decrees button, .choices button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; text-align: left; white-space: normal; }
+.decrees button small, .choices button small { color: var(--muted); font-size: 12px; }
+.choices button.warwarn { border-color: #b8913c; }
+.dipgrid button { white-space: normal; }
+.ruler { display: flex; gap: 10px; align-items: center; }
+.ruler svg { width: 34px; height: 41px; flex: none; }
+.ruler b { color: var(--gold); font-weight: normal; font-size: 17px; }
+.reply { font-style: italic; margin: 8px 0 0; }
+
+#advisor { position: absolute; right: 16px; bottom: 82px; width: 300px; z-index: 5; background: rgba(17, 25, 45, 0.94); border: 1px solid var(--gold-2);
+  border-radius: 6px; font-size: 14px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45); }
+#advisor:empty { display: none; }
+.adv-head { display: flex; justify-content: space-between; padding: 6px 10px; color: var(--gold); cursor: pointer; letter-spacing: 1px; text-transform: uppercase; font-size: 12px; }
+.tip { padding: 7px 10px; border-top: 1px solid #2f3f63; color: var(--parch); }
+.tip.link { cursor: pointer; }
+.tip.link:hover { background: rgba(216, 180, 90, 0.12); }
+@media (max-width: 760px) {
+  #advisor { left: 12px; right: auto; top: 54px; bottom: auto; width: min(300px, calc(100% - 24px)); }
+  #panel:not(.hidden) ~ #advisor { display: none; }
+  .decrees { grid-template-columns: 1fr; }
+}

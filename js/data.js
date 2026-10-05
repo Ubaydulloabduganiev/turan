@@ -4,8 +4,6 @@
 
 const GAME = {
   START_YEAR: 1370,
-  END_YEAR: 1450,
-  WIN_PROVINCES: 25,
   MAX_ARMY: 16,
   SEASONS: ['Spring', 'Autumn'],
 };
@@ -14,7 +12,7 @@ const GAME = {
 const FACTIONS = {
   temur: {
     name: 'Amir Temur', full: 'Chagatai Ulus of Amir Temur', adj: 'Temurid', color: '#2f6fb3', dark: '#1b416b',
-    capital: 'samarkand', nomad: false, difficulty: 'Easy', leader: 'Amir Temur', heir: 'Jahangir Mirza',
+    capital: 'samarkand', nomad: false, difficulty: 'Easy', title: 'Great Amir of Transoxiana', leader: 'Amir Temur', heir: 'Jahangir Mirza',
     generals: [['Amir Temur', 5, 34], ['Jahangir Mirza', 2, 14], ['Sayf al-Din Nuküz', 3, 40]],
     unique: 'tovachi', names: 'turkic',
     blurb: 'Temur, of the Barlas tribe of Kesh, has just beaten his old ally Amir Husayn at Balkh. In April 1370 a kurultai proclaimed him Great Amir of the Chagatai Ulus. Because he is not descended from Chinggis Khan, he rules in the name of a puppet khan, Soyurghatmish, and married the Chinggisid princess Saray Mulk Khanum to call himself Küregen, the "royal son-in-law". Transoxiana is rich, its cities are loyal, and its army is the best on the map, but every neighbour fears him.',
@@ -22,7 +20,7 @@ const FACTIONS = {
   },
   moghul: {
     name: 'Moghulistan', full: 'Khanate of Moghulistan', adj: 'Moghul', color: '#3f8f4f', dark: '#245a2f',
-    capital: 'almaliq', nomad: true, difficulty: 'Normal', leader: 'Qamar al-Din Dughlat', heir: 'Khizr Khoja',
+    capital: 'almaliq', nomad: true, difficulty: 'Normal', title: 'Khan of Moghulistan', leader: 'Qamar al-Din Dughlat', heir: 'Khizr Khoja',
     generals: [['Qamar al-Din Dughlat', 4, 45], ['Khizr Khoja', 2, 20]],
     unique: 'dughlat', names: 'mongol',
     blurb: 'The eastern half of the old Chagatai Khanate: the grasslands of Zhetysu, the Ili and the Tian Shan, with the oasis towns of Kashgar and Fergana. After the death of Ilyas Khoja, the Dughlat amir Qamar al-Din made himself khan, the only Dughlat ever to do so. Temur will invade again and again; historically the Moghuls survived by retreating into the endless steppe.',
@@ -30,7 +28,7 @@ const FACTIONS = {
   },
   white: {
     name: 'White Horde', full: 'White Horde (Aq Orda)', adj: 'Aq Orda', color: '#cfc6a8', dark: '#7d7458',
-    capital: 'sighnaq', nomad: true, difficulty: 'Normal', leader: 'Urus Khan', heir: 'Toqtaqiya',
+    capital: 'sighnaq', nomad: true, difficulty: 'Normal', title: 'Khan of the White Horde', leader: 'Urus Khan', heir: 'Toqtaqiya',
     generals: [['Urus Khan', 3, 50], ['Toqtaqiya', 1, 25], ['Temur-Malik', 2, 22]],
     unique: 'kipchak', names: 'turkic',
     blurb: 'The eastern wing of the Jochid ulus, ruling the Kipchak steppe from Sighnaq on the Syr Darya. Urus Khan (r. 1369–1377) dreams of reuniting the whole Golden Horde and marched on Sarai in 1373. His young rival Toqtamish will flee to Temur for help, a quarrel that shaped the next thirty years.',
@@ -38,7 +36,7 @@ const FACTIONS = {
   },
   golden: {
     name: 'Golden Horde', full: 'Golden Horde (Ulus of Jochi)', adj: 'Jochid', color: '#d9a21b', dark: '#86630f',
-    capital: 'sarai', nomad: true, difficulty: 'Normal', leader: 'Beglerbeg Mamai', heir: 'Muhammad-Sultan',
+    capital: 'sarai', nomad: true, difficulty: 'Normal', title: 'Beglerbeg of the Golden Horde', leader: 'Beglerbeg Mamai', heir: 'Muhammad-Sultan',
     generals: [['Beglerbeg Mamai', 4, 45], ['Muhammad-Sultan', 1, 20]],
     unique: 'ordu', names: 'turkic',
     blurb: 'The great Jochid empire on the Volga, torn by the "Great Troubles" since 1359. The real power is the beglerbeg Mamai, a Kiyat noble who is not of Chinggis\'s line and rules through puppet khans. Sarai is the richest trading city on the northern Silk Road, but enemies press from the east and from Russia. Mamai will meet disaster at Kulikovo in 1380.',
@@ -46,7 +44,7 @@ const FACTIONS = {
   },
   khwarezm: {
     name: 'Khwarezm', full: 'Khwarezm under the Sufi dynasty', adj: 'Khwarezmian', color: '#8a4fa6', dark: '#552f68',
-    capital: 'urgench', nomad: false, difficulty: 'Hard', leader: 'Husayn Sufi', heir: 'Yusuf Sufi',
+    capital: 'urgench', nomad: false, difficulty: 'Hard', title: 'Amir of Khwarezm', leader: 'Husayn Sufi', heir: 'Yusuf Sufi',
     generals: [['Husayn Sufi', 3, 45], ['Yusuf Sufi', 2, 35]],
     unique: 'qangli', names: 'turkic',
     blurb: 'The ancient oasis of the lower Amu Darya. Husayn Sufi of the Qungrat tribe broke away from the Golden Horde around 1361, took Urgench, and then seized Kath and Khiva from Transoxiana. His refusal to give them back brought Temur\'s armies in 1372; historically Urgench fell for good in 1379.',
@@ -54,7 +52,7 @@ const FACTIONS = {
   },
   kart: {
     name: 'Kartids of Herat', full: 'Kart dynasty of Herat', adj: 'Kartid', color: '#c9572c', dark: '#7c3218',
-    capital: 'herat', nomad: false, difficulty: 'Hard', leader: 'Ghiyath al-Din Pir Ali', heir: 'Pir Muhammad',
+    capital: 'herat', nomad: false, difficulty: 'Hard', title: 'Malik of Herat', leader: 'Ghiyath al-Din Pir Ali', heir: 'Pir Muhammad',
     generals: [['Ghiyath al-Din Pir Ali', 2, 35], ['Pir Muhammad', 1, 15]],
     unique: 'ghuri', names: 'persian',
     blurb: 'A Tajik dynasty, related to the Ghurids, ruling Herat since 1245. In 1370 Ghiyath al-Din Pir Ali has just inherited the throne from his father Mu\'izz al-Din Husayn, but his step-brother holds Sarakhs. Herat is one of the jewels of Khorasan, with strong walls and fine workshops. Temur took it in 1381.',
@@ -62,7 +60,7 @@ const FACTIONS = {
   },
   sarbadar: {
     name: 'Sarbadars', full: 'Sarbadar state of Sabzevar', adj: 'Sarbadar', color: '#2a8c8a', dark: '#175553',
-    capital: 'sabzevar', nomad: false, difficulty: 'Hard', leader: "Khwaja Ali Mu'ayyad", heir: 'Darvish Rukn al-Din',
+    capital: 'sabzevar', nomad: false, difficulty: 'Hard', title: 'Lord of Sabzevar', leader: "Khwaja Ali Mu'ayyad", heir: 'Darvish Rukn al-Din',
     generals: [["Khwaja Ali Mu'ayyad", 2, 35], ['Darvish Rukn al-Din', 2, 30]],
     unique: 'dervish', names: 'persian',
     blurb: 'The "heads on the gallows": in 1337 the people of Sabzevar rose against their Mongol lords and swore they would rather hang than submit. Led by a mix of Shia dervishes and local nobles, the Sarbadars have held western Khorasan for a generation. Khwaja Ali Mu\'ayyad submitted to Temur in 1381.',
@@ -256,9 +254,9 @@ const EVENTS = [
 
 const RANDOM_EVENTS = [
   { title: 'Good harvest', text: 'The aryks run full and the harvest is plentiful in {p}.', w: 3, apply: (p) => { p.pop *= 1.04; } },
-  { title: 'Locusts', text: 'A cloud of locusts strips the fields of {p}.', w: 2, apply: (p) => { p.pop *= 0.95; p.unrest += 10; } },
+  { title: 'Locusts', text: 'A cloud of locusts strips the fields of {p}.', w: 2, apply: (p) => { p.pop *= 0.95; p.unrest = Math.max(0, p.unrest) + 10; } },
   { title: 'Earthquake', text: 'An earthquake shakes {p}, damaging the walls.', w: 1, apply: (p) => { if (p.b.walls > 0) p.b.walls--; } },
   { title: 'Wandering scholars', text: 'Scholars and Sufi masters settle in {p}. The people are content.', w: 2, apply: (p) => { p.unrest -= 15; } },
   { title: 'Rich caravan', text: 'A caravan laden with silk passes through {p} and pays generous tolls.', w: 3, silk: true, apply: (p, s, f) => { f.gold += 250; } },
-  { title: 'Nomad raid', text: 'Nomad raiders sweep through the villages of {p}.', w: 2, apply: (p) => { p.pop *= 0.96; p.unrest += 8; } },
+  { title: 'Nomad raid', text: 'Nomad raiders sweep through the villages of {p}.', w: 2, apply: (p) => { p.pop *= 0.96; p.unrest = Math.max(0, p.unrest) + 8; } },
 ];

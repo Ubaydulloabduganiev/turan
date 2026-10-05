@@ -9,7 +9,9 @@ The Chagatai Khanate has broken apart. Amir Temur has just taken power at Balkh,
 - **Locally:** open `index.html` in Chrome, Firefox, Edge or Safari.
 - **Online:** turn on GitHub Pages for this repository (Settings → Pages → deploy from the `main` branch, root folder). The game is then served at `https://<user>.github.io/turan/`.
 
-You win by holding **25 provinces**. You lose if your last province falls. Each turn is half a year (Spring and Autumn), from 1370 to 1450.
+**The last nation standing wins.** Destroy your rivals in war, or force them to submit and hand you their crowns. You lose if your last city falls. Each turn is half a year (Spring and Autumn), starting in 1370.
+
+Playing is simple: click any city. In your own cities you issue royal decrees, recruit and build. In anyone else's city you see its ruler and can attack it with any army in reach, or deal with its ruler right there: trade, alliance, marriage, gifts, tribute, a demand to submit, or a declaration of war. Your vizier suggests good moves every turn.
 
 ## The nations
 
@@ -33,7 +35,9 @@ Independent cities such as Otrar, Merv, Kabul, Kandahar and Rayy are held by loc
 - **Armies:** 15 unit types, including a unique unit for each nation (Temur's Tovachi Guard, the Sarbadar Dervishes, Ghuri Highlanders and others). Generals gain stars with victories, grow old and die.
 - **War:** field battles, sieges, storming the walls and sallies. Spearmen beat cavalry, horse archers rule the steppe, and walls favour the defender.
 - **Real-time battles:** fight any battle yourself on the battlefield, or auto-resolve it.
-- **Diplomacy:** peace, alliances, trade, royal marriages, tribute and gifts. Rulers remember betrayals.
+- **Diplomacy:** peace, alliances, trade, royal marriages, tribute, gifts and demands to submit. Broken rulers may surrender their whole realm, as the Sarbadars did to Temur in 1381. Rulers remember betrayals.
+- **Royal decrees:** hold a feast, levy militia or raise a special tax in any of your cities.
+- **Vizier:** up to three suggested moves each turn; click one to jump there.
 - **Rival AI:** every rival plays by the same rules as you. It builds, recruits, declares war, besieges cities and sends you envoys.
 - **History:** events such as the kurultai at Balkh, the death of Urus Khan, the battle of Kulikovo and the return of the plague.
 - **Saving:** three save slots plus an autosave every turn, stored in the browser.

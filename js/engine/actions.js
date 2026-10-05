@@ -226,6 +226,15 @@ function dealValue(from, to, type, gold = 0) {
     case 'marriage':
       if (r.war || r.married) return -999;
       return r.att + 5;
+    case 'submit': { // `to` gives up its crown and all its lands to `from`
+      if (r.alliance && r.att > 40) return -999;
+      const n = provsOf(to).length;
+      const cap = G.provinces[G.factions[to].capital];
+      let v = (pr - 2.2) * 22 + r.att * 0.25 - n * 5 + (r.war ? 8 : 0) + (n <= 1 ? 10 : 0);
+      if (cap && cap.siege && cap.siege.by === from) v += 15;
+      if (pr < 2) v = Math.min(v, -10);
+      return v;
+    }
     case 'joinwar': // `gold` here is the faction id of the shared enemy
       return r.alliance ? r.att - 20 + (rel(to, gold).att < 0 ? 30 : 0) : -999;
     default: return 0;
@@ -266,9 +275,60 @@ function applyDeal(from, to, type, gold = 0) {
       break;
     case 'marriage': r.married = true; r.att += 30; log(`A marriage binds the houses of ${F.name} and ${T.name}.`, 'dip'); break;
     case 'joinwar': declareWar(to, gold, true); break;
+    case 'submit': annex(from, to); return 0;
   }
   r.att = clampN(r.att, -100, 100);
   return 0;
+}
+
+// `loser` bows to `winner`: its cities, treasury and armies change hands and the nation ends.
+function annex(winner, loser) {
+  for (const p of provsOf(loser)) {
+    p.owner = winner; p.unrest = Math.max(p.unrest, 15); p.queue = []; p.siege = null;
+  }
+  for (const p of Object.values(G.provinces)) if (p.siege && (p.siege.by === loser || (p.siege.by === winner && p.owner === winner))) p.siege = null;
+  for (const a of Object.values(G.armies)) {
+    if (a.owner === winner) a.besieging = false;
+    if (a.owner !== loser) continue;
+    a.owner = winner; a.moves = 0; a.besieging = false;
+    if (a.general) a.general.leader = false;
+  }
+  G.factions[winner].gold += Math.max(0, G.factions[loser].gold);
+  G.factions[loser].gold = 0;
+  G.factions[loser].alive = false;
+  for (const g of PLAYABLE) if (g !== loser) { const r = rel(loser, g); r.war = false; r.alliance = false; r.trade = false; }
+  log(`${dateText()}: ${G.factions[loser].leader} submits to ${G.factions[winner].leader}. The ${FACTIONS[loser].full} is no more.`, 'big');
+  HOOKS.notify({ title: `The ${FACTIONS[loser].name} submits`, text: `${G.factions[loser].leader} has bowed before ${G.factions[winner].leader}. All the lands of the ${FACTIONS[loser].full} now belong to the ${FACTIONS[winner].full}.` });
+}
+
+// ---------- Royal decrees ----------
+
+const DECREES = {
+  feast: { name: 'Hold a feast', desc: 'Feed the city and fill the squares with music. Public order rises sharply for a few turns.', cost: p => Math.round(60 + p.pop * 6) },
+  levy: { name: 'Levy militia', desc: 'Call up two units of town militia for free. Costs a thousand people and some goodwill.' },
+  tax: { name: 'Special tax', desc: 'Squeeze the merchants for gold now. The city will resent it.', gain: p => Math.round(60 + p.pop * 14) },
+};
+function decreeCheck(p, key) {
+  if (p.decree === G.turn) return 'Only one decree per city each turn';
+  if (p.siege) return 'The city is under siege';
+  if (key === 'feast' && G.factions[p.owner].gold < DECREES.feast.cost(p)) return 'Not enough gold';
+  if (key === 'levy' && p.pop < 4) return 'Too few people';
+  return null;
+}
+function issueDecree(p, key) {
+  const why = decreeCheck(p, key);
+  if (why) return why;
+  const st = G.factions[p.owner];
+  p.decree = G.turn;
+  if (key === 'feast') { st.gold -= DECREES.feast.cost(p); p.unrest = Math.max(-30, p.unrest - 30); }
+  if (key === 'levy') {
+    p.pop -= 1; p.unrest = Math.max(0, p.unrest) + 10;
+    let army = armiesIn(p.id).find(a => a.owner === p.owner && a.units.length <= GAME.MAX_ARMY - 2);
+    if (!army) army = addArmy(p.owner, p.id, [], null);
+    army.units.push(makeUnit('militia'), makeUnit('militia'));
+  }
+  if (key === 'tax') { st.gold += DECREES.tax.gain(p); p.unrest = Math.max(0, p.unrest) + 25; }
+  return null;
 }
 
 function nearestOwnProvince(a) {
@@ -314,18 +374,21 @@ function propose(to, type, gold = 0) {
   r.asked = G.turn + ':' + type;
   const v = dealValue(from, to, type, gold);
   if (v > 0) {
+    const ruler = G.factions[to].leader;
     const amt = applyDeal(from, to, type, gold);
     const texts = {
+      submit: `${ruler} bows before you. All the lands of the ${FACTIONS[to].full} are now yours.`,
       peace: 'They accept. The war is over.', alliance: 'They accept. We are now allies.', trade: 'They accept. Caravans will travel between our lands.',
       tribute: `They are afraid of us and pay ${amt} gold.`, marriage: 'They accept. The two houses are joined by marriage.',
     };
     return { ok: true, text: texts[type] };
   }
-  if (type === 'tribute') { r.att -= 10; }
+  if (type === 'tribute' || type === 'submit') { r.att -= 10; }
   const no = {
     peace: v > -15 ? 'They refuse, but might accept with some gold.' : 'They refuse. They believe they can still win.',
     alliance: 'They refuse. They do not trust us enough.', trade: 'They refuse to trade with us.',
     tribute: 'They laugh at our envoy and send him home.', marriage: 'They refuse the match.',
+    submit: v > -20 ? 'They refuse, but they are wavering. Weaken them further or besiege their capital.' : 'They refuse. They would sooner die fighting.',
   };
   return { ok: false, text: no[type] || 'They refuse.' };
 }

@@ -120,6 +120,7 @@ function newGame(player, seed) {
   rel('temur', 'white').att = -10;
   rel('kart', 'temur').att = 10;
   for (const a of PLAYABLE) for (const b of PLAYABLE) if (a < b && !rel(a, b).war && rel(a, b).att >= 0) rel(a, b).trade = (a === 'temur' && b === 'kart');
+  for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
   log(`${dateText()}: you take command of the ${FACTIONS[player].full}.`);
   runEvents();
   return G;

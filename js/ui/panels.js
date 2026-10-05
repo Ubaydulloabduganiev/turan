@@ -13,16 +13,18 @@ function refresh() {
   renderTopbar();
   renderPanel();
   updateHint();
+  renderAdvisor();
 }
 
 function renderTopbar() {
   const pl = G.player, st = G.factions[pl];
-  $('tb-faction').innerHTML = flagSVG(pl) + `<span>${FACTIONS[pl].full}</span>`;
+  $('tb-faction').innerHTML = flagSVG(pl) + `<span>${st.leader}<small>${FACTIONS[pl].title}</small></span>`;
   $('tb-gold').textContent = fmt(st.gold);
   const net = factionIncome(pl) - factionUpkeep(pl);
   $('tb-net').textContent = (net >= 0 ? '+' : '') + fmt(net);
   $('tb-net').className = net < 0 ? 'neg' : '';
-  $('tb-provs').textContent = provsOf(pl).length + ' / ' + GAME.WIN_PROVINCES;
+  $('tb-provs').textContent = provsOf(pl).length + ' provinces';
+  $('tb-nations').textContent = nationsLeft().length + ' nations left';
   $('tb-date').textContent = dateText();
 }
 
@@ -65,21 +67,11 @@ function provincePanel(p) {
   if (p.sacked > 0) h += `<p class="note warn">The city is still recovering from a sack.</p>`;
 
   if (mine) {
-    h += '<div class="p-sec"><h4>Buildings</h4>';
-    if (p.build) {
-      const k = p.build.key;
-      h += `<p class="note">Building <b>${BUILDINGS[k].levels[p.b[k] + 1]}</b>: ${p.build.turns} turn(s) left <button class="small" data-act="cancelbuild">Cancel</button></p>`;
-    }
-    for (const k of BUILDING_ORDER) {
-      const B = BUILDINGS[k], lvl = p.b[k], next = lvl + 1;
-      let right = '';
-      if (next <= 3) {
-        const why = buildCheck(p, k);
-        right = `<button class="small" data-act="build" data-k="${k}" ${why ? 'disabled' : ''} title="${why || B.desc}">${B.levels[next]} · ${B.cost[next]}g · ${B.turns[next]}t</button>`;
-      }
-      h += `<div class="bld"><div>${B.name} <span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('')}</span><div class="lv">${lvl ? B.levels[lvl] : 'Not built'}</div></div>${right}</div>`;
-    }
-    h += '</div>';
+    h += '<div class="p-sec"><h4>Royal decrees</h4><div class="decrees">' + Object.keys(DECREES).map(k => {
+      const D = DECREES[k], why = decreeCheck(p, k);
+      const price = k === 'feast' ? `−${fmt(D.cost(p))} gold` : k === 'tax' ? `+${fmt(D.gain(p))} gold` : '+2 militia';
+      return `<button data-act="decree" data-k="${k}" ${why ? 'disabled' : ''} title="${why || D.desc}"><b>${D.name}</b><small>${price}</small></button>`;
+    }).join('') + '</div>' + (p.decree === G.turn ? '<p class="note">You have already issued a decree here this turn.</p>' : '') + '</div>';
 
     h += '<div class="p-sec"><h4>Recruit</h4>';
     const list = recruitable(p);
@@ -95,16 +87,92 @@ function provincePanel(p) {
         p.queue.map((t, i) => `<div class="rcard" data-act="unqueue" data-i="${i}" title="Cancel and refund">${unitSVG(t, p.owner)}<div>${UNITS[t].name}</div></div>`).join('') + '</div>';
     }
     h += '</div>';
-  } else if (p.owner !== 'rebels') {
-    const r = rel(G.player, p.owner);
-    h += `<div class="p-sec"><h4>Relations</h4><p>${statusChips(G.player, p.owner)} ${attitudeWord(r.att)} towards us.</p><div class="btnrow"><button data-act="dip" data-f="${p.owner}">Diplomacy</button></div></div>`;
+
+    h += '<div class="p-sec"><h4>Buildings</h4>';
+    if (p.build) {
+      const k = p.build.key;
+      h += `<p class="note">Building <b>${BUILDINGS[k].levels[p.b[k] + 1]}</b>: ${p.build.turns} turn(s) left <button class="small" data-act="cancelbuild">Cancel</button></p>`;
+    }
+    for (const k of BUILDING_ORDER) {
+      const B = BUILDINGS[k], lvl = p.b[k], next = lvl + 1;
+      let right = '';
+      if (next <= 3) {
+        const why = buildCheck(p, k);
+        right = `<button class="small" data-act="build" data-k="${k}" ${why ? 'disabled' : ''} title="${why || B.desc}">${B.levels[next]} · ${B.cost[next]}g · ${B.turns[next]}t</button>`;
+      }
+      h += `<div class="bld"><div>${B.name} <span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('')}</span><div class="lv">${lvl ? B.levels[lvl] : 'Not built'}</div></div>${right}</div>`;
+    }
+    h += '</div>';
   } else {
-    h += `<p class="note">An independent city. Its lords answer to no khan; any army may attack it.</p>`;
+    h += foreignActions(p);
   }
 
   const here = armiesIn(p.id);
   if (here.length) {
     h += '<div class="p-sec"><h4>Armies here</h4>' + here.map(a => armyRow(a)).join('') + '</div>';
+  }
+  return h;
+}
+
+// ---------- Someone else's province: war and diplomacy in one place ----------
+
+function estimateDefence(p) {
+  let s = 0;
+  for (const a of armiesIn(p.id)) if (a.owner !== G.player && !allied(a.owner, G.player)) s += armyPower(a);
+  if (p.b.walls) { for (const u of cityWatch(p)) s += unitPower(u); s *= 1 + 0.3 * p.b.walls; }
+  return s;
+}
+function chanceWord(ratio) {
+  return ratio > 2 ? ['Easy victory', 'good'] : ratio > 1.3 ? ['Good odds', 'good'] : ratio > 0.9 ? ['Even fight', 'warn'] : ['Risky', 'bad'];
+}
+
+function foreignActions(p) {
+  const o = p.owner, pl = G.player;
+  let h = '';
+  // Who rules here
+  if (o === 'rebels') {
+    h += `<div class="p-sec"><h4>Independent city</h4><p class="note">Local lords hold ${p.city} and answer to no khan. There is no one to bargain with: take it by force.</p></div>`;
+  } else {
+    const r = rel(pl, o), st = G.factions[o];
+    h += `<div class="p-sec"><h4>Ruler</h4><div class="ruler">${flagSVG(o)}<div><b>${st.leader}</b><div class="p-sub">${FACTIONS[o].title}</div>
+      <div>${statusChips(pl, o)} <span style="color:${attitudeColor(r.att)}">${attitudeWord(r.att)}</span> towards you</div></div></div></div>`;
+  }
+  // Attack
+  const def = estimateDefence(p);
+  const opts = armiesOf(pl).map(a => ({ a, r: a.moves > 0 && !a.besieging ? reachable(a)[p.id] : null })).filter(x => x.r && x.r.kind !== 'move');
+  h += `<div class="p-sec"><h4>Attack ${p.city}</h4>`;
+  if (opts.length) {
+    h += '<div class="choices">' + opts.map(({ a, r }) => {
+      const [w, c] = chanceWord(armyPower(a) / (def + 1));
+      const name = a.general ? a.general.name : 'Army at ' + G.provinces[a.prov].city;
+      const how = p.b.walls && !armiesIn(p.id).some(x => x.owner === o) ? 'besiege the city' : 'attack';
+      return `<button data-act="attackwith" data-id="${a.id}" class="${r.kind === 'blocked' ? 'warwarn' : ''}"><b>${name}</b><small>${a.units.length} units · ${how}${r.kind === 'blocked' ? ' · means war' : ''} · <span class="${c}">${w}</span></small></button>`;
+    }).join('') + '</div>';
+  } else {
+    const near = armiesOf(pl).filter(a => !a.besieging).sort((x, y) => Math.hypot(G.provinces[x.prov].x - p.x, G.provinces[x.prov].y - p.y) - Math.hypot(G.provinces[y.prov].x - p.x, G.provinces[y.prov].y - p.y))[0];
+    h += `<p class="note">None of your armies can reach ${p.city} this turn.</p>`;
+    if (near) h += `<div class="btnrow"><button data-act="selarmy" data-id="${near.id}">Select your nearest army (${G.provinces[near.prov].city})</button></div>`;
+  }
+  h += `<p class="note">Defenders: ${def < 1 ? 'none to speak of' : strengthWord(def)}${p.b.walls ? ` · ${BUILDINGS.walls.levels[p.b.walls].toLowerCase()}` : ''}</p></div>`;
+  // Diplomacy
+  if (o !== 'rebels') {
+    const r = rel(pl, o), gold = G.factions[pl].gold;
+    const b = (type, label, extra = '', g = 0, dis = false) => `<button data-act="propose" data-type="${type}" data-g="${g}" ${dis ? 'disabled' : ''} class="${extra}">${label}</button>`;
+    let btns = '';
+    if (r.war) {
+      btns += b('peace', 'Offer peace') + b('peace', 'Peace + 500 gold', '', 500, gold < 500) + b('submit', 'Demand surrender');
+    } else {
+      btns += r.trade ? b('cancelTrade', 'Cancel trade') : b('trade', 'Propose trade');
+      btns += r.alliance ? b('cancelAlliance', 'End alliance') : b('alliance', 'Propose alliance');
+      if (!r.married) btns += b('marriage', 'Arrange a marriage');
+      btns += b('tribute', `Demand tribute (~${fmt(tributeAmount(o))})`);
+      btns += b('submit', 'Demand submission');
+      btns += b('war', 'Declare war', 'danger');
+    }
+    btns += b('gift', 'Send 200 gold', '', 200, gold < 200) + b('gift', 'Send 1000 gold', '', 1000, gold < 1000);
+    h += `<div class="p-sec"><h4>Diplomacy with ${FACTIONS[o].name}</h4><div class="dipgrid">${btns}</div>`;
+    if (UI.dipReply && UI.dipReply.f === o && UI.dipReply.t === G.turn) h += `<p class="reply ${UI.dipReply.ok ? 'good' : 'bad'}">“${UI.dipReply.text}”</p>`;
+    h += `<p class="note">“Demand submission” asks their ruler to hand you his whole realm without a fight. Only the weak and the beaten accept.</p></div>`;
   }
   return h;
 }
@@ -203,6 +271,24 @@ $('panel').addEventListener('click', async e => {
     }
     case 'merge': err = mergeArmies(a, G.armies[el.dataset.id]); unitPick.clear(); break;
     case 'appoint': err = appointGeneral(a); if (!err) toast('A new general', `${a.general.name} takes command of the army.`, 'good'); break;
+    case 'decree': err = issueDecree(p, el.dataset.k); if (!err) toast(DECREES[el.dataset.k].name, `${p.city} obeys your decree.`, 'good'); break;
+    case 'attackwith': {
+      const army = G.armies[el.dataset.id];
+      UI.selArmy = army.id;
+      UI.reach = reachable(army);
+      await orderMove(army, p.id);
+      return;
+    }
+    case 'propose': {
+      const f = p.owner, type = el.dataset.type, gold = +el.dataset.g;
+      if (type === 'war' && !(await confirmBox('Declare war?', `Your envoys will carry a declaration of war to ${G.factions[f].leader}.${rel(G.player, f).alliance || rel(G.player, f).truce > 0 ? ' Breaking a treaty will make every ruler trust you less.' : ''}`, 'Declare war', 'Not yet'))) return;
+      const res = propose(f, type, gold);
+      UI.dipReply = { f, text: res.text, ok: res.ok, t: G.turn };
+      if (type === 'submit' && res.ok) { UI.selProv = p.id; }
+      refresh();
+      checkOverUI();
+      return;
+    }
     case 'assault': await doAssault(a.prov); return;
     case 'sally': await doSally(a.prov); return;
   }

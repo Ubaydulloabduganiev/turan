@@ -76,8 +76,8 @@ async function startNew() {
   notices.length = 0; // the opening event is shown in the intro instead
   enterGame();
   const F = FACTIONS[pickSel];
-  await showModal(`<h3>${dateText()}</h3><p>${F.blurb}</p><p><b>Your aim:</b> hold ${GAME.WIN_PROVINCES} provinces. ${F.play}</p>
-    <p class="note">Tip: click your capital to build and recruit, click a banner to command an army, and press <b>End turn</b> when you are done.</p>`,
+  await showModal(`<h3>${dateText()}</h3><p>${F.blurb}</p><p><b>Your aim:</b> outlast every other nation. Conquer them, or make them kneel and hand you their crowns. ${F.play}</p>
+    <p class="note">Click any city to rule it, attack it or talk to its ruler. Your vizier in the corner will suggest what to do. Press <b>End turn</b> when you are done.</p>`,
     [{ label: 'How to play', value: 'help' }, { label: 'To war', value: true, cls: 'big' }], { cancel: true, cls: 'parch' }).then(v => v === 'help' && openHelp());
   saveGame('auto');
 }

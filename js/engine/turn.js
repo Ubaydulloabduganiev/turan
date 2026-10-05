@@ -122,7 +122,8 @@ function growProvince(p, order) {
   const cap = 30 + 40 * p.b.farms + (p.terrain === 'oasis' ? 40 : 0);
   if (p.pop > cap) g = Math.min(g, 0);
   p.pop = Math.max(1, p.pop * (1 + g));
-  p.unrest = Math.max(0, p.unrest * 0.8 - 1);
+  // Unrest fades; so does the goodwill from a feast
+  p.unrest = p.unrest > 0 ? Math.max(0, p.unrest * 0.8 - 1) : Math.min(0, p.unrest * 0.8 + 1);
   if (p.sacked > 0) p.sacked--;
 }
 
@@ -168,7 +169,7 @@ function randomEvent() {
   if (!cands.length) return;
   const p = pick(cands);
   ev.apply(p, G, G.factions[p.owner]);
-  p.unrest = Math.max(0, p.unrest);
+  p.unrest = Math.max(-30, p.unrest);
   if (p.owner === G.player) {
     const text = ev.text.replace('{p}', p.city);
     log(`${dateText()}: ${text}`, 'event');
@@ -206,10 +207,11 @@ function runEvents() {
   }
 }
 
+// The last nation standing wins.
 function checkVictory() {
+  if (G.over) return;
   const pl = G.player;
-  const n = provsOf(pl).length;
-  if (!G.factions[pl].alive || n === 0) { G.over = 'lose'; return; }
-  if (n >= GAME.WIN_PROVINCES && !G.wonShown) { G.over = 'win'; return; }
-  if (year() >= GAME.END_YEAR) G.over = 'time';
+  if (!G.factions[pl].alive || provsOf(pl).length === 0) { G.over = 'lose'; return; }
+  if (nationsLeft().length === 1) G.over = 'win';
 }
+const nationsLeft = () => PLAYABLE.filter(f => G.factions[f].alive);

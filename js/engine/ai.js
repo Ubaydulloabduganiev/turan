@@ -56,20 +56,26 @@ function aiDiplomacy(f) {
     } else if (!r.trade && dealValue(f, g, 'trade') > 0 && dealValue(g, f, 'trade') > 0 && rng() < 0.15) applyDeal(f, g, 'trade');
     else if (!r.alliance && dealValue(f, g, 'alliance') > 10 && dealValue(g, f, 'alliance') > 10 && rng() < 0.1) applyDeal(f, g, 'alliance');
   }
+  // Swallow a broken neighbour whole if it will kneel
+  for (const g of neighbourFactions(f)) {
+    if (g === 'rebels' || g === G.player || !G.factions[g].alive) continue;
+    if (dealValue(f, g, 'submit') > 0 && rng() < 0.3) { applyDeal(f, g, 'submit'); return; }
+  }
   // War on a weaker neighbour
   if (G.turn < 2) return;
   const wars = PLAYABLE.filter(g => g !== f && G.factions[g].alive && rel(f, g).war).length;
-  if (wars >= 2 || rng() > AGGRESSION[f] * 0.18) return;
+  const few = nationsLeft().length <= 3; // the endgame: fewer rivals, bolder rulers
+  if (wars >= 2 || rng() > AGGRESSION[f] * (few ? 0.4 : 0.18)) return;
   let best = null, bs = 0;
   for (const g of neighbourFactions(f)) {
     if (g === 'rebels' || !G.factions[g].alive) continue;
     const r = rel(f, g);
-    if (r.war || r.alliance || r.truce > 0) continue;
+    if (r.war || (r.alliance && !few) || r.truce > 0) continue;
     const ratio = my / (factionPower(g) + 40);
-    const s = ratio * AGGRESSION[f] - r.att / 50 - (g === G.player ? 0 : 0.1);
-    if (ratio > 1.35 && s > bs) { bs = s; best = g; }
+    const s = ratio * AGGRESSION[f] - r.att / (few ? 150 : 50) - (g === G.player ? 0 : 0.1);
+    if (ratio > (few ? 0.9 : 1.35) && s > bs) { bs = s; best = g; }
   }
-  if (best && bs > 1.1) declareWar(f, best);
+  if (best && bs > (few ? 0.5 : 1.1)) declareWar(f, best);
 }
 
 // Proposals the AI makes to the player (at most one per turn across all rivals).
@@ -79,7 +85,8 @@ async function aiOffers(f) {
   const r = rel(f, pl);
   const chance = rng();
   let type = null, gold = 0;
-  if (r.war && r.warTurns > 3 && dealValue(pl, f, 'peace') > 10 && chance < 0.35) type = 'peace';
+  if (dealValue(pl, f, 'submit') > 12 && chance < 0.4) type = 'yield';
+  else if (r.war && r.warTurns > 3 && dealValue(pl, f, 'peace') > 10 && chance < 0.35) type = 'peace';
   else if (!r.war && !r.trade && r.att > -5 && chance < 0.08) type = 'trade';
   else if (!r.war && !r.alliance && r.att > 35 && chance < 0.08) type = 'alliance';
   else if (!r.war && !r.married && r.att > 20 && chance < 0.04) type = 'marriage';
@@ -90,6 +97,7 @@ async function aiOffers(f) {
   const yes = await HOOKS.offer({ from: f, type, gold });
   if (yes) {
     if (type === 'tribute') applyDeal(f, pl, 'tribute');
+    else if (type === 'yield') applyDeal(pl, f, 'submit');
     else applyDeal(f, pl, type);
   } else {
     r.att -= type === 'tribute' ? 5 : 3;
@@ -108,6 +116,7 @@ function aiBuild(f) {
     if (budget < 300) break;
     const order = provinceOrder(p, distancesFrom(f));
     const want = [];
+    if (order < 35 && !decreeCheck(p, 'feast') && st.gold > 800) issueDecree(p, 'feast');
     if (order < 45) want.push('madrasa');
     if (frontier(p) && p.b.walls < 2) want.push('walls');
     if (p.pop >= 10) want.push('market');
