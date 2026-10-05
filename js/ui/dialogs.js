@@ -51,7 +51,8 @@ function pushNotice(n) {
 async function flushNotices() {
   while (notices.length) {
     const n = notices.shift();
-    await infoBox(n.title, n.text, { cls: n.history ? 'parch' : '' });
+    if (n.who) await infoBox(n.title, `<div class="with-portrait">${portraitSVG(n.who, { faction: n.whoFaction })}<p>${n.text}</p></div>`, { cls: n.history ? 'parch' : '' });
+    else await infoBox(n.title, n.text, { cls: n.history ? 'parch' : '' });
     if (n.prov && G) { UI.selProv = n.prov; UI.selArmy = null; centerOnProv(n.prov); refresh(); }
   }
 }
@@ -60,11 +61,13 @@ async function flushNotices() {
 
 async function showStory({ story, ctx }) {
   const opts = story.options.map((o, i) => `<button class="choice" data-mi="${i}"><b>${o.label(ctx)}</b><small>${o.hint}</small></button>`).join('');
-  const i = await showModal(`<h3>${story.title}</h3><p>${story.text(ctx)}</p><div class="choices story">${opts}</div>`, [], { cls: 'parch', cancel: 0, pickIndex: true });
+  const who = story.who ? story.who(ctx) : null;
+  const pic = who ? portraitSVG(who, { faction: story.whoFaction ? story.whoFaction(ctx) : ctx.f }) : '';
+  const i = await showModal(`<h3>${story.title}</h3><div class="with-portrait">${pic}<p>${story.text(ctx)}</p></div><div class="choices story">${opts}</div>`, [], { cls: 'parch', cancel: 0, pickIndex: true });
   const result = story.options[i || 0].act(ctx);
   log(`${dateText()}: ${story.title}. ${result}`, 'event');
   refresh();
-  await showModal(`<h3>${story.title}</h3><p>${result}</p>`, [{ label: 'Continue', value: true, cls: 'big' }], { cls: 'parch', cancel: true });
+  await showModal(`<h3>${story.title}</h3><div class="with-portrait">${pic}<p>${result}</p></div>`, [{ label: 'Continue', value: true, cls: 'big' }], { cls: 'parch', cancel: true });
   checkMission();
   await flushNotices();
 }
@@ -245,7 +248,7 @@ function openDiplomacy(f) {
     const rows = others.map(x => {
       const r = rel(G.player, x), F = FACTIONS[x], st = G.factions[x];
       const att = r.att, w = Math.abs(att) / 100 * 35;
-      return `<tr data-f="${x}" class="${x === dipSel ? 'sel' : ''}"><td>${flagSVG(x)}</td><td>${F.name}<div class="p-sub">${st.leader}</div></td>
+      return `<tr data-f="${x}" class="${x === dipSel ? 'sel' : ''}"><td>${flagSVG(x)}</td><td class="dip-ruler">${rulerPortrait(x, 'mini-portrait')}<div>${F.name}<div class="p-sub">${st.leader}</div></div></td>
         <td>${provsOf(x).length}</td><td>${strengthWord(factionPower(x) / 3)}</td>
         <td><span class="att"><i style="left:${att < 0 ? 35 - w : 35}px;width:${w}px;background:${attitudeColor(att)}"></i></span><div class="p-sub">${attitudeWord(att)}</div></td>
         <td>${statusChips(G.player, x)}</td></tr>`;
@@ -285,6 +288,50 @@ function openDiplomacy(f) {
       $('dip-reply').className = res.ok ? 'good' : 'bad';
       refresh();
       if (G.over) { closeModal(null); checkOverUI(); }
+    },
+  });
+}
+
+// ---------- The court: the people of the age ----------
+
+function personCard(name, faction, o = {}) {
+  const c = charByName(name);
+  const age = o.age !== undefined ? o.age : c ? year() - c.born : null;
+  const dead = c && c.died && year() > c.died && !o.alive;
+  const role = o.leader ? FACTIONS[faction].title : o.consort ? 'Consort of the ruler' : o.child ? `Born ${c.born} · joins the court in ${c.joins}` : o.cmd !== undefined ? `General ${stars(Math.min(5, o.cmd))}` : c ? { scholar: 'Scholar', poet: 'Poet', envoy: 'Envoy' }[c.role] || '' : '';
+  const where = o.prov ? ` · ${G.provinces[o.prov].city}` : '';
+  return `<div class="person ${o.child ? 'child' : ''} ${dead ? 'dead' : ''}" ${o.army ? `data-army="${o.army}"` : ''}>${portraitSVG(name, { faction, age: age || undefined })}
+    <div class="pc-body"><div class="pc-name">${name}</div><div class="pc-role">${role}</div>
+    <div class="pc-meta">${age !== null && !o.child ? `Age ${age}` : ''}${dead ? ` · died ${c.died}` : ''}${where}</div>
+    ${c ? `<div class="pc-bio">${c.bio}</div>` : ''}</div></div>`;
+}
+
+function openCourt(tab = 'mine') {
+  const pl = G.player;
+  const render = () => {
+    let body = '';
+    if (tab === 'mine') {
+      body = '<div class="people">' + courtOf(pl).map(p => personCard(p.name, pl, { ...p, alive: !p.child })).join('') + '</div>';
+    } else if (tab === 'rulers') {
+      body = '<div class="people">' + PLAYABLE.filter(f => G.factions[f].alive && f !== pl).map(f => {
+        const st = G.factions[f];
+        const ga = armiesOf(f).find(a => a.general && a.general.name === st.leader);
+        return personCard(st.leader, f, { leader: true, age: ga ? ga.general.age : undefined, alive: true });
+      }).join('') + '</div>';
+    } else {
+      body = '<div class="people">' + CHARACTERS.filter(c => !c.faction).map(c => personCard(c.name, null, {})).join('') + '</div>';
+    }
+    const tabs = [['mine', 'Your court'], ['rulers', 'Rulers of Turan'], ['figures', 'Figures of the age']].map(([k, l]) => `<button data-tab="${k}" class="${tab === k ? 'big' : ''}">${l}</button>`).join('');
+    return `<button class="modal-x small" data-close="1">Close</button><h3>The court of ${G.factions[pl].leader}</h3><div class="btnrow tabs">${tabs}</div>${body}`;
+  };
+  showModal(render(), [], {
+    cls: 'wide', cancel: null,
+    onClick: e => {
+      if (e.target.closest('[data-close]')) return closeModal(null);
+      const tb = e.target.closest('[data-tab]');
+      if (tb) { tab = tb.dataset.tab; $('modal').innerHTML = render(); return; }
+      const pa = e.target.closest('[data-army]');
+      if (pa && G.armies[pa.dataset.army]) { closeModal(null); UI.selArmy = pa.dataset.army; UI.selProv = G.armies[pa.dataset.army].prov; centerOnProv(UI.selProv); refresh(); }
     },
   });
 }

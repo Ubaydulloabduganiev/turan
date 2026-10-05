@@ -19,7 +19,7 @@ function refresh() {
 
 function renderTopbar() {
   const pl = G.player, st = G.factions[pl];
-  $('tb-faction').innerHTML = flagSVG(pl) + `<span>${st.leader}<small>${FACTIONS[pl].title}</small></span>`;
+  $('tb-faction').innerHTML = flagSVG(pl) + rulerPortrait(pl, 'tb-portrait') + `<span>${st.leader}<small>${FACTIONS[pl].title}</small></span>`;
   $('tb-gold').textContent = fmt(st.gold);
   const net = factionIncome(pl) - factionUpkeep(pl);
   $('tb-net').textContent = (net >= 0 ? '+' : '') + fmt(net);
@@ -136,7 +136,7 @@ function foreignActions(p) {
     h += `<div class="p-sec"><h4>Independent city</h4><p class="note">Local lords hold ${p.city} and answer to no khan. There is no one to bargain with: take it by force.</p></div>`;
   } else {
     const r = rel(pl, o), st = G.factions[o];
-    h += `<div class="p-sec"><h4>Ruler</h4><div class="ruler">${flagSVG(o)}<div><b>${st.leader}</b><div class="p-sub">${FACTIONS[o].title}</div>
+    h += `<div class="p-sec"><h4>Ruler</h4><div class="ruler">${rulerPortrait(o, 'p-portrait')}<div><b>${st.leader}</b><div class="p-sub">${FACTIONS[o].title}</div>
       <div>${statusChips(pl, o)} <span style="color:${attitudeColor(r.att)}">${attitudeWord(r.att)}</span> towards you</div></div></div></div>`;
   }
   // Attack
@@ -225,7 +225,7 @@ function armyPanel(a) {
   const mine = a.owner === G.player, p = G.provinces[a.prov];
   const F = FACTIONS[a.owner];
   const g = a.general;
-  let h = `<div class="p-head">${flagSVG(a.owner)}<div><div class="p-title">${g ? g.name : (mine ? 'Army' : F.adj + ' army')}</div>` +
+  let h = `<div class="p-head">${g ? personPortrait(g.name, a.owner, g.age, 'p-portrait') : flagSVG(a.owner)}<div><div class="p-title">${g ? g.name : (mine ? 'Army' : F.adj + ' army')}</div>` +
     `<div class="p-sub">${g ? `<span class="stars">${stars(Math.min(5, g.cmd))}</span> ${g.leader ? 'Ruler · ' : ''}age ${g.age}` : 'Led by a captain'}</div>` +
     `<div class="p-sub">${F.full} · at ${p.city}</div></div></div>`;
   const men = a.units.reduce((n, u) => n + u.men, 0);

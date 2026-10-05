@@ -20,6 +20,7 @@ async function endTurn(onProgress) {
     G.turn++;
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
     runEvents();
+    comingOfAge();
     checkVictory();
   } finally {
     turnBusy = false;
@@ -196,7 +197,7 @@ function runEvents() {
     if (x.leader && x.faction !== G.player) {
       const st = G.factions[x.faction];
       const la = armiesOf(x.faction).find(a => a.general && a.general.leader);
-      if (la) { la.general.name = x.leader; la.general.age = 28; la.general.cmd = Math.max(la.general.cmd, 3); }
+      if (la) { la.general.name = x.leader; la.general.age = charByName(x.leader) ? year() - charByName(x.leader).born : 35; la.general.cmd = Math.max(la.general.cmd, 3); }
       st.leader = x.leader;
     }
     if (x.armyLoss) for (const a of armiesOf(x.faction)) { for (const u of a.units) u.men = Math.round(u.men * (1 - x.armyLoss)); cleanArmy(a); }

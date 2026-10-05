@@ -43,6 +43,8 @@ function makeUnit(type) {
 }
 
 function makeGeneral(faction, name, cmd, age, leader) {
+  const c = typeof charByName === 'function' ? charByName(name) : null;
+  if (c) age = year() - c.born;
   return { name, cmd, age: age || 25 + Math.floor(rng() * 15), leader: !!leader };
 }
 

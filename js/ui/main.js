@@ -172,6 +172,7 @@ $('btn-help').onclick = openHelp;
 $('btn-end').onclick = doEndTurn;
 $('busy').onclick = () => { LIFE.skip = true; };
 $('btn-dip').onclick = () => !uiLocked() && openDiplomacy();
+$('btn-court').onclick = () => !uiLocked() && openCourt();
 $('btn-realm').onclick = () => !uiLocked() && openRealm();
 $('btn-chron').onclick = () => !uiLocked() && openChronicle();
 $('btn-menu').onclick = () => !uiLocked() && openMenu();
@@ -187,6 +188,7 @@ window.addEventListener('keydown', e => {
   if (!G || uiLocked() || $('game').classList.contains('hidden')) return;
   if (e.key === 'Enter') doEndTurn();
   else if (e.key === 'd' || e.key === 'D') openDiplomacy();
+  else if (e.key === 'k' || e.key === 'K') openCourt();
   else if (e.key === 'r' || e.key === 'R') openRealm();
   else if (e.key === 'c' || e.key === 'C') openChronicle();
 });

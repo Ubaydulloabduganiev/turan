@@ -184,7 +184,7 @@ const cost = (ctx, base) => Math.round(base * (1 + provsOf(ctx.f).length / 12));
 
 const STORIES = [
   {
-    id: 'naqshband', once: true, title: 'The master of Bukhara',
+    id: 'naqshband', who: () => 'naqshband', once: true, title: 'The master of Bukhara',
     when: c => G.provinces.bukhara.owner === c.f && c.year < 1389,
     text: c => 'Baha al-Din Naqshband, the most revered Sufi master of Bukhara, asks you to protect the lodges of his order and feed the poor who gather there.',
     options: [
@@ -195,7 +195,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'bandits', title: 'Bandits on the Silk Road',
+    id: 'bandits', who: () => 'merchant', title: 'Bandits on the Silk Road',
     when: c => !!c.silk,
     text: c => `Bandits are robbing the caravans on the road to ${c.silk.city}. The merchants beg for protection.`,
     options: [
@@ -206,7 +206,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'amir', title: 'An ambitious amir',
+    id: 'amir', who: c => c.gen.general.name, title: 'An ambitious amir',
     when: c => !!c.gen && c.gen.general.cmd >= 2,
     text: c => `${c.gen.general.name}, proud of his victories, demands the governorship of ${c.p.city} as his reward.`,
     options: [
@@ -217,7 +217,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'genoese', title: 'Merchants from Tana',
+    id: 'genoese', who: () => 'genoese', title: 'Merchants from Tana',
     when: c => !!c.silk && c.year < 1410,
     text: c => `Genoese merchants from their colony at Tana, on the Sea of Azov, offer silver to rent a trading quarter in ${c.silk.city}.`,
     options: [
@@ -252,7 +252,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'ming', once: true, title: 'An envoy from the Ming',
+    id: 'ming', who: () => 'ming', once: true, title: 'An envoy from the Ming',
     when: c => c.year >= 1385 && provsOf(c.f).some(p => p.silk),
     text: () => 'An envoy of the Hongwu Emperor of Ming China arrives with a letter calling you his loyal vassal, who owes tribute to the Son of Heaven.',
     options: [
@@ -263,7 +263,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'horses', title: 'Horses from the steppe',
+    id: 'horses', who: () => 'herder', title: 'Horses from the steppe',
     when: c => !!c.cap && c.cap.owner === c.f,
     text: () => 'Kipchak herders drive three hundred fine horses to your capital and offer them for sale.',
     options: [
@@ -273,7 +273,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'spy', title: 'A spy is caught',
+    id: 'spy', who: () => 'spy', title: 'A spy is caught',
     when: c => !!c.enemy && !!c.cap,
     text: c => `A spy in the pay of the ${FACTIONS[c.enemy].full} has been caught in ${c.cap.city}.`,
     options: [
@@ -286,7 +286,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'heir', title: 'The heir wants glory',
+    id: 'heir', who: c => c.st.heir, title: 'The heir wants glory',
     when: c => !!c.cap && c.cap.owner === c.f && c.st.heir && !armiesOf(c.f).some(a => a.general && a.general.name === c.st.heir),
     text: c => `Your heir, ${c.st.heir}, begs to be given an army of his own.`,
     options: [
@@ -297,7 +297,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'pretender', title: 'A pretender appears',
+    id: 'pretender', who: () => 'pretender', title: 'A pretender appears',
     when: c => c.mine.length > 3 && G.turn > 4,
     text: c => `In ${c.p.city} a man claiming descent from Chinggis Khan is gathering armed followers.`,
     options: [
@@ -310,7 +310,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'historian', title: 'A historian at court',
+    id: 'historian', who: c => c.f === 'temur' ? 'shami' : 'merchant', title: 'A historian at court',
     when: () => true,
     text: c => `${c.f === 'temur' ? 'Nizam al-Din Shami' : 'A learned Persian historian'} asks for patronage to write the chronicle of your reign.`,
     options: [
@@ -331,7 +331,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'pay', title: 'Unpaid soldiers',
+    id: 'pay', who: () => 'soldier', title: 'Unpaid soldiers',
     when: c => factionUpkeep(c.f) > factionIncome(c.f) * 0.7 && armiesOf(c.f).length > 0,
     text: () => 'Your soldiers grumble that their pay is late. Some talk of going home.',
     options: [
@@ -341,7 +341,7 @@ const STORIES = [
     ],
   },
   {
-    id: 'insult', title: 'An insult',
+    id: 'insult', who: c => G.factions[c.rival].leader, whoFaction: c => c.rival, title: 'An insult',
     when: c => !!c.rival && !rel(c.f, c.rival).war && rel(c.f, c.rival).att < 10,
     text: c => `${G.factions[c.rival].leader} has mocked your envoy before his whole court, calling you a camel herder.`,
     options: [
@@ -352,13 +352,64 @@ const STORIES = [
     ],
   },
   {
-    id: 'caravanserai', title: 'A caravanserai on the road',
+    id: 'caravanserai', who: () => 'merchant', title: 'A caravanserai on the road',
     when: c => !!c.silk && c.silk.b.market < maxBuildLevel(c.silk),
     text: c => `The merchants of ${c.silk.city} offer to build a great caravanserai if you pay half the cost.`,
     options: [
       { label: c => `Agree (−${cost(c, 350)} gold)`, hint: 'The bazaar improves at once.',
         act: c => { c.st.gold -= cost(c, 350); c.silk.b.market++; return `A caravanserai with a hundred rooms opens in ${c.silk.city}.`; } },
       { label: () => 'Refuse', hint: 'Nothing changes.', act: () => 'The merchants take their plans elsewhere.' },
+    ],
+  },
+  {
+    id: 'hafez', once: true, title: 'The poet of Shiraz', who: () => 'hafez',
+    when: c => c.year < 1390 && c.year >= 1375,
+    text: () => 'Hafez of Shiraz sends you a ghazal. Its last line says he would give Samarkand and Bukhara for the mole on his beloved’s cheek. Your court is not sure whether to laugh.',
+    options: [
+      { label: c => `Send him a robe of honour (−${cost(c, 150)} gold)`, hint: 'Poets will sing your praises across Persia.',
+        act: c => { c.st.gold -= cost(c, 150); c.st.orderBonus = Math.max(c.st.orderBonus, 6); c.st.orderBonusT = Math.max(c.st.orderBonusT, 4); return 'Hafez replies with a verse in your honour, copied in every bazaar.'; } },
+      { label: () => 'Ask him how he can give away cities so cheaply', hint: 'As Temur is said to have done.',
+        act: () => 'Hafez points at his patched robe: "It is by such generosity, my lord, that I have come to this poverty." The court laughs.' },
+    ],
+  },
+  {
+    id: 'taftazani', once: true, title: 'The most learned man of the age', who: () => 'taftazani',
+    when: c => c.year < 1390 && provsOf(c.f).some(p => p.b.madrasa >= 2),
+    text: () => "Sa'd al-Din Taftazani, master of logic, rhetoric and law, is willing to teach at one of your madrasas — for a price.",
+    options: [
+      { label: c => `Invite him (−${cost(c, 350)} gold)`, hint: 'Your madrasas fill with students; order rises in every city.',
+        act: c => { c.st.gold -= cost(c, 350); for (const p of c.mine) p.unrest = Math.max(-20, p.unrest - 10); return 'Students come from as far as Delhi and Damascus to hear him.'; } },
+      { label: () => 'Our mullahs are learned enough', hint: 'Nothing changes.', act: () => 'He goes to teach elsewhere.' },
+    ],
+  },
+  {
+    id: 'kamal', once: true, title: 'A poet from Khujand', who: () => 'kamal',
+    when: c => c.year < 1400,
+    text: () => 'Kamal Khujandi, the poet of Tabriz, longs to see his home town again and asks for a house and a garden there.',
+    options: [
+      { label: c => `Give him a garden (−${cost(c, 120)} gold)`, hint: 'A small kindness the poets will remember.',
+        act: c => { c.st.gold -= cost(c, 120); c.st.orderBonus = Math.max(c.st.orderBonus, 4); c.st.orderBonusT = Math.max(c.st.orderBonusT, 4); return 'He writes that the apricots of Khujand are sweeter than any in Persia.'; } },
+      { label: () => 'He is happy enough in Tabriz', hint: 'Nothing changes.', act: () => 'The poet stays in Tabriz.' },
+    ],
+  },
+  {
+    id: 'ibnkhaldun', once: true, title: 'The historian from the West', who: () => 'ibnkhaldun',
+    when: c => c.year >= 1395,
+    text: () => 'Ibn Khaldun, the great historian of North Africa, asks for an audience. He wants to talk about why empires rise and why they fall.',
+    options: [
+      { label: () => 'Speak with him for many days', hint: 'Your generals learn from his wisdom: one of them gains a star.',
+        act: c => { const g = armiesOf(c.f).filter(a => a.general).sort((a, b) => a.general.cmd - b.general.cmd)[0]; if (g) g.general.cmd = Math.min(6, g.general.cmd + 1); return 'He tells you that every dynasty lasts about four generations. You resolve to prove him wrong.'; } },
+      { label: c => `Give him a mule and gold, and send him home (−${cost(c, 100)})`, hint: 'He will write kindly of you.', act: c => { c.st.gold -= cost(c, 100); return 'He rides away on a fine mule, already writing.'; } },
+    ],
+  },
+  {
+    id: 'clavijo', once: true, title: 'An embassy from Castile', who: () => 'clavijo',
+    when: c => c.year >= 1403 && !!c.cap,
+    text: c => `Ruy González de Clavijo, envoy of the King of Castile, has crossed half the world to reach ${c.cap.city}, with gifts of scarlet cloth.`,
+    options: [
+      { label: c => `Feast them for a week (−${cost(c, 250)} gold)`, hint: 'Foreign merchants will follow, bringing trade.',
+        act: c => { c.st.gold -= cost(c, 250); later(c.f, 2, cost(c, 700), 'Merchants from the West arrive in your bazaars.'); return 'The Castilians are amazed by your gardens, your wine and your elephants.'; } },
+      { label: () => 'Receive them coolly', hint: 'Nothing changes.', act: () => 'They leave with a polite letter and little else.' },
     ],
   },
 ];

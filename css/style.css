@@ -355,3 +355,27 @@ table.dip svg { width: 24px; height: 29px; vertical-align: middle; }
 
 #busy { cursor: pointer; }
 #busy-skip { align-self: center; font-size: 13px; color: var(--muted); font-style: italic; }
+
+/* ---------- Portraits and the court ---------- */
+.portrait { display: block; flex: none; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55)); }
+#tb-faction .tb-portrait { width: 34px; height: 42px; }
+.p-head .p-portrait { width: 58px; height: 72px; }
+.ruler .p-portrait { width: 52px; height: 65px; }
+.mini-portrait { width: 30px; height: 37px; }
+.dip-ruler { display: flex; gap: 8px; align-items: center; }
+.with-portrait { display: flex; gap: 16px; align-items: flex-start; }
+.with-portrait .portrait { width: 110px; height: 137px; }
+.with-portrait p { flex: 1; min-width: 0; margin-top: 4px; }
+.tabs { margin: 0 0 14px; }
+.people { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.person { display: flex; gap: 12px; padding: 10px; background: rgba(5, 9, 18, 0.45); border: 1px solid rgba(216, 180, 90, 0.3); border-radius: 3px; }
+.person[data-army] { cursor: pointer; }
+.person[data-army]:hover { border-color: var(--gold); }
+.person .portrait { width: 84px; height: 105px; }
+.person.child .portrait, .person.dead .portrait { filter: grayscale(0.7) brightness(0.8); }
+.pc-body { min-width: 0; }
+.pc-name { font: 400 18px/1.15 var(--display); color: var(--gold-hi); }
+.pc-role { font-size: 14px; color: var(--tile); font-style: italic; }
+.pc-meta { font-size: 13px; color: var(--muted); }
+.pc-bio { font-size: 14px; margin-top: 4px; }
+@media (max-width: 760px) { .with-portrait { flex-direction: column; align-items: center; } #tb-faction .tb-portrait { display: none; } }
