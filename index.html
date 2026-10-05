@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Turan: Khanates of the Silk Road</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Campaign -->
+<div id="game" class="hidden">
+  <svg id="map" xmlns="http://www.w3.org/2000/svg"></svg>
+
+  <header id="topbar">
+    <div id="tb-faction"></div>
+    <div class="tb-stat" title="Treasury (income per turn)"><span class="ico gold"></span><b id="tb-gold">0</b><small id="tb-net"></small></div>
+    <div class="tb-stat" title="Provinces held / needed for victory"><span class="ico flagi"></span><b id="tb-provs">0</b></div>
+    <div class="tb-stat" id="tb-date"></div>
+    <div class="spacer"></div>
+    <button id="btn-dip" title="Diplomacy (D)">Diplomacy</button>
+    <button id="btn-realm" title="Overview of your realm (R)">Realm</button>
+    <button id="btn-chron" title="Chronicle of events (C)">Chronicle</button>
+    <button id="btn-menu" title="Menu (Esc)">Menu</button>
+  </header>
+
+  <aside id="panel" class="hidden"></aside>
+  <div id="tooltip" class="hidden"></div>
+  <div id="toasts"></div>
+  <div id="hint"></div>
+  <button id="btn-end" title="End turn (Enter)">End turn</button>
+  <div id="busy" class="hidden"><div class="spinner"></div><span id="busy-text">The rival khans are moving…</span></div>
+</div>
+
+<!-- Tactical battle -->
+<div id="battle" class="hidden">
+  <canvas id="bcanvas"></canvas>
+  <div id="b-top"></div>
+  <div id="b-cards"></div>
+  <div id="b-help">Drag to select · Right-click to move or attack · Shift + right-click to run · Space to pause</div>
+  <div id="b-buttons"><button id="b-speed">Speed 1×</button><button id="b-retreat">Withdraw</button><button id="b-auto">Auto-resolve the rest</button></div>
+</div>
+
+<!-- Title screen -->
+<div id="title" class="screen">
+  <div class="title-wrap">
+    <div class="tile-band"></div>
+    <h1>TURAN</h1>
+    <h2>Khanates of the Silk Road · 1370</h2>
+    <p class="lead">The Chagatai Ulus has broken apart. In Samarkand a lame amir of the Barlas tribe has just made himself master of Transoxiana. To the east the Moghul khans ride the Tian Shan; to the north the Jochid hordes quarrel over Sarai; in Khwarezm, Herat and Sabzevar old dynasties guard their walls. Choose a nation and decide the fate of Turkistan.</p>
+    <div class="menu-buttons">
+      <button id="btn-new" class="big">New campaign</button>
+      <button id="btn-continue">Continue</button>
+      <button id="btn-load">Load game</button>
+      <button id="btn-help">How to play</button>
+    </div>
+    <div class="tile-band"></div>
+  </div>
+</div>
+
+<!-- Nation selection -->
+<div id="pick" class="screen hidden">
+  <h2 class="pick-h">Choose your nation</h2>
+  <div id="pick-list"></div>
+  <div id="pick-detail"></div>
+  <div class="pick-buttons"><button id="pick-back">Back</button><button id="pick-go" class="big">Begin campaign</button></div>
+</div>
+
+<div id="modal-wrap" class="hidden"><div id="modal"></div></div>
+
+<script src="js/data.js"></script>
+<script src="js/mapgen.js"></script>
+<script src="js/engine/state.js"></script>
+<script src="js/engine/battle.js"></script>
+<script src="js/engine/actions.js"></script>
+<script src="js/engine/turn.js"></script>
+<script src="js/engine/ai.js"></script>
+<script src="js/ui/art.js"></script>
+<script src="js/ui/map.js"></script>
+<script src="js/ui/panels.js"></script>
+<script src="js/ui/dialogs.js"></script>
+<script src="js/ui/tactical.js"></script>
+<script src="js/ui/main.js"></script>
+</body>
+</html>

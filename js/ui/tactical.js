@@ -1,0 +1,518 @@
+'use strict';
+// The battlefield: each campaign unit becomes a regiment of little soldiers that the player commands in real time.
+
+const BF = { W: 1200, H: 800 };
+const SPEED = { spear: 30, inf: 30, missile: 32, cav: 72, ha: 66, siege: 20 };
+const RANGE = { missile: 230, ha: 185 };
+let TB = null; // the running battle
+
+const bc = $('bcanvas');
+const bx = bc.getContext('2d');
+
+function startTactical(b) {
+  return new Promise(resolve => {
+    const pl = G.player;
+    const playerSide = b.att.faction === pl ? 'att' : 'def';
+    const p = G.provinces[b.prov];
+    TB = {
+      b, resolve, playerSide, regs: [], arrows: [], fx: [], t: 0, paused: false, speed: 1, sel: new Set(), drag: null, over: null,
+      terrain: p.terrain, walls: b.kind === 'assault' ? p.b.walls : 0, seed: 1, start: { att: 0, def: 0 },
+    };
+    // Player always deploys at the bottom
+    deploy('att', playerSide === 'att' ? 'bottom' : 'top');
+    deploy('def', playerSide === 'def' ? 'bottom' : 'top');
+    for (const r of TB.regs) TB.start[r.side] += r.men;
+    TB.wallY = TB.walls ? (playerSide === 'def' ? BF.H * 0.62 : BF.H * 0.38) : null;
+    TB.breach = TB.walls && sideUnits(b.att).some(x => UNITS[x.u.type].cls === 'siege');
+    $('battle').classList.remove('hidden');
+    $('busy').classList.add('hidden');
+    resizeBattle();
+    renderBattleTop();
+    renderBattleCards();
+    TB.last = performance.now();
+    requestAnimationFrame(battleFrame);
+  });
+}
+HOOKS.fight = startTactical;
+
+function deploy(sideKey, edge) {
+  const side = TB.b[sideKey];
+  const list = sideUnits(side);
+  const faction = side.faction;
+  const rows = { front: [], back: [], wing: [], rear: [] };
+  for (const x of list) {
+    const c = UNITS[x.u.type].cls;
+    if (x.u.type === 'general') rows.rear.push(x);
+    else if (c === 'missile') rows.front.push(x);
+    else if (c === 'cav' || c === 'ha') rows.wing.push(x);
+    else if (c === 'siege') rows.rear.push(x);
+    else rows.back.push(x);
+  }
+  const dir = edge === 'bottom' ? -1 : 1;
+  const baseY = edge === 'bottom' ? BF.H - 130 : 130;
+  const place = (arr, y, x0, x1) => {
+    arr.forEach((x, i) => {
+      const px = arr.length === 1 ? (x0 + x1) / 2 : x0 + (x1 - x0) * i / (arr.length - 1);
+      addReg(x.u, faction, sideKey, px, y);
+    });
+  };
+  const spread = n => Math.min(640, n * 82);
+  const inf = rows.back, mis = rows.front;
+  place(mis, baseY + dir * 70, BF.W / 2 - spread(mis.length) / 2, BF.W / 2 + spread(mis.length) / 2);
+  place(inf, baseY, BF.W / 2 - spread(inf.length) / 2, BF.W / 2 + spread(inf.length) / 2);
+  const left = rows.wing.filter((x, i) => i % 2 === 0), right = rows.wing.filter((x, i) => i % 2 === 1);
+  const wx = Math.max(spread(inf.length), spread(mis.length)) / 2 + 100;
+  left.forEach((x, i) => addReg(x.u, faction, sideKey, Math.max(40, BF.W / 2 - wx - i * 78), baseY + dir * 20 - (BF.W / 2 - wx - i * 78 < 40 ? dir * 80 : 0)));
+  right.forEach((x, i) => addReg(x.u, faction, sideKey, Math.min(BF.W - 40, BF.W / 2 + wx + i * 78), baseY + dir * 20 - (BF.W / 2 + wx + i * 78 > BF.W - 40 ? dir * 80 : 0)));
+  place(rows.rear, baseY - dir * 80, BF.W / 2 - 70 * rows.rear.length / 2, BF.W / 2 + 70 * rows.rear.length / 2);
+}
+
+function addReg(u, faction, side, x, y) {
+  const d = UNITS[u.type];
+  TB.regs.push({
+    u, d, faction, side, x, y, tx: x, ty: y, face: side === TB.playerSide ? -Math.PI / 2 : Math.PI / 2,
+    men: u.men, max: u.men, morale: d.morale * 10 + u.exp * 5, target: null, run: false,
+    cd: Math.random(), charge: 0, rout: false, gone: false, id: TB.regs.length, player: side === TB.playerSide, order: null,
+    r: d.cls === 'cav' || d.cls === 'ha' ? 32 : 30,
+  });
+}
+
+// ---------- Simulation ----------
+
+function enemiesOf(r) { return TB.regs.filter(o => o.side !== r.side && !o.gone && !o.rout && o.men > 0); }
+function nearest(r, list) {
+  let best = null, bd = 1e9;
+  for (const o of list) { const d = Math.hypot(o.x - r.x, o.y - r.y); if (d < bd) { bd = d; best = o; } }
+  return best;
+}
+
+function inWall(y) { return TB.wallY !== null && Math.abs(y - TB.wallY) < 22; }
+function behindWall(r) {
+  if (TB.wallY === null) return false;
+  const defBottom = TB.playerSide === 'def';
+  return r.side === 'def' && (defBottom ? r.y > TB.wallY : r.y < TB.wallY);
+}
+
+function speedOf(r) {
+  let s = SPEED[r.d.cls] * (r.run ? 1.45 : 1);
+  if (TB.terrain === 'mountain' && (r.d.cls === 'cav' || r.d.cls === 'ha')) s *= 0.75;
+  if (inWall(r.y) && !TB.breach) s *= 0.3;
+  if (r.rout) s *= 1.2;
+  return s;
+}
+
+function aiControl(r) {
+  // Simple battlefield sense for the computer's regiments (and idle player regiments defending themselves)
+  const foes = enemiesOf(r);
+  if (!foes.length) return;
+  const n = nearest(r, foes), dn = Math.hypot(n.x - r.x, n.y - r.y);
+  if (r.d.cls === 'missile' || r.d.cls === 'ha') {
+    if (r.d.cls === 'ha') {
+      const melee = foes.filter(o => o.d.cls !== 'missile' && o.d.cls !== 'ha');
+      const threat = nearest(r, melee);
+      if (threat && Math.hypot(threat.x - r.x, threat.y - r.y) < 110) {
+        const a = Math.atan2(r.y - threat.y, r.x - threat.x);
+        r.tx = clampN(r.x + Math.cos(a) * 120, 20, BF.W - 20); r.ty = clampN(r.y + Math.sin(a) * 120, 20, BF.H - 20); r.target = null;
+        return;
+      }
+    }
+    r.target = n;
+    if (dn > RANGE[r.d.cls] * 0.9) { r.tx = n.x; r.ty = n.y; } else { r.tx = r.x; r.ty = r.y; }
+    return;
+  }
+  // Defenders behind walls wait for the enemy to come close
+  if (behindWall(r) && dn > 160) { r.tx = r.x; r.ty = r.y; return; }
+  // Cavalry prefers archers and the flanks
+  let t = n;
+  if (r.d.cls === 'cav') {
+    const soft = foes.filter(o => o.d.cls === 'missile' || o.d.cls === 'siege');
+    const s = nearest(r, soft);
+    if (s && Math.hypot(s.x - r.x, s.y - r.y) < dn + 250) t = s;
+  }
+  r.target = t;
+}
+
+function stepBattle(dt) {
+  TB.t += dt;
+  const regs = TB.regs;
+  for (const r of regs) {
+    if (r.gone) continue;
+    r.cd -= dt;
+    if (r.rout) {
+      const home = r.side === TB.playerSide ? BF.H + 60 : -60;
+      r.ty = home; r.tx = r.x;
+      moveReg(r, dt);
+      if (r.y > BF.H + 40 || r.y < -40) r.gone = true;
+      continue;
+    }
+    if (!r.player || !r.order) {
+      if (!r.player) { if (TB.t > (r.side === 'def' && TB.walls ? 0 : 1.5) || r.d.cls === 'missile') aiControl(r); }
+      else autoDefend(r);
+    }
+    const t = r.target && !r.target.gone && !r.target.rout && r.target.men > 0 ? r.target : null;
+    if (!t) r.target = null;
+    // Ranged attack
+    if (t && RANGE[r.d.cls] && !inMelee(r)) {
+      const d = Math.hypot(t.x - r.x, t.y - r.y);
+      if (d <= RANGE[r.d.cls] + (behindWall(r) ? 40 : 0)) {
+        if (!r.order || r.order === 'attack') { r.tx = r.x; r.ty = r.y; }
+        r.face = Math.atan2(t.y - r.y, t.x - r.x);
+        if (r.cd <= 0) shoot(r, t);
+      } else if (r.order !== 'move') { r.tx = t.x; r.ty = t.y; }
+    } else if (t && r.order !== 'move') { r.tx = t.x; r.ty = t.y; }
+    moveReg(r, dt);
+  }
+  // Melee
+  for (let i = 0; i < regs.length; i++) {
+    const a = regs[i];
+    if (a.gone || a.men <= 0) continue;
+    for (let j = i + 1; j < regs.length; j++) {
+      const c = regs[j];
+      if (c.gone || c.men <= 0 || c.side === a.side) continue;
+      const d = Math.hypot(a.x - c.x, a.y - c.y);
+      if (d < a.r + c.r) {
+        meleeHit(a, c, dt); meleeHit(c, a, dt);
+        // push apart a little so blocks stay readable
+        const push = (a.r + c.r - d) * 0.5, ang = Math.atan2(c.y - a.y, c.x - a.x);
+        if (push > 6) { a.x -= Math.cos(ang) * (push - 6) * 0.5; a.y -= Math.sin(ang) * (push - 6) * 0.5; c.x += Math.cos(ang) * (push - 6) * 0.5; c.y += Math.sin(ang) * (push - 6) * 0.5; }
+      }
+    }
+  }
+  // Friendly regiments do not stack on each other
+  for (let i = 0; i < regs.length; i++) for (let j = i + 1; j < regs.length; j++) {
+    const a = regs[i], c = regs[j];
+    if (a.gone || c.gone || a.side !== c.side) continue;
+    const d = Math.hypot(a.x - c.x, a.y - c.y), m = (a.r + c.r) * 0.85;
+    if (d < m && d > 0.01) { const k = (m - d) / d * 0.25; a.x -= (c.x - a.x) * k; a.y -= (c.y - a.y) * k; c.x += (c.x - a.x) * k; c.y += (c.y - a.y) * k; }
+  }
+  // Morale
+  for (const r of regs) {
+    if (r.gone || r.rout) continue;
+    if (r.men <= 0) { r.gone = true; continue; }
+    const loss = 1 - r.men / r.max;
+    const friends = regs.filter(o => o.side === r.side && !o.gone && !o.rout).length;
+    const general = regs.some(o => o.side === r.side && o.u.type === 'general' && !o.gone && !o.rout && Math.hypot(o.x - r.x, o.y - r.y) < 300);
+    const m = r.morale - loss * 80 - (friends < 3 ? 15 : 0) + (general ? 12 : 0) - (r.flanked > 0 ? 25 : 0);
+    if (r.flanked > 0) r.flanked -= dt;
+    if (m < 8) { r.rout = true; r.target = null; r.order = null; TB.fx.push({ x: r.x, y: r.y - 30, text: 'Routing!', life: 1.5, color: '#ffb0a0' }); }
+  }
+  for (const a of TB.arrows) a.life -= dt;
+  TB.arrows = TB.arrows.filter(a => a.life > 0);
+  for (const f of TB.fx) { f.life -= dt; f.y -= 12 * dt; }
+  TB.fx = TB.fx.filter(f => f.life > 0);
+  checkBattleEnd();
+}
+
+function autoDefend(r) {
+  // An idle player regiment fights back against enemies that come close
+  const foes = enemiesOf(r);
+  const n = nearest(r, foes);
+  if (!n) return;
+  const d = Math.hypot(n.x - r.x, n.y - r.y);
+  if (RANGE[r.d.cls] && d < RANGE[r.d.cls]) r.target = n;
+  else if (d < r.r + n.r + 25) r.target = n;
+}
+
+function inMelee(r) { return TB.regs.some(o => o.side !== r.side && !o.gone && o.men > 0 && Math.hypot(o.x - r.x, o.y - r.y) < r.r + o.r + 4); }
+
+function moveReg(r, dt) {
+  const dx = r.tx - r.x, dy = r.ty - r.y, d = Math.hypot(dx, dy);
+  r.moving = d > 3 && !inMelee(r);
+  if (!r.moving) { r.charge = Math.max(0, r.charge - dt); if (r.order === 'move' && d <= 3) r.order = null; return; }
+  const step = speedOf(r) * dt;
+  r.face = Math.atan2(dy, dx);
+  if (d <= step) { r.x = r.tx; r.y = r.ty; } else { r.x += dx / d * step; r.y += dy / d * step; }
+  r.x = clampN(r.x, 10, BF.W - 10);
+  if (!r.rout) r.y = clampN(r.y, 10, BF.H - 10);
+  if (r.d.cls === 'cav' && d > 60) r.charge = 2.2; // momentum for a charge
+}
+
+function meleeHit(a, c, dt) {
+  if (a.rout) return;
+  const d = a.d, e = c.d;
+  let atk = d.atk;
+  if (d.cls === 'spear' && (e.cls === 'cav' || e.cls === 'ha')) atk *= 1.8;
+  if ((d.cls === 'cav') && a.charge > 0) { atk *= 2.2; a.charge -= dt * 1.5; }
+  if (d.cls === 'missile' || d.cls === 'ha') atk *= 0.7;
+  let def = e.def + (behindWall(c) ? 4 : 0) + (inWall(c.y) && !TB.breach && c.side === 'def' ? 3 : 0);
+  if (e.cls === 'cav' && d.cls === 'spear') def *= 0.8;
+  // Attacks from behind hurt more and shake morale
+  const ang = Math.atan2(a.y - c.y, a.x - c.x);
+  let rel = Math.abs(((ang - c.face) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+  if (rel > 2.2) { atk *= 1.5; c.flanked = 1.5; }
+  const kills = a.men / 100 * atk / (def + 4) * 2.1 * dt * (1 + a.u.exp * 0.08) * (c.rout ? 2 : 1);
+  c.men = Math.max(0, c.men - kills);
+  a.face = Math.atan2(c.y - a.y, c.x - a.x);
+}
+
+function shoot(r, t) {
+  r.cd = r.d.cls === 'ha' ? 2.0 : 2.4;
+  let dmg = r.men / 100 * r.d.missile / (t.d.def + 6) * 5.5 * (1 + r.u.exp * 0.08);
+  if (behindWall(t) && !TB.breach) dmg *= 0.5;
+  if (t.d.cls === 'cav' || t.d.cls === 'ha') dmg *= 0.85;
+  t.men = Math.max(0, t.men - dmg);
+  for (let i = 0; i < 5; i++) {
+    TB.arrows.push({ x0: r.x + (Math.random() - 0.5) * 30, y0: r.y + (Math.random() - 0.5) * 20, x1: t.x + (Math.random() - 0.5) * 40, y1: t.y + (Math.random() - 0.5) * 30, life: 0.6, max: 0.6 });
+  }
+}
+
+function sideMen(side) { return TB.regs.filter(r => r.side === side && !r.gone && !r.rout).reduce((n, r) => n + r.men, 0); }
+
+function checkBattleEnd() {
+  if (TB.over) return;
+  const a = sideMen('att'), d = sideMen('def');
+  if (a <= 0 || d <= 0) endTactical(a > 0 ? 'att' : 'def');
+  else if (TB.t > 420) endTactical(a / TB.start.att >= d / TB.start.def ? 'att' : 'def');
+}
+
+function endTactical(winner, quiet) {
+  TB.over = winner;
+  // Write the survivors back to the campaign. Routed men who escaped come home; the beaten side loses more stragglers.
+  for (const r of TB.regs) {
+    let men = r.men;
+    if (r.side !== winner) men *= r.rout && !r.gone ? 0.75 : r.gone && r.men > 0 ? 0.7 : 1;
+    r.u.men = Math.max(0, Math.round(men));
+  }
+  const loserSide = winner === 'att' ? 'def' : 'att';
+  const left = TB.regs.filter(r => r.side === loserSide).reduce((n, r) => n + r.u.men, 0);
+  const res = { winner, rout: left < TB.start[loserSide] * 0.3 };
+  const pw = (winner === TB.playerSide);
+  const done = () => {
+    $('battle').classList.add('hidden');
+    if (turnBusy) $('busy').classList.remove('hidden');
+    const resolve = TB.resolve;
+    TB = null;
+    resolve(res);
+  };
+  if (quiet) return done();
+  TB.fx.push({ x: BF.W / 2, y: BF.H / 2, text: pw ? 'VICTORY' : 'DEFEAT', life: 99, color: pw ? '#ffe08a' : '#ff9a8a', big: true });
+  setTimeout(done, 1600);
+}
+
+// ---------- Drawing ----------
+
+function resizeBattle() {
+  bc.width = window.innerWidth * devicePixelRatio;
+  bc.height = window.innerHeight * devicePixelRatio;
+  const top = 44, bottom = 96;
+  const s = Math.min(window.innerWidth / BF.W, (window.innerHeight - top - bottom) / BF.H);
+  TB.view = { s, ox: (window.innerWidth - BF.W * s) / 2, oy: top + (window.innerHeight - top - bottom - BF.H * s) / 2 };
+}
+window.addEventListener('resize', () => { if (TB) resizeBattle(); });
+const bToWorld = (x, y) => ({ x: (x - TB.view.ox) / TB.view.s, y: (y - TB.view.oy) / TB.view.s });
+
+const GROUND = { steppe: ['#8b9a52', '#7a8a46'], oasis: ['#7f9a4e', '#6e8a40'], river: ['#6f9450', '#5f8444'], desert: ['#c9ad74', '#b99c63'], mountain: ['#8a8564', '#77725a'] };
+
+function drawBattle() {
+  const c = bx, v = TB.view;
+  c.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  c.fillStyle = '#1b2236';
+  c.fillRect(0, 0, window.innerWidth, window.innerHeight);
+  c.save();
+  c.translate(v.ox, v.oy); c.scale(v.s, v.s);
+  const g = GROUND[TB.terrain] || GROUND.steppe;
+  c.fillStyle = g[0];
+  c.fillRect(0, 0, BF.W, BF.H);
+  // Ground texture (stable pattern)
+  c.fillStyle = g[1];
+  c.globalAlpha = 0.45;
+  for (let i = 0; i < 140; i++) {
+    const x = (i * 977) % BF.W, y = (i * 571) % BF.H;
+    c.beginPath(); c.ellipse(x, y, 22 + (i % 7) * 6, 7 + (i % 5) * 2, 0.15 * (i % 3), 0, Math.PI * 2); c.fill();
+  }
+  c.globalAlpha = 1;
+  if (TB.terrain === 'mountain') {
+    c.fillStyle = '#6b6550';
+    for (let i = 0; i < 18; i++) { const x = (i * 331) % BF.W, y = (i * 613) % BF.H; c.beginPath(); c.moveTo(x - 30, y + 20); c.lineTo(x, y - 25); c.lineTo(x + 30, y + 20); c.fill(); }
+  }
+  if (TB.wallY !== null) {
+    c.fillStyle = '#8c7a5a';
+    c.fillRect(0, TB.wallY - 14, BF.W, 28);
+    c.fillStyle = '#6d5d42';
+    for (let x = 0; x < BF.W; x += 24) c.fillRect(x, TB.wallY - (TB.playerSide === 'def' ? 22 : -14), 14, 8);
+    if (TB.breach) { c.fillStyle = GROUND[TB.terrain] ? g[0] : '#888'; c.fillRect(BF.W / 2 - 60, TB.wallY - 15, 120, 30); c.fillStyle = '#5a4a33'; c.fillRect(BF.W / 2 - 70, TB.wallY - 8, 18, 18); c.fillRect(BF.W / 2 + 52, TB.wallY - 10, 16, 20); }
+  }
+  // Movement lines for selected regiments
+  c.lineWidth = 1.5; c.setLineDash([6, 6]);
+  for (const r of TB.regs) {
+    if (!TB.sel.has(r.id) || r.gone) continue;
+    if (Math.hypot(r.tx - r.x, r.ty - r.y) > 5) { c.strokeStyle = r.target ? '#ff8a70' : '#ffffffaa'; c.beginPath(); c.moveTo(r.x, r.y); c.lineTo(r.tx, r.ty); c.stroke(); }
+  }
+  c.setLineDash([]);
+  for (const r of TB.regs) if (!r.gone) drawRegiment(c, r);
+  // Arrows
+  c.strokeStyle = '#2a1a0a'; c.lineWidth = 1;
+  for (const a of TB.arrows) {
+    const k = 1 - a.life / a.max, x = a.x0 + (a.x1 - a.x0) * k, y = a.y0 + (a.y1 - a.y0) * k - Math.sin(k * Math.PI) * 40;
+    const ang = Math.atan2(a.y1 - a.y0, a.x1 - a.x0);
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x - Math.cos(ang) * 9, y - Math.sin(ang) * 9); c.stroke();
+  }
+  // Selection box
+  if (TB.drag && TB.drag.moved) {
+    const a = bToWorld(TB.drag.x0, TB.drag.y0), b = bToWorld(TB.drag.x1, TB.drag.y1);
+    c.strokeStyle = '#ffe08a'; c.lineWidth = 1.5 / v.s; c.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
+  }
+  for (const f of TB.fx) {
+    c.font = (f.big ? 90 : 18) + 'px Palatino Linotype, Georgia, serif';
+    c.textAlign = 'center'; c.lineWidth = f.big ? 6 : 3; c.strokeStyle = '#000a'; c.fillStyle = f.color;
+    c.strokeText(f.text, f.x, f.y); c.fillText(f.text, f.x, f.y);
+  }
+  c.restore();
+  if (TB.paused && !TB.over) {
+    c.font = '28px Palatino Linotype, Georgia, serif'; c.textAlign = 'center'; c.fillStyle = '#ffe08a';
+    c.fillText('Paused — press Space', window.innerWidth / 2, 90);
+  }
+}
+
+function drawRegiment(c, r) {
+  const F = FACTIONS[r.faction];
+  const n = Math.max(1, Math.ceil(r.men / (r.d.cls === 'cav' || r.d.cls === 'ha' ? 3 : 4)));
+  const mounted = r.d.cls === 'cav' || r.d.cls === 'ha';
+  const cols = mounted ? 6 : 10, sp = mounted ? 13 : 8.5;
+  const rows = Math.ceil(n / cols);
+  const cos = Math.cos(r.face + Math.PI / 2), sin = Math.sin(r.face + Math.PI / 2);
+  const sel = TB.sel.has(r.id);
+  const t = TB.t;
+  const fighting = inMelee(r);
+  for (let i = 0; i < n; i++) {
+    const col = i % cols, row = Math.floor(i / cols);
+    let lx = (col - (Math.min(cols, n) - 1) / 2) * sp, ly = (row - (rows - 1) / 2) * sp;
+    if (r.rout) { lx += Math.sin(i * 12.9 + t) * 10; ly += Math.cos(i * 7.3 + t) * 10; }
+    if (fighting) { lx += Math.sin(i * 3.1 + t * 9) * 2; ly += Math.cos(i * 5.7 + t * 8) * 2; }
+    const x = r.x + lx * cos - ly * sin, y = r.y + lx * sin + ly * cos + (r.moving ? Math.sin(t * 10 + i) * 0.8 : 0);
+    if (mounted) {
+      c.fillStyle = '#5c432b';
+      c.beginPath(); c.ellipse(x, y, 5.6, 3.1, r.face, 0, Math.PI * 2); c.fill();
+      c.fillStyle = r.u.type === 'general' ? '#ffd75a' : F.color;
+      c.beginPath(); c.arc(x, y - 1.8, 2.7, 0, Math.PI * 2); c.fill();
+    } else {
+      c.fillStyle = F.dark;
+      c.beginPath(); c.arc(x, y, 3.2, 0, Math.PI * 2); c.fill();
+      c.fillStyle = F.color;
+      c.beginPath(); c.arc(x, y - 0.7, 2.2, 0, Math.PI * 2); c.fill();
+      if (r.d.cls === 'spear') { c.strokeStyle = '#3a2a1a'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x, y); c.lineTo(x + Math.cos(r.face) * 8, y + Math.sin(r.face) * 8); c.stroke(); }
+    }
+  }
+  // Banner
+  const bx0 = r.x, by0 = r.y - r.r - 12;
+  c.strokeStyle = '#2a1a0a'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(bx0, by0 + 16); c.lineTo(bx0, by0 - 8); c.stroke();
+  c.fillStyle = F.color; c.fillRect(bx0, by0 - 8, 14, 9);
+  if (sel) { c.strokeStyle = '#ffe08a'; c.lineWidth = 2; c.beginPath(); c.ellipse(r.x, r.y, r.r + 8, r.r + 4, 0, 0, Math.PI * 2); c.stroke(); }
+  // Strength bar
+  c.fillStyle = '#000a'; c.fillRect(r.x - 16, r.y + r.r + 4, 32, 4);
+  c.fillStyle = r.rout ? '#d0503a' : r.player ? '#7fe07f' : '#ff8a70';
+  c.fillRect(r.x - 16, r.y + r.r + 4, 32 * r.men / r.max, 4);
+}
+
+function renderBattleTop() {
+  const b = TB.b, p = G.provinces[b.prov];
+  const side = s => {
+    const f = b[s].faction, total = TB.start[s], now = sideMen(s);
+    return `<div class="bside">${flagSVG(f)}<div><div>${FACTIONS[f].name}${s === TB.playerSide ? ' (you)' : ''}</div><div class="meter"><div style="width:${Math.round(now / total * 100)}%;background:${FACTIONS[f].color}"></div></div></div><div>${fmt(now)}</div></div>`;
+  };
+  $('b-top').innerHTML = side('att') + `<div>Battle of ${p.city}${TB.walls ? ' · storming the walls' + (TB.breach ? ' (breach made)' : '') : ''}</div>` + side('def');
+}
+
+function renderBattleCards() {
+  const mine = TB.regs.filter(r => r.player);
+  $('b-cards').innerHTML = mine.map(r => `<div class="ucard ${TB.sel.has(r.id) ? 'sel' : ''}" data-r="${r.id}" style="${r.gone || r.rout ? 'opacity:.35' : ''}" title="${r.d.name}">${unitSVG(r.u.type, r.faction)}<div class="men">${Math.round(r.men)}</div><div class="bar"><div style="width:${Math.round(r.men / r.max * 100)}%"></div></div></div>`).join('');
+}
+
+let cardT = 0;
+function battleFrame(now) {
+  if (!TB) return;
+  const dt = Math.min(0.05, (now - TB.last) / 1000);
+  TB.last = now;
+  if (!TB.paused && !TB.over) for (let i = 0; i < TB.speed; i++) stepBattle(dt);
+  drawBattle();
+  cardT -= dt;
+  if (cardT <= 0 && TB) { cardT = 0.3; renderBattleTop(); renderBattleCards(); }
+  if (TB) requestAnimationFrame(battleFrame);
+}
+
+// ---------- Battle input ----------
+
+bc.addEventListener('pointerdown', e => {
+  if (!TB || TB.over) return;
+  if (e.button === 2) { battleOrder(e); return; }
+  TB.drag = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY, moved: false, shift: e.shiftKey };
+});
+bc.addEventListener('pointermove', e => {
+  if (!TB || !TB.drag) return;
+  TB.drag.x1 = e.clientX; TB.drag.y1 = e.clientY;
+  if (Math.abs(TB.drag.x1 - TB.drag.x0) + Math.abs(TB.drag.y1 - TB.drag.y0) > 6) TB.drag.moved = true;
+});
+bc.addEventListener('pointerup', e => {
+  if (!TB || !TB.drag) return;
+  const d = TB.drag;
+  TB.drag = null;
+  if (e.button === 2) return;
+  if (d.moved) {
+    const a = bToWorld(Math.min(d.x0, d.x1), Math.min(d.y0, d.y1)), b = bToWorld(Math.max(d.x0, d.x1), Math.max(d.y0, d.y1));
+    if (!d.shift) TB.sel.clear();
+    for (const r of TB.regs) if (r.player && !r.gone && !r.rout && r.x >= a.x && r.x <= b.x && r.y >= a.y && r.y <= b.y) TB.sel.add(r.id);
+  } else {
+    const w = bToWorld(e.clientX, e.clientY);
+    const hit = TB.regs.find(r => !r.gone && Math.hypot(r.x - w.x, r.y - w.y) < r.r + 6);
+    if (hit && hit.player) {
+      if (!d.shift) TB.sel.clear();
+      TB.sel.add(hit.id);
+    } else if (hit && !hit.player && TB.sel.size) {
+      orderAttackReg(hit, false); // left-click on an enemy with troops selected = attack (good for touch)
+    } else if (!hit && TB.sel.size && e.pointerType !== 'mouse') {
+      battleMoveTo(w, false);
+    } else if (!d.shift) TB.sel.clear();
+  }
+  renderBattleCards();
+});
+bc.addEventListener('contextmenu', e => e.preventDefault());
+
+function battleOrder(e) {
+  if (!TB.sel.size) return;
+  const w = bToWorld(e.clientX, e.clientY);
+  const hit = TB.regs.find(r => !r.gone && !r.player && Math.hypot(r.x - w.x, r.y - w.y) < r.r + 6);
+  if (hit) orderAttackReg(hit, e.shiftKey); else battleMoveTo(w, e.shiftKey);
+}
+function orderAttackReg(t, run) {
+  for (const id of TB.sel) { const r = TB.regs[id]; if (r.gone || r.rout) continue; r.target = t; r.order = 'attack'; r.run = run; }
+}
+function battleMoveTo(w, run) {
+  const list = [...TB.sel].map(id => TB.regs[id]).filter(r => !r.gone && !r.rout);
+  if (!list.length) return;
+  // Keep the group's shape around the clicked point
+  const cx = list.reduce((s, r) => s + r.x, 0) / list.length, cy = list.reduce((s, r) => s + r.y, 0) / list.length;
+  for (const r of list) {
+    r.tx = clampN(w.x + (r.x - cx), 15, BF.W - 15); r.ty = clampN(w.y + (r.y - cy), 15, BF.H - 15);
+    r.target = null; r.order = 'move'; r.run = run;
+  }
+  TB.fx.push({ x: w.x, y: w.y, text: '✕', life: 0.5, color: '#fff' });
+}
+
+$('b-cards').addEventListener('click', e => {
+  const c = e.target.closest('[data-r]');
+  if (!c || !TB) return;
+  const id = +c.dataset.r;
+  if (!e.shiftKey) TB.sel.clear();
+  TB.sel.add(id);
+  renderBattleCards();
+});
+$('b-speed').onclick = () => { if (!TB) return; TB.speed = TB.speed === 1 ? 2 : TB.speed === 2 ? 4 : 1; $('b-speed').textContent = 'Speed ' + TB.speed + '×'; };
+$('b-auto').onclick = () => {
+  if (!TB || TB.over) return;
+  // Finish the fight by the numbers from where it stands now
+  for (const r of TB.regs) r.u.men = Math.round(r.men * (r.rout || r.gone ? 0.6 : 1));
+  const res = autoResolve(TB.b);
+  for (const r of TB.regs) r.men = r.u.men;
+  endTactical(res.winner, true);
+};
+$('b-retreat').onclick = () => {
+  if (!TB || TB.over) return;
+  for (const r of TB.regs) if (r.player && !r.gone) r.men *= 0.85; // a fighting withdrawal costs men
+  endTactical(TB.playerSide === 'att' ? 'def' : 'att', true);
+};
+window.addEventListener('keydown', e => {
+  if (!TB || $('battle').classList.contains('hidden')) return;
+  if (e.code === 'Space') { TB.paused = !TB.paused; e.preventDefault(); }
+  if (e.key === 'a' && e.ctrlKey) { e.preventDefault(); for (const r of TB.regs) if (r.player && !r.gone && !r.rout) TB.sel.add(r.id); renderBattleCards(); }
+});
