@@ -41,7 +41,9 @@ function infoBox(title, text, opts = {}) {
 
 // ---------- Notices from the engine ----------
 
+let quietNotices = false;
 function pushNotice(n) {
+  if (quietNotices) return;
   if (n.minor) { toast(n.title, n.text); return; }
   notices.push(n);
   if (!turnBusy && !modalOpen) flushNotices();

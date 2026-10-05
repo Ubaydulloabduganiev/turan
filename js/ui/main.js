@@ -5,6 +5,25 @@ let pickSel = 'temur';
 
 function showScreen(id) {
   for (const s of ['title', 'pick', 'game']) $(s).classList.toggle('hidden', s !== id);
+  if (id === 'game') sceneStop(); else sceneStart();
+}
+
+// Runs slow work (painting the map) behind a loading screen
+async function withLoading(fn) {
+  if (TERRAIN_CV) return fn();
+  $('loading').classList.remove('hidden');
+  await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+  try { return fn(); } finally { $('loading').classList.add('hidden'); }
+}
+
+function turnBanner(sub) {
+  const old = $('turn-banner');
+  if (old) old.remove();
+  const d = document.createElement('div');
+  d.id = 'turn-banner';
+  d.innerHTML = `<div class="season">${dateText().toUpperCase()}</div><div class="rule"></div><div class="sub">${sub}</div>`;
+  $('game').appendChild(d);
+  setTimeout(() => d.remove(), 2700);
 }
 
 function toTitle() {
@@ -22,21 +41,33 @@ function updateTitleButtons() {
 
 // ---------- Nation selection ----------
 
-function miniMapSVG(f) {
-  MAPDATA = MAPDATA || buildMap();
-  let h = `<svg id="pick-mini" viewBox="0 0 ${MAP.W} ${MAP.H}" xmlns="http://www.w3.org/2000/svg">`;
+// The painted map with the chosen nation's lands picked out
+function drawPickMap(f) {
+  const c = $('pick-mini');
+  if (!c) return;
+  const w = 840, h = Math.round(w * MAP.H / MAP.W);
+  c.width = w; c.height = h;
+  const x = c.getContext('2d');
+  x.drawImage(getTerrain(), 0, 0, w, h);
+  x.scale(w / MAP.W, h / MAP.H);
   MAPDATA.sites.forEach((s, i) => {
-    let fill = s.kind === 'water' ? '#2c5a7c' : s.kind === 'province' ? '#6d6450' : '#3d372e';
-    let op = 1;
-    if (s.kind === 'province') {
-      const owner = PROVINCE_DATA[i][5];
-      if (owner !== 'rebels') { fill = FACTIONS[owner].color; op = owner === f ? 1 : 0.28; }
-    }
-    h += `<path d="${outlinePath(MAPDATA.outlines[i])}" fill="${fill}" fill-opacity="${op}" stroke="#14100a" stroke-width="1.2"/>`;
+    if (s.kind !== 'province') return;
+    const owner = PROVINCE_DATA[i][5];
+    if (owner === 'rebels') return;
+    x.beginPath(); cellPath(x, i);
+    x.fillStyle = FACTIONS[owner].color;
+    x.globalAlpha = owner === f ? 0.6 : 0.16;
+    x.fill();
+    if (owner === f) { x.globalAlpha = 1; x.strokeStyle = '#fff1c4'; x.lineWidth = 2.5; x.stroke(); }
   });
+  x.globalAlpha = 1;
   const cap = MAPDATA.sites.find(s => s.id === FACTIONS[f].capital);
-  if (cap) h += `<circle cx="${cap.x}" cy="${cap.y}" r="14" fill="none" stroke="#fff" stroke-width="4"/>`;
-  return h + '</svg>';
+  if (cap) {
+    x.strokeStyle = '#fff6d6'; x.lineWidth = 4; x.beginPath(); x.arc(cap.x, cap.y, 16, 0, Math.PI * 2); x.stroke();
+    x.font = '600 46px Cinzel, Georgia, serif'; x.textAlign = 'center'; x.lineWidth = 6; x.strokeStyle = '#1b1208'; x.fillStyle = '#ffe39a';
+    const name = PROVINCE_DATA.find(d => d[0] === FACTIONS[f].capital)[2];
+    x.strokeText(name, cap.x, cap.y + 62); x.fillText(name, cap.x, cap.y + 62);
+  }
 }
 
 function renderPick() {
@@ -51,7 +82,8 @@ function renderPick() {
   $('pick-detail').innerHTML = `<div><h3>${F.full}</h3><div class="sub">Ruler: ${F.leader} · Capital: ${cap[2]} · Difficulty: ${F.difficulty}</div>
     <p>${F.blurb}</p><p><b>How to play:</b> ${F.play}</p>
     <p class="facts"><b>${provs.length}</b> provinces · <b>${provs.reduce((n, d) => n + d[6], 0)}k</b> people · ${F.nomad ? 'Steppe nation: horsemen need no stables and cost less to keep' : 'Settled nation: strong cities and infantry'} · Special unit: <b>${unique.name}</b> — ${unique.desc}</p></div>
-    <div>${miniMapSVG(pickSel)}</div>`;
+    <div><canvas id="pick-mini"></canvas></div>`;
+  drawPickMap(pickSel);
 }
 
 $('pick-list').addEventListener('click', e => {
@@ -64,6 +96,7 @@ $('pick-list').addEventListener('click', e => {
 function enterGame() {
   showScreen('game');
   if (!svg.querySelector('#cam')) initMap();
+  turnBanner(`${G.factions[G.player].leader}, ${FACTIONS[G.player].title}`);
   fitMap();
   UI.selArmy = null; UI.selProv = null;
   refresh();
@@ -72,9 +105,12 @@ function enterGame() {
 }
 
 async function startNew() {
+  quietNotices = true; // the opening event is told in the intro instead
   newGame(pickSel);
-  notices.length = 0; // the opening event is shown in the intro instead
-  enterGame();
+  quietNotices = false;
+  notices.length = 0;
+  await withLoading(enterGame);
+  await new Promise(r => setTimeout(r, 1800));
   const F = FACTIONS[pickSel];
   await showModal(`<h3>${dateText()}</h3><p>${F.blurb}</p><p><b>Your aim:</b> outlast every other nation. Conquer them, or make them kneel and hand you their crowns. ${F.play}</p>
     <p class="note">Click any city to rule it, attack it or talk to its ruler. Your vizier in the corner will suggest what to do. Press <b>End turn</b> when you are done.</p>`,
@@ -82,8 +118,8 @@ async function startNew() {
   saveGame('auto');
 }
 
-function startLoaded() {
-  enterGame();
+async function startLoaded() {
+  await withLoading(enterGame);
   toast('Game loaded', `${FACTIONS[G.player].full}, ${dateText()}`, 'good');
 }
 
@@ -105,7 +141,8 @@ async function doEndTurn() {
   if (!G) return;
   saveGame('auto');
   refresh();
-  toast(dateText(), `Treasury ${fmt(G.factions[G.player].gold)} gold`, '');
+  const st = G.factions[G.player];
+  turnBanner(`Treasury ${fmt(st.gold)} gold · ${nationsLeft().length} nations remain`);
   await flushNotices();
   refresh();
   checkOverUI();
@@ -121,7 +158,7 @@ function updateHint() {
 
 // ---------- Input ----------
 
-$('btn-new').onclick = () => { showScreen('pick'); renderPick(); };
+$('btn-new').onclick = () => withLoading(() => { showScreen('pick'); renderPick(); });
 $('pick-back').onclick = () => showScreen('title');
 $('pick-go').onclick = startNew;
 $('btn-continue').onclick = () => { if (loadGame('auto')) startLoaded(); };

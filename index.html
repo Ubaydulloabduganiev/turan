@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Turan: Khanates of the Silk Road</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -43,13 +46,15 @@
   <div id="b-buttons"><button id="b-speed">Speed 1×</button><button id="b-retreat">Withdraw</button><button id="b-auto">Auto-resolve the rest</button></div>
 </div>
 
+<canvas id="scene"></canvas>
+
 <!-- Title screen -->
 <div id="title" class="screen">
   <div class="title-wrap">
     <div class="tile-band"></div>
     <h1>TURAN</h1>
     <h2>Khanates of the Silk Road · 1370</h2>
-    <p class="lead">The Chagatai Ulus has broken apart. In Samarkand a lame amir of the Barlas tribe has just made himself master of Transoxiana. To the east the Moghul khans ride the Tian Shan; to the north the Jochid hordes quarrel over Sarai; in Khwarezm, Herat and Sabzevar old dynasties guard their walls. Choose a nation and decide the fate of Turkistan.</p>
+    <p class="lead">The Chagatai Ulus has broken apart. Seven crowns now contend for the cities of the Silk Road, from the Caspian to the Tian Shan. Only one will endure.</p>
     <div class="menu-buttons">
       <button id="btn-new" class="big">New campaign</button>
       <button id="btn-continue">Continue</button>
@@ -58,6 +63,7 @@
     </div>
     <div class="tile-band"></div>
   </div>
+  <div class="version">Turan · 1370</div>
 </div>
 
 <!-- Nation selection -->
@@ -69,6 +75,7 @@
 </div>
 
 <div id="modal-wrap" class="hidden"><div id="modal"></div></div>
+<div id="loading" class="hidden"><div class="spinner"></div><div>Painting the map of Turan…</div></div>
 
 <script src="js/data.js"></script>
 <script src="js/mapgen.js"></script>
@@ -78,6 +85,8 @@
 <script src="js/engine/turn.js"></script>
 <script src="js/engine/ai.js"></script>
 <script src="js/ui/art.js"></script>
+<script src="js/ui/paint.js"></script>
+<script src="js/ui/scene.js"></script>
 <script src="js/ui/map.js"></script>
 <script src="js/ui/panels.js"></script>
 <script src="js/ui/dialogs.js"></script>

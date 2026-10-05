@@ -4,7 +4,7 @@
 const SVGNS = 'http://www.w3.org/2000/svg';
 const svg = document.getElementById('map');
 const cam = { x: 0, y: 0, s: 1 };
-const UI = { selArmy: null, selProv: null, reach: null, hover: null };
+const UI = { selArmy: null, selProv: null, reach: null, hover: null, k: 1 };
 let layers = {};
 
 function svgEl(tag, attrs, parent) {
@@ -14,46 +14,76 @@ function svgEl(tag, attrs, parent) {
   return e;
 }
 
-function initMap() {
-  svg.innerHTML = `<defs>
-    <pattern id="pat-water" width="28" height="14" patternUnits="userSpaceOnUse">
-      <rect width="28" height="14" fill="#2c5a7c"/><path d="M2 8q5-4 10 0t10 0" fill="none" stroke="#4d81a6" stroke-width="1.2"/></pattern>
-    <pattern id="pat-mount" width="26" height="20" patternUnits="userSpaceOnUse">
-      <rect width="26" height="20" fill="#7a6c58"/><path d="M3 16l6-9 6 9M13 16l5-7 5 7" fill="#8d7e68" stroke="#4e4436" stroke-width="1"/><path d="M9 7l-1.6 2.4h3.2z" fill="#e8e2d4"/></pattern>
-    <pattern id="pat-desert" width="16" height="16" patternUnits="userSpaceOnUse">
-      <rect width="16" height="16" fill="#cdb183"/><circle cx="4" cy="5" r="0.9" fill="#b0925f"/><circle cx="12" cy="11" r="0.9" fill="#b0925f"/></pattern>
-    <pattern id="pat-rebel" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-      <rect width="8" height="8" fill="none"/><path d="M0 0v8" stroke="#00000022" stroke-width="3"/></pattern>
-    <filter id="paper" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="3" seed="7"/>
-      <feColorMatrix values="0 0 0 0 0.35  0 0 0 0 0.28  0 0 0 0 0.18  0 0 0 0.22 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
-    <filter id="glow"><feGaussianBlur stdDeviation="2.5"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-  </defs>`;
-  const root = svgEl('g', { id: 'cam' }, svg);
-  for (const name of ['terrain', 'owners', 'texture', 'borders', 'sel', 'reach', 'labels', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
-  layers.labels.setAttribute('pointer-events', 'none');
-  layers.texture.setAttribute('pointer-events', 'none');
-  layers.borders.setAttribute('pointer-events', 'none');
+// Illustrated city pictures, drawn around (0,0) = the city's centre on the ground.
+function cityDefs() {
+  const house = (x, y, w, h) => `<rect x="${x}" y="${y - h}" width="${w}" height="${h}" fill="url(#g-wall)" stroke="#5e4729" stroke-width="0.35"/><rect x="${x - 0.4}" y="${y - h - 1.2}" width="${w + 0.8}" height="1.4" fill="#f1dfb2" stroke="#5e4729" stroke-width="0.3"/>` +
+    `<rect x="${x + w * 0.35}" y="${y - h * 0.55}" width="${w * 0.3}" height="${h * 0.55}" fill="#3b2a18"/>`;
+  const dome = (x, y, r, gold) => `<rect x="${x - r * 0.8}" y="${y - r * 0.9}" width="${r * 1.6}" height="${r * 0.9}" fill="url(#g-wall)" stroke="#5e4729" stroke-width="0.35"/>` +
+    `<path d="M${x - r} ${y - r * 0.85}a${r} ${r * 1.15} 0 0 1 ${2 * r} 0z" fill="url(#${gold ? 'g-gold' : 'g-dome'})" stroke="#0e3c40" stroke-width="0.4"/>` +
+    `<path d="M${x} ${y - r * 2.1}v-${r * 0.5}" stroke="#d9b45a" stroke-width="0.7"/><circle cx="${x}" cy="${y - r * 2.65}" r="0.6" fill="#f3d27a"/>`;
+  const minaret = (x, y, h) => `<rect x="${x - 1.3}" y="${y - h}" width="2.6" height="${h}" fill="url(#g-minaret)" stroke="#4d3a20" stroke-width="0.3"/>` +
+    `<rect x="${x - 2}" y="${y - h * 0.78}" width="4" height="1.1" fill="#e9d6a8" stroke="#4d3a20" stroke-width="0.25"/><path d="M${x - 1.5} ${y - h}l1.5-3l1.5 3z" fill="#2a8f8a"/>`;
+  const portal = (x, y, w, h) => `<rect x="${x - w / 2}" y="${y - h}" width="${w}" height="${h}" fill="url(#g-wall)" stroke="#5e4729" stroke-width="0.35"/>` +
+    `<rect x="${x - w / 2 + 0.8}" y="${y - h + 0.8}" width="${w - 1.6}" height="1.2" fill="#2a8f8a"/><path d="M${x - w * 0.28} ${y}v-${h * 0.5}q${w * 0.28}-${h * 0.35} ${w * 0.56} 0v${h * 0.5}z" fill="#1d3f5a"/>`;
+  const yurt = (x, y, r) => `<ellipse cx="${x}" cy="${y}" rx="${r}" ry="${r * 0.3}" fill="#00000030"/><path d="M${x - r} ${y}v-${r * 0.55}q${r}-${r * 0.9} ${2 * r} 0v${r * 0.55}z" fill="#f1e8d2" stroke="#6b5434" stroke-width="0.4"/>` +
+    `<path d="M${x - r} ${y - r * 0.4}h${2 * r}" stroke="#a5452c" stroke-width="0.8"/><rect x="${x - r * 0.22}" y="${y - r * 0.45}" width="${r * 0.44}" height="${r * 0.45}" fill="#7a3a1c"/>`;
+  const wall = (w, h, towers) => `<ellipse cx="0" cy="${h * 0.15}" rx="${w * 0.62}" ry="${h * 0.42}" fill="#00000038"/>` +
+    `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="1.5" fill="#cdb488" stroke="#7a5f37" stroke-width="1.6"/>` +
+    `<rect x="${-w / 2}" y="${-h / 2}" width="${w}" height="${h}" rx="1.5" fill="none" stroke="#e8d5a6" stroke-width="0.6" stroke-dasharray="1.4 1.2"/>` +
+    (towers ? [[-w / 2, -h / 2], [w / 2, -h / 2], [-w / 2, h / 2], [w / 2, h / 2]].map(([tx, ty]) => `<circle cx="${tx}" cy="${ty}" r="2.4" fill="url(#g-wall)" stroke="#5e4729" stroke-width="0.5"/>`).join('') : '');
+  return `
+    <linearGradient id="g-wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ecd7a6"/><stop offset="1" stop-color="#b8945e"/></linearGradient>
+    <linearGradient id="g-minaret" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e7d1a0"/><stop offset="0.6" stop-color="#c7a46c"/><stop offset="1" stop-color="#8e6f42"/></linearGradient>
+    <radialGradient id="g-dome" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#a6f3ea"/><stop offset="0.45" stop-color="#2fb3a9"/><stop offset="1" stop-color="#11585e"/></radialGradient>
+    <radialGradient id="g-gold" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#fff2c0"/><stop offset="0.5" stop-color="#d9a93e"/><stop offset="1" stop-color="#7a5414"/></radialGradient>
+    <symbol id="c-great" overflow="visible">${wall(34, 18, true)}${house(-14, 2, 5, 4)}${house(9, 3, 5, 4)}${house(-6, 7, 4, 3)}${portal(-3, 4, 9, 9)}${dome(6, 4, 4.6, false)}${minaret(-11, 4, 18)}${minaret(13, 5, 15)}</symbol>
+    <symbol id="c-great-cap" overflow="visible">${wall(34, 18, true)}${house(-14, 2, 5, 4)}${house(9, 3, 5, 4)}${house(-6, 7, 4, 3)}${portal(-3, 4, 9, 9)}${dome(6, 4, 4.6, true)}${minaret(-11, 4, 18)}${minaret(13, 5, 15)}</symbol>
+    <symbol id="c-city" overflow="visible">${wall(26, 14, true)}${house(-10, 2, 5, 4)}${house(5, 4, 5, 3.5)}${dome(0, 3, 3.8, false)}${minaret(-6, 4, 13)}</symbol>
+    <symbol id="c-city-cap" overflow="visible">${wall(26, 14, true)}${house(-10, 2, 5, 4)}${house(5, 4, 5, 3.5)}${dome(0, 3, 3.8, true)}${minaret(-6, 4, 13)}</symbol>
+    <symbol id="c-town" overflow="visible">${wall(19, 11, false)}${house(-7, 2, 4, 3.5)}${house(2, 3, 4.5, 3)}${dome(-1, 0, 2.8, false)}</symbol>
+    <symbol id="c-village" overflow="visible"><ellipse cx="0" cy="2" rx="10" ry="4" fill="#00000030"/>${house(-7, 2, 4, 3)}${house(-1, 3, 4, 3.5)}${house(4, 1, 3.5, 3)}</symbol>
+    <symbol id="c-camp" overflow="visible">${yurt(-5, 1, 4)}${yurt(4, 3, 4.5)}${yurt(0, -2, 3.5)}</symbol>`;
+}
 
-  // Static terrain
+function cityKind(p) {
+  const cap = p.owner !== 'rebels' && G.factions[p.owner].capital === p.id;
+  const nomadCamp = (p.terrain === 'steppe' || p.terrain === 'desert') && p.b.walls < 2 && p.pop < 12;
+  if (nomadCamp) return { id: 'c-camp', top: -8 };
+  if (p.pop >= 38) return { id: cap ? 'c-great-cap' : 'c-great', top: -22 };
+  if (p.pop >= 18 || p.b.walls >= 2) return { id: cap ? 'c-city-cap' : 'c-city', top: -16 };
+  if (p.b.walls >= 1) return { id: 'c-town', top: -10 };
+  return { id: 'c-village', top: -8 };
+}
+
+function initMap() {
+  svg.innerHTML = `<defs>${cityDefs()}
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter>
+    ${PROVINCE_DATA.map((d, i) => `<clipPath id="cp-${d[0]}"><path d="${outlinePath(MAPDATA.outlines[i])}"/></clipPath>`).join('')}
+  </defs>`;
+  // The painted terrain lives on a canvas under the SVG and follows the same camera
+  let tc = document.getElementById('terrain');
+  if (!tc) {
+    tc = getTerrain();
+    tc.id = 'terrain';
+    tc.style.width = MAP.W + 'px'; tc.style.height = MAP.H + 'px';
+    svg.parentNode.insertBefore(tc, svg);
+  }
+  const root = svgEl('g', { id: 'cam' }, svg);
+  for (const name of ['hit', 'owners', 'borders', 'sel', 'reach', 'labels', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
+  for (const n of ['labels', 'borders', 'owners', 'sel']) layers[n].setAttribute('pointer-events', 'none');
+
+  // Invisible province shapes catch clicks
   MAPDATA.sites.forEach((s, i) => {
-    const d = outlinePath(MAPDATA.outlines[i]);
-    if (s.kind === 'province') {
-      const P = PROVINCE_DATA[i];
-      svgEl('path', { d, fill: TERRAIN[P[7]].color, 'data-prov': P[0] }, layers.terrain);
-    } else {
-      const fill = s.kind === 'water' ? 'url(#pat-water)' : s.kind === 'desert' ? 'url(#pat-desert)' : 'url(#pat-mount)';
-      svgEl('path', { d, fill, stroke: fill, 'stroke-width': 0.6 }, layers.terrain);
-    }
+    if (s.kind === 'province') svgEl('path', { d: outlinePath(MAPDATA.outlines[i]), fill: '#000', 'fill-opacity': 0, 'data-prov': PROVINCE_DATA[i][0] }, layers.hit);
   });
-  // Paper texture over everything
-  svgEl('rect', { x: 0, y: 0, width: MAP.W, height: MAP.H, filter: 'url(#paper)', fill: '#fff' }, layers.texture);
-  // Barrier names
+  // Names of seas, deserts and mountain ranges
   const named = {};
   MAPDATA.sites.forEach(s => { if (s.kind !== 'province') (named[s.name] = named[s.name] || []).push(s); });
   for (const name in named) {
     const l = named[name], x = l.reduce((t, s) => t + s.x, 0) / l.length, y = l.reduce((t, s) => t + s.y, 0) / l.length;
-    const t = svgEl('text', { x, y, class: 'barrier-label', 'text-anchor': 'middle', fill: l[0].kind === 'water' ? '#9cc3df' : '#3b3226',
-      'font-size': l[0].kind === 'water' ? 17 : 13, 'font-style': 'italic', opacity: 0.85, 'letter-spacing': 2 }, layers.labels);
+    const water = l[0].kind === 'water';
+    const t = svgEl('text', { x, y, class: 'geo-label' + (water ? ' sea' : ''), 'text-anchor': 'middle', 'font-size': water ? 19 : 13 }, layers.labels);
     t.textContent = name;
   }
   bindMapInput();
@@ -64,26 +94,31 @@ function provPath(pid) { return outlinePath(MAPDATA.outlines[G.provinces[pid].id
 
 function renderMap() {
   if (!G) return;
-  // Ownership colours
+  // A light wash of each nation's colour
   layers.owners.innerHTML = '';
   for (const p of Object.values(G.provinces)) {
-    const F = FACTIONS[p.owner];
-    const fill = p.owner === 'rebels' ? 'url(#pat-rebel)' : F.color;
-    svgEl('path', { d: provPath(p.id), fill, 'fill-opacity': p.owner === 'rebels' ? 1 : 0.55, 'data-prov': p.id, class: 'prov' }, layers.owners);
+    if (p.owner === 'rebels') continue;
+    svgEl('path', { d: provPath(p.id), fill: FACTIONS[p.owner].color, 'fill-opacity': p.owner === G.player ? 0.2 : 0.14 }, layers.owners);
   }
-  // Borders
-  let thin = '', thick = '', coast = '';
+  // Borders: a painted band of colour inside each nation's edge, and a dark line where nations meet
+  layers.borders.innerHTML = '';
+  let inner = '', outer = '';
+  const bands = {};
+  const band = (pid, d) => { const o = G.provinces[pid].owner; if (o === 'rebels') return; (bands[pid] = bands[pid] || []).push(d); };
   for (const e of MAPDATA.edges) {
     const sa = MAPDATA.sites[e.a], sb = MAPDATA.sites[e.b];
     const d = linePath(e.pts);
     if (sa.kind === 'province' && sb.kind === 'province') {
-      if (G.provinces[sa.id].owner !== G.provinces[sb.id].owner) thick += d; else thin += d;
-    } else if ((sa.kind === 'water') !== (sb.kind === 'water')) coast += d;
+      if (G.provinces[sa.id].owner !== G.provinces[sb.id].owner) { outer += d; band(sa.id, d); band(sb.id, d); } else inner += d;
+    } else if (sa.kind === 'province' || sb.kind === 'province') band(sa.kind === 'province' ? sa.id : sb.id, d);
   }
-  layers.borders.innerHTML = '';
-  svgEl('path', { d: coast, fill: 'none', stroke: '#efe3c6', 'stroke-width': 2.2, 'stroke-opacity': 0.8 }, layers.borders);
-  svgEl('path', { d: thin, fill: 'none', stroke: '#2a2116', 'stroke-width': 0.8, 'stroke-opacity': 0.35, 'stroke-dasharray': '3 3' }, layers.borders);
-  svgEl('path', { d: thick, fill: 'none', stroke: '#1f160c', 'stroke-width': 2.4, 'stroke-opacity': 0.85, 'stroke-linejoin': 'round' }, layers.borders);
+  for (const pid in bands) {
+    const F = FACTIONS[G.provinces[pid].owner];
+    svgEl('path', { d: bands[pid].join(''), fill: 'none', stroke: F.color, 'stroke-width': 11, 'stroke-opacity': 0.55, 'stroke-linejoin': 'round', 'clip-path': `url(#cp-${pid})`, filter: 'url(#soft)' }, layers.borders);
+    svgEl('path', { d: bands[pid].join(''), fill: 'none', stroke: F.color, 'stroke-width': 3.2, 'stroke-opacity': 0.9, 'stroke-linejoin': 'round', 'clip-path': `url(#cp-${pid})` }, layers.borders);
+  }
+  svgEl('path', { d: inner, fill: 'none', stroke: '#2a1d0e', 'stroke-width': 0.9, 'stroke-opacity': 0.4, 'stroke-dasharray': '2 3' }, layers.borders);
+  svgEl('path', { d: outer, fill: 'none', stroke: '#1a1208', 'stroke-width': 1.7, 'stroke-opacity': 0.85, 'stroke-linejoin': 'round' }, layers.borders);
 
   renderSelection();
   renderCities();
@@ -94,17 +129,17 @@ function renderSelection() {
   layers.sel.innerHTML = '';
   layers.reach.innerHTML = '';
   if (UI.selProv && !UI.selArmy) {
-    svgEl('path', { d: provPath(UI.selProv), fill: '#fff', 'fill-opacity': 0.12, stroke: '#ffe08a', 'stroke-width': 3, filter: 'url(#glow)', 'pointer-events': 'none' }, layers.sel);
+    svgEl('path', { d: provPath(UI.selProv), fill: '#fff6d8', 'fill-opacity': 0.14, stroke: '#ffe9a8', 'stroke-width': 3, filter: 'url(#glow)', class: 'sel-glow' }, layers.sel);
   }
   if (UI.selArmy && G.armies[UI.selArmy]) {
     const a = G.armies[UI.selArmy];
-    svgEl('path', { d: provPath(a.prov), fill: 'none', stroke: '#ffe08a', 'stroke-width': 2.5, 'pointer-events': 'none' }, layers.sel);
+    svgEl('path', { d: provPath(a.prov), fill: 'none', stroke: '#ffe9a8', 'stroke-width': 2.5, filter: 'url(#glow)' }, layers.sel);
     if (a.owner === G.player) {
       UI.reach = reachable(a);
       for (const pid in UI.reach) {
         const r = UI.reach[pid];
-        const col = r.kind === 'move' ? '#7fe07f' : r.kind === 'blocked' ? '#9a9a9a' : '#ff6a50';
-        svgEl('path', { d: provPath(pid), fill: col, 'fill-opacity': r.kind === 'blocked' ? 0.12 : 0.22, stroke: col, 'stroke-width': 2, 'stroke-dasharray': r.kind === 'move' ? '6 4' : '', 'data-prov': pid, class: 'reach' }, layers.reach);
+        const col = r.kind === 'move' ? '#9be37f' : r.kind === 'blocked' ? '#b8b0a0' : '#ff6a4a';
+        svgEl('path', { d: provPath(pid), fill: col, 'fill-opacity': r.kind === 'blocked' ? 0.1 : 0.2, stroke: col, 'stroke-width': 2.4, 'stroke-dasharray': '7 5', 'data-prov': pid, class: 'reach' }, layers.reach);
       }
     }
   } else UI.reach = null;
@@ -113,24 +148,28 @@ function renderSelection() {
 function renderCities() {
   layers.cities.innerHTML = '';
   for (const p of Object.values(G.provinces)) {
-    const g = svgEl('g', { transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)})`, 'data-prov': p.id, class: 'city' }, layers.cities);
-    const r = 3 + Math.min(5, p.pop / 12);
+    const g = svgEl('g', { transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) scale(${UI.k.toFixed(3)})`, 'data-prov': p.id, class: 'city' }, layers.cities);
+    const k = cityKind(p);
     const isCap = p.owner !== 'rebels' && G.factions[p.owner].capital === p.id;
-    if (p.b.walls) svgEl('rect', { x: -r - 2.5, y: -r - 2.5, width: 2 * r + 5, height: 2 * r + 5, rx: 1.5, fill: '#3a3024', stroke: '#e9dcb8', 'stroke-width': 0.6 + 0.5 * p.b.walls }, g);
-    svgEl('circle', { r, fill: isCap ? '#f3d27a' : '#efe3c6', stroke: '#2a2116', 'stroke-width': 1.2 }, g);
-    if (isCap) svgEl('path', { d: `M${-r * 0.6} ${-r * 0.1}l${r * 0.3} ${-r * 0.6}l${r * 0.3} ${r * 0.4}l${r * 0.3} ${-r * 0.4}l${r * 0.3} ${r * 0.6}z`, fill: '#7a1f12' }, g);
-    const label = svgEl('text', { y: r + 13, 'text-anchor': 'middle', class: 'city-label', 'font-size': p.pop >= 25 ? 13 : 11.5,
-      fill: '#1d150c', stroke: '#f3e9cf', 'stroke-width': 3, 'paint-order': 'stroke', 'pointer-events': 'none' }, g);
-    label.textContent = p.city;
+    svgEl('use', { href: '#' + k.id }, g);
+    // The owner's pennant flies over the city
+    const F = FACTIONS[p.owner];
+    svgEl('path', { d: `M2 ${k.top}v-9`, stroke: '#3a2a16', 'stroke-width': 0.8 }, g);
+    svgEl('path', { d: `M2 ${k.top - 9}h8l-2 2.2 2 2.2h-8z`, fill: F.color, stroke: F.dark, 'stroke-width': 0.5 }, g);
+    // Zoomed far out, only the great cities keep their names
+    if (UI.k < 1.15 || isCap || p.pop >= 20) {
+      const label = svgEl('text', { y: 19, 'text-anchor': 'middle', class: 'city-label' + (isCap ? ' cap' : ''), 'font-size': isCap ? 13.5 : p.pop >= 25 ? 12 : 10.5 }, g);
+      label.textContent = p.city;
+    }
     if (p.siege) {
-      const s = svgEl('g', { transform: `translate(${-r - 12} ${-r - 8})`, 'pointer-events': 'none' }, g);
-      svgEl('circle', { r: 7, fill: '#7a1f12', stroke: '#ffd2a0', 'stroke-width': 1 }, s);
-      svgEl('path', { d: 'M-4-4L4 4M4-4L-4 4', stroke: '#ffe8c8', 'stroke-width': 1.8 }, s);
+      const s = svgEl('g', { transform: 'translate(-17 -12)', class: 'siege-mark' }, g);
+      svgEl('circle', { r: 6.5, fill: '#5e1208', stroke: '#ffcf8a', 'stroke-width': 1 }, s);
+      svgEl('path', { d: 'M-3.5-3.5L3.5 3.5M3.5-3.5L-3.5 3.5', stroke: '#ffe2b8', 'stroke-width': 1.6, 'stroke-linecap': 'round' }, s);
     }
     if (p.build && p.owner === G.player) {
-      const s = svgEl('g', { transform: `translate(${r + 7} ${-r - 4})`, 'pointer-events': 'none' }, g);
-      svgEl('rect', { x: -5, y: -5, width: 10, height: 10, fill: '#2b6b8a', stroke: '#fff', 'stroke-width': 0.8 }, s);
-      svgEl('path', { d: 'M-3 3l5-5M1-3l2 2', stroke: '#fff', 'stroke-width': 1.3 }, s);
+      const s = svgEl('g', { transform: 'translate(16 -6)' }, g);
+      svgEl('circle', { r: 5.5, fill: '#1f4e6b', stroke: '#e8d29a', 'stroke-width': 0.8 }, s);
+      svgEl('path', { d: 'M-2.5 2.5l4-4M0.5-2.5l2 2', stroke: '#fff3d6', 'stroke-width': 1.2, 'stroke-linecap': 'round' }, s);
     }
   }
 }
@@ -142,23 +181,28 @@ function renderArmies() {
   for (const pid in byProv) {
     const p = G.provinces[pid];
     const home = byProv[pid].filter(a => a.owner === p.owner), away = byProv[pid].filter(a => a.owner !== p.owner);
-    const list = home.concat(away);
-    list.forEach(a => {
+    for (const a of home.concat(away)) {
       const F = FACTIONS[a.owner];
       const besieger = a.owner !== p.owner;
-      // Defenders stand above the city, outsiders to its left
       const k = besieger ? away.indexOf(a) : home.indexOf(a);
-      const x = besieger ? p.x - 30 - k * 16 : p.x - (home.length - 1) * 8 + k * 16 - 2, y = besieger ? p.y - 2 : p.y - 20;
-      const g = svgEl('g', { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)})`, 'data-army': a.id, class: 'army' }, layers.armies);
-      const sel = UI.selArmy === a.id;
-      if (sel) svgEl('circle', { cx: 6, cy: -2, r: 15, fill: '#ffe08a', 'fill-opacity': 0.35, stroke: '#ffe08a', 'stroke-width': 1.5 }, g);
-      svgEl('path', { d: 'M0 12V-16', stroke: '#2a1a0a', 'stroke-width': 1.6 }, g);
-      svgEl('path', { d: 'M0-16h15v11l-7.5-3L0-5z', fill: F.color, stroke: F.dark, 'stroke-width': 1 }, g);
-      const t = svgEl('text', { x: 7.5, y: -7.5, 'text-anchor': 'middle', 'font-size': 8, fill: a.owner === 'white' ? '#2a2116' : '#fff', 'font-weight': 'bold' }, g);
+      // Defenders stand beside the city, besiegers camp to its left
+      const s = UI.k, x = besieger ? p.x - (34 + k * 15) * s : p.x + (20 + k * 15) * s, y = besieger ? p.y + 4 * s : p.y - 2 * s;
+      const g = svgEl('g', { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${s.toFixed(3)})`, 'data-army': a.id, class: 'army' + (UI.selArmy === a.id ? ' selected' : '') }, layers.armies);
+      if (UI.selArmy === a.id) svgEl('ellipse', { cx: 0, cy: 10, rx: 13, ry: 4.5, class: 'army-ring' }, g);
+      svgEl('ellipse', { cx: 2, cy: 10, rx: 9, ry: 2.8, fill: '#000', 'fill-opacity': 0.35 }, g);
+      svgEl('path', { d: 'M0 10V-24', stroke: '#3b2410', 'stroke-width': 1.6, 'stroke-linecap': 'round' }, g);
+      svgEl('path', { d: 'M-1-22h17', stroke: '#3b2410', 'stroke-width': 1.2 }, g);
+      svgEl('circle', { cx: 0, cy: -25, r: 1.6, fill: '#e8c15c', stroke: '#6b4a10', 'stroke-width': 0.4 }, g);
+      svgEl('path', { d: 'M0-22h16v17l-8-3.5-8 3.5z', fill: F.color, stroke: F.dark, 'stroke-width': 0.9 }, g);
+      svgEl('path', { d: 'M0-22h16v3H0z', fill: '#00000030' }, g);
+      const em = svgEl('g', { transform: 'translate(2.2 -21) scale(0.3)' }, g);
+      em.innerHTML = (EMBLEMS[a.owner] || EMBLEMS.rebels)(a.owner === 'white' ? '#5b4a2c' : a.owner === 'golden' ? '#7a1f12' : '#f6e7b8');
+      svgEl('circle', { cx: 15, cy: 4, r: 5.6, fill: '#1a1208', stroke: '#d8b45a', 'stroke-width': 1 }, g);
+      const t = svgEl('text', { x: 15, y: 6.8, 'text-anchor': 'middle', class: 'army-count' }, g);
       t.textContent = a.units.length;
-      if (a.general) svgEl('path', { d: 'M0-21l1.5 3h3.2l-2.6 2 1 3.2L0-14.6-3.1-12.8l1-3.2-2.6-2h3.2z', fill: a.general.leader ? '#ffd75a' : '#f3eee0', stroke: '#2a1a0a', 'stroke-width': 0.6 }, g);
-      if (a.owner === G.player && a.moves > 0) svgEl('circle', { cx: -3, cy: 10, r: 2.6, fill: '#7fe07f', stroke: '#173', 'stroke-width': 0.7 }, g);
-    });
+      if (a.general) svgEl('path', { d: 'M0-34l1.6 3.3h3.6l-2.9 2.2 1.1 3.5L0-27.1l-3.4 2.1 1.1-3.5-2.9-2.2h3.6z', fill: a.general.leader ? '#ffd75a' : '#f3eee0', stroke: '#3b2410', 'stroke-width': 0.5 }, g);
+      if (a.owner === G.player && a.moves > 0) svgEl('circle', { cx: -4, cy: 7, r: 2.4, fill: '#8ff07a', stroke: '#1d4a12', 'stroke-width': 0.7, class: 'ready' }, g);
+    }
   }
 }
 
@@ -188,7 +232,19 @@ function reachable(a) {
 
 // ---------- Camera ----------
 
+// Cities and banners keep a readable size: larger when zoomed out, smaller when zoomed in
+let iconsQueued = false;
+function updateIconScale() {
+  const k = clampN(Math.pow(1.3 / cam.s, 0.6), 0.62, 1.45);
+  if (Math.abs(k - UI.k) / UI.k < 0.06 || iconsQueued) return;
+  iconsQueued = true;
+  requestAnimationFrame(() => { iconsQueued = false; UI.k = clampN(Math.pow(1.3 / cam.s, 0.6), 0.62, 1.45); if (G) { renderCities(); renderArmies(); } });
+}
+
 function applyCam() {
+  updateIconScale();
+  const tc = document.getElementById('terrain');
+  if (tc) tc.style.transform = `translate(${(-cam.x * cam.s).toFixed(1)}px, ${(-cam.y * cam.s).toFixed(1)}px) scale(${cam.s.toFixed(4)})`;
   layers.labels.parentNode.setAttribute('transform', `translate(${(-cam.x * cam.s).toFixed(1)} ${(-cam.y * cam.s).toFixed(1)}) scale(${cam.s.toFixed(4)})`);
 }
 function minScale() { return Math.max(svg.clientWidth / MAP.W, (svg.clientHeight - 46) / MAP.H) * 0.98; }
