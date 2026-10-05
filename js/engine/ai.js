@@ -70,7 +70,7 @@ function aiDiplomacy(f) {
   for (const g of neighbourFactions(f)) {
     if (g === 'rebels' || !G.factions[g].alive) continue;
     const r = rel(f, g);
-    if (r.war || (r.alliance && !few) || r.truce > 0) continue;
+    if (r.war || (r.alliance && !few) || r.truce > 0 || (r.married && r.att > -40 && !few)) continue;
     const ratio = my / (factionPower(g) + 40);
     const s = ratio * AGGRESSION[f] - r.att / (few ? 150 : 50) - (g === G.player ? 0 : 0.1);
     if (ratio > (few ? 0.9 : 1.35) && s > bs) { bs = s; best = g; }
@@ -156,7 +156,7 @@ function aiRecruit(f) {
       for (const t of options) total += prefs[t];
       let r = rng() * total, type = options[0];
       for (const t of options) { r -= prefs[t]; if (r <= 0) { type = t; break; } }
-      if (UNITS[type].cost > st.gold - 300) continue;
+      if (unitCost(f, type) > st.gold - 300) continue;
       if (recruit(p, type)) break;
       upkeep += unitUpkeep(type, F.nomad);
     }

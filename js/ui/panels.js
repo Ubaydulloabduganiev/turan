@@ -78,8 +78,8 @@ function provincePanel(p) {
     if (!list.length) h += `<p class="note">${t('Build barracks or stables to train troops here.')}</p>`;
     else {
       h += '<div class="recruit-grid">' + list.map(u => {
-        const d = UNITS[u], ok = G.factions[p.owner].gold >= d.cost && p.queue.length < QUEUE_MAX;
-        return `<div class="rcard ${ok ? '' : 'off'}" data-act="recruit" data-t="${u}" title="${unitTip(u)}">${unitSVG(u, p.owner)}<div>${uName(u)}</div><div class="c">${t('{n}g', { n: d.cost })}</div></div>`;
+        const d = UNITS[u], price = unitCost(p.owner, u), ok = G.factions[p.owner].gold >= price && p.queue.length < QUEUE_MAX;
+        return `<div class="rcard ${ok ? '' : 'off'}" data-act="recruit" data-t="${u}" title="${unitTip(u)}">${unitSVG(u, p.owner)}<div>${uName(u)}</div><div class="c">${t('{n}g', { n: price })}</div></div>`;
       }).join('') + '</div>';
     }
     if (p.queue.length) {
@@ -107,6 +107,7 @@ function provincePanel(p) {
   }
 
   h += wonderSection(p);
+  h += placeSection(p);
   const here = armiesIn(p.id);
   if (here.length) {
     h += `<div class="p-sec"><h4>${t('Armies here')}</h4>` + here.map(a => armyRow(a)).join('') + '</div>';
@@ -310,6 +311,7 @@ $('panel').addEventListener('click', async e => {
     }
     case 'assault': await doAssault(a.prov); return;
     case 'raid': { const r = raid(a); if (r.why) err = r.why; else toast(t('Plunder'), t('Your army returns laden with loot: {n} gold.', { n: fmt(r.gold) }), 'good'); break; }
+    case 'viewplace': { const ctx = storyContext(G.player); ctx.lp = p; playScene({ kind: 'place', id: el.dataset.k, ctx, replay: true }); return; }
     case 'wonder': err = startWonder(p); if (!err) toast(t('The work begins'), t('Masons gather in {city} to raise the {wonder}.', { city: cityOf(p), wonder: wName(p.build.id) }), 'good'); break;
     case 'sally': await doSally(a.prov); return;
   }

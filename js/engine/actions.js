@@ -157,8 +157,9 @@ function recruit(p, type) {
   const f = G.factions[p.owner], d = UNITS[type];
   if (!canRecruit(p, type)) return 'Cannot train that here';
   if (p.queue.length >= QUEUE_MAX) return 'The training queue is full';
-  if (f.gold < d.cost) return 'Not enough gold';
-  f.gold -= d.cost;
+  const price = unitCost(p.owner, type);
+  if (f.gold < price) return 'Not enough gold';
+  f.gold -= price;
   p.queue.push(type);
   return null;
 }
@@ -166,7 +167,7 @@ function cancelRecruit(p, i) {
   const t = p.queue[i];
   if (!t) return;
   p.queue.splice(i, 1);
-  G.factions[p.owner].gold += UNITS[t].cost;
+  G.factions[p.owner].gold += unitCost(p.owner, t);
 }
 
 function buildCheck(p, key) {
@@ -275,7 +276,7 @@ function applyDeal(from, to, type, gold = 0) {
       G.factions[from].gold -= gold; G.factions[to].gold += gold;
       r.att = Math.min(100, r.att + Math.min(35, gold / 25));
       break;
-    case 'marriage': r.married = true; r.att += 30; log(t('A marriage binds the houses of {nation} and {nation2}.', { nation: fName(from), nation2: fName(to) }), 'dip'); break;
+    case 'marriage': r.married = true; r.att += 30; arrangeMarriage(from, to); log(t('A marriage binds the houses of {nation} and {nation2}.', { nation: fName(from), nation2: fName(to) }), 'dip'); break;
     case 'joinwar': declareWar(to, gold, true); break;
     case 'submit': annex(from, to); return 0;
   }

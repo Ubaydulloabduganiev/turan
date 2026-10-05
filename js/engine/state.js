@@ -191,6 +191,7 @@ function provinceOrder(p, dist) {
   if (f.orderBonusT > 0) o += f.orderBonus;
   if (hasWonder(p.owner, 'bibikhanym')) o += 10;
   if (hasWonder(p.owner, 'yasawi') && (p.terrain === 'steppe' || p.terrain === 'desert')) o += 15;
+  o += landmarkOrder(p);
   return Math.round(clampN(o, 0, 120));
 }
 
@@ -204,7 +205,7 @@ function provinceIncome(p, order) {
   if (p.siege) { tax *= 0.2; trade = 0; }
   const open = p.terrain === 'steppe' || p.terrain === 'desert';
   const herds = F.nomad ? (open ? 110 : p.terrain === 'river' ? 50 : 0) : (open ? 20 : 0);
-  return Math.round(tax + trade + herds);
+  return Math.round(tax + trade + herds + landmarkGold(p));
 }
 
 // Steppe horsemen live off their own herds, so nomad nations pay less to keep them.

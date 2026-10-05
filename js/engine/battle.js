@@ -126,8 +126,10 @@ function succession(f) {
   if (!next) next = armiesOf(f).filter(a => a.general).sort((x, y) => y.general.cmd - x.general.cmd)[0];
   if (next) { next.general.leader = true; st.leader = next.general.name; }
   else st.leader = st.heir || newGeneralName(f);
-  st.heir = newGeneralName(f);
+  const son = Object.values(G.people || {}).filter(x => x.faction === f && !x.female && x.father === st.leader && x.name !== st.leader).sort((x, y) => x.born - y.born)[0];
+  st.heir = son ? son.name : newGeneralName(f);
   st.orderBonus = -10; st.orderBonusT = 4;
+  if (f === G.player) HOOKS.notify({ scene: { kind: 'coronation', f, old } });
   log(t('{name} succeeds {name2} as ruler of the {nation}.', { name: pn(st.leader), name2: pn(old), nation: fFull(f) }), 'big');
 }
 
@@ -209,7 +211,9 @@ function captureProvince(p, by, army, mode) {
   if (mode === 'sack') { loot = Math.round(p.pop * 25); p.pop *= 0.8; p.unrest = 55; p.sacked = 6; }
   if (by !== 'rebels') G.factions[by].gold += loot;
   G.stats[by] && G.stats[by].taken++;
-  if (old !== 'rebels' && G.factions[old].capital === p.id) {
+  const wasCap = old !== 'rebels' && G.factions[old].capital === p.id;
+  if (by === G.player && (wasCap || p.pop >= 25 || wonderHere(p) || landmarkIn(p.id))) HOOKS.notify({ scene: { kind: 'conquest', prov: p.id, from: old, sack: mode === 'sack', capital: wasCap } });
+  if (wasCap) {
     const rest = provsOf(old).sort((x, y) => y.pop - x.pop);
     G.factions[old].capital = rest.length ? rest[0].id : null;
   }

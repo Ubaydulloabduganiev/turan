@@ -25,6 +25,9 @@ function lookFor(who, faction, age) {
   const c = typeof who === 'string' ? (CHAR_BY_ID[who] || charByName(who)) : who;
   if (c && c.look) return { ...c.look, female: !!c.female, age: age || (G ? year() - c.born : 40), seed: hashStr(c.name), faction: c.faction };
   if (TYPES[who]) return { ...TYPES[who], age: 40, seed: hashStr(who), faction: null };
+  // People born or married into the game: princes, princesses and their children
+  const pp = typeof who === 'string' ? personBy(who) : null;
+  if (pp) { faction = faction || pp.faction; age = age || Math.max(0, year() - pp.born); }
   const name = String(who || 'Unknown');
   const h = hashStr(name), r = n => ((h >>> (n * 3)) & 1023) / 1023;
   const F = FACTIONS[faction] || FACTIONS.rebels;
@@ -32,6 +35,11 @@ function lookFor(who, faction, age) {
   const hats = nomad ? ['mongol', 'fur', 'kalpak', 'helmet'] : persian ? ['turban', 'turban', 'helmet', 'taj'] : ['turban', 'helmet', 'mongol', 'turban'];
   const beards = ['short', 'long', 'mustache', 'goatee', 'forked'];
   const robes = [F.dark, '#6a3a2a', '#3a5a4a', '#4a3a6a', '#7a5a2a', F.color];
+  if (pp && year() - pp.born < 12) return { hat: pp.female ? 'tiara' : 'kalpak', female: !!pp.female, beard: 'none', hair: '#1a1410', robe: pp.female ? '#8a2a3a' : F.color, trim: '#d8b45a', skin: nomad ? 1 : 0, age: 10, seed: h, faction };
+  if (pp && pp.female) {
+    const fh = nomad ? ['boqta', 'boqta', 'tiara'] : persian ? ['veil', 'veil', 'tiara'] : ['tiara', 'veil', 'boqta'];
+    return { hat: fh[Math.floor(r(1) * fh.length)], female: true, beard: 'none', hair: '#1a1410', robe: ['#8a2a3a', '#2a5a7a', '#6a2a6a', '#2a6a4a', F.color][Math.floor(r(4) * 5)], trim: '#d8b45a', skin: nomad ? 1 : Math.round(r(6)), age: age || 18, seed: h, faction };
+  }
   return {
     hat: hats[Math.floor(r(1) * hats.length)], beard: beards[Math.floor(r(2) * beards.length)],
     hair: ['#1a1410', '#2a1a0e', '#3a2a1a', '#4a3020'][Math.floor(r(3) * 4)],
@@ -42,6 +50,7 @@ function lookFor(who, faction, age) {
 
 function portraitSVG(who, opts = {}) {
   const L = lookFor(who, opts.faction, opts.age);
+  if (L.age < 16 && !L.female) L.beard = 'none';
   const id = 'pt' + (portraitN++);
   const F = FACTIONS[opts.faction || L.faction] || null;
   const bg = F ? F.dark : '#2a3a5a', bg2 = F ? F.color : '#4a6a8a';
@@ -137,6 +146,14 @@ function portraitSVG(who, opts = {}) {
       <path d="M42 20h16M42.6 28h14.8M43.2 36h13.6" stroke="#d8b45a" stroke-width="1.4"/>
       <path d="M50 12Q44 2 40 0M50 12Q56 2 60 0M50 12V0" stroke="#f2efe6" stroke-width="1.6" fill="none"/>
       <path d="M36 52Q36 44 50 44Q64 44 64 52Z" fill="#8a1a22"/><circle cx="50" cy="47" r="1.8" fill="#f3d27a"/>`,
+    veil: `<path d="M33 52Q31 82 28 100L38 96Q36 74 37 56Z M67 52Q69 82 72 100L62 96Q64 74 63 56Z" fill="#f4efe6" opacity=".85"/>
+      <path d="M35 53Q35 38 50 37Q65 38 65 53Q50 47 35 53Z" fill="${L.robe}" stroke="${L.trim}" stroke-width="1"/>
+      <path d="M35 53Q50 47 65 53" stroke="${L.trim}" stroke-width="2.2" fill="none"/><circle cx="50" cy="49.5" r="2" fill="#2a8f9a" stroke="#f3d27a" stroke-width=".6"/>
+      <path d="M38 45l3-1M44 42l3-.5M53 41.5l3 .5M59 43l3 1" stroke="#f3d27a" stroke-width="1.2" stroke-linecap="round"/>`,
+    tiara: `<path d="M36 60Q34 80 31 98M64 60Q66 80 69 98" stroke="#1a1410" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+      <path d="M31 98l-1 4M69 98l1 4" stroke="${L.trim}" stroke-width="2"/>
+      <path d="M36.5 51Q50 43 63.5 51L62 45L57 48L53.5 41L50 46L46.5 41L43 48L38 45Z" fill="url(#${id}c)" stroke="#6a4a10" stroke-width=".6"/>
+      <circle cx="50" cy="44" r="1.6" fill="#b0202a"/><circle cx="43" cy="47" r="1" fill="#f4f0e6"/><circle cx="57" cy="47" r="1" fill="#f4f0e6"/>`,
     chinese: `<path d="M38 50Q37.5 34 50 33Q62.5 34 62 50Z" fill="#1a1a1a"/><path d="M44 36Q50 28 56 36Z" fill="#1a1a1a"/>
       <path d="M26 44h11v2.4H26zM63 44h11v2.4H63z" fill="#1a1a1a"/>`,
     european: `<path d="M37 49Q37 33 50 32Q63 33 63 49Z" fill="#1a1a1a"/><ellipse cx="50" cy="49" rx="17" ry="3.6" fill="#2a1a1a"/>

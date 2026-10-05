@@ -4,7 +4,7 @@
 let modalResolve = null, modalOpen = false;
 const notices = [];
 
-function uiLocked() { return modalOpen || turnBusy || !$('battle').classList.contains('hidden'); }
+function uiLocked() { return modalOpen || turnBusy || !$('battle').classList.contains('hidden') || (CINE.el && !CINE.el.classList.contains('hidden')); }
 
 // buttons: [{ label, value, cls }]. Resolves with the clicked value (or `cancel` on Escape).
 function showModal(html, buttons, opts = {}) {
@@ -20,6 +20,8 @@ function showModal(html, buttons, opts = {}) {
       modalResolve = null; modalOpen = false;
       $('modal-wrap').classList.add('hidden');
       resolve(v);
+      // Scenes and notices that arrived while this window was open
+      setTimeout(() => { if (!turnBusy && !modalOpen && !flushing && notices.length) flushNotices(); }, 0);
     };
     m.onclick = e => {
       const b = e.target.closest('[data-mi]');
@@ -48,9 +50,15 @@ function pushNotice(n) {
   notices.push(n);
   if (!turnBusy && !modalOpen) flushNotices();
 }
-async function flushNotices() {
+let flushing = null;
+function flushNotices() {
+  if (!flushing) flushing = flushQueue().finally(() => { flushing = null; });
+  return flushing;
+}
+async function flushQueue() {
   while (notices.length) {
     const n = notices.shift();
+    if (n.scene) { await playScene(n.scene); if (G) refresh(); continue; }
     if (n.who) await infoBox(n.title, `<div class="with-portrait">${portraitSVG(n.who, { faction: n.whoFaction })}<p>${n.text}</p></div>`, { cls: n.history ? 'parch' : '' });
     else await infoBox(n.title, n.text, { cls: n.history ? 'parch' : '' });
     if (n.prov && G) { UI.selProv = n.prov; UI.selArmy = null; centerOnProv(n.prov); refresh(); }
@@ -297,9 +305,9 @@ function openDiplomacy(f) {
 
 function personCard(name, faction, o = {}) {
   const c = charByName(name);
-  const age = o.age !== undefined ? o.age : c ? year() - c.born : null;
+  const age = o.age !== undefined ? o.age : c ? year() - c.born : personBy(name) ? year() - personBy(name).born : null;
   const dead = c && c.died && year() > c.died && !o.alive;
-  const role = o.leader ? fTitle(faction) : o.consort ? t('Consort of the ruler') : o.child ? t('Born {born} · joins the court in {joins}', { born: c.born, joins: c.joins }) : o.cmd !== undefined ? `${t('General')} ${stars(Math.min(5, o.cmd))}` : c ? t({ scholar: 'Scholar', poet: 'Poet', envoy: 'Envoy' }[c.role] || '') : '';
+  const role = o.role ? o.role : o.leader ? fTitle(faction) : o.consort ? t('Consort of the ruler') : o.child ? t('Born {born} · joins the court in {joins}', { born: c.born, joins: c.joins }) : o.cmd !== undefined ? `${t('General')} ${stars(Math.min(5, o.cmd))}` : c ? t({ scholar: 'Scholar', poet: 'Poet', envoy: 'Envoy' }[c.role] || '') : '';
   const where = o.prov ? ` · ${cityOf(G.provinces[o.prov])}` : '';
   return `<div class="person ${o.child ? 'child' : ''} ${dead ? 'dead' : ''}" ${o.army ? `data-army="${o.army}"` : ''}>${portraitSVG(name, { faction, age: age || undefined })}
     <div class="pc-body"><div class="pc-name">${pn(name)}</div><div class="pc-role">${role}</div>
@@ -319,10 +327,17 @@ function openCourt(tab = 'mine') {
         const ga = armiesOf(f).find(a => a.general && a.general.name === st.leader);
         return personCard(st.leader, f, { leader: true, age: ga ? ga.general.age : undefined, alive: true });
       }).join('') + '</div>';
+    } else if (tab === 'family') {
+      const ms = (G.marriages || []).filter(m => m.gF === pl || m.bF === pl);
+      body = ms.length ? '<div class="families">' + ms.map(m => {
+        const kids = m.kids.map(k => { const pp = personBy(k); return `<div class="kid">${portraitSVG(k, { faction: m.gF })}<div>${pn(k)}</div><small>${t('Born {born}', { born: pp.born })}</small></div>`; }).join('');
+        return `<div class="family"><div class="couple">${personCard(m.groom, m.gF, { role: t('Husband · {nation}', { nation: fName(m.gF) }) })}<div class="knot">❦</div>${personCard(m.bride, m.bF, { role: t('Wife · {nation}', { nation: fName(m.bF) }) })}</div>` +
+          `<div class="f-meta">${t('Married {date}', { date: dateText(m.turn) })}</div>${kids ? `<div class="kids">${kids}</div>` : `<p class="note">${t('No children yet.')}</p>`}</div>`;
+      }).join('') + '</div>' : `<p class="note">${t('No marriages yet. Propose one to another ruler through diplomacy: the houses will be joined by a royal wedding, and their children will grow up to serve you.')}</p>`;
     } else {
       body = '<div class="people">' + CHARACTERS.filter(c => !c.faction).map(c => personCard(c.name, null, {})).join('') + '</div>';
     }
-    const tabs = [['mine', 'Your court'], ['rulers', 'Rulers of Turan'], ['figures', 'Figures of the age']].map(([k, l]) => `<button data-tab="${k}" class="${tab === k ? 'big' : ''}">${t(l)}</button>`).join('');
+    const tabs = [['mine', 'Your court'], ['family', 'Marriages'], ['rulers', 'Rulers of Turan'], ['figures', 'Figures of the age']].map(([k, l]) => `<button data-tab="${k}" class="${tab === k ? 'big' : ''}">${t(l)}</button>`).join('');
     return `<button class="modal-x small" data-close="1">${t('Close')}</button><h3>${t('The court of {ruler}', { ruler: pn(G.factions[pl].leader) })}</h3><div class="btnrow tabs">${tabs}</div>${body}`;
   };
   showModal(render(), [], {
@@ -437,6 +452,9 @@ const HELP = [
   ['li', "The council of amirs sets you tasks with a deadline (shown in the vizier's box). Fulfil them for gold and praise."],
   ['li', 'An army standing in enemy land can plunder the countryside for gold. Steppe armies take more.'],
   ['li', 'Five great wonders can be raised in Samarkand, Shahrisabz, Otrar, Herat and Sarai. Their blessing belongs to whoever holds the city.'],
+  ['h', 'Weddings and special places'],
+  ['li', 'A marriage with another house weds a real prince to a real princess, with a wedding you can watch. Their children are born in the following years, and sons come of age at fifteen to lead your armies. See them under Court → Marriages.'],
+  ['li', 'Fifteen special places are marked on the map: ruins, shrines, mines, passes and lakes. Whoever holds one enjoys its blessing every turn, and the first time you hold one you can visit it and decide what to do there.'],
   ['h', 'People'],
   ['li', 'Open the Court to see your family, generals and the famous people of the age. Princes come of age in their historical years and join you at the head of an army.'],
   ['h', 'Diplomacy'],

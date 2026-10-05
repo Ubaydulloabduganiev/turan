@@ -21,6 +21,8 @@ async function endTurn(onProgress) {
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
     runEvents();
     comingOfAge();
+    peopleComeOfAge();
+    familyTurn();
     checkVictory();
   } finally {
     turnBusy = false;

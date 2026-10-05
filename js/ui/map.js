@@ -70,7 +70,7 @@ function initMap() {
     svg.parentNode.insertBefore(tc, svg);
   }
   const root = svgEl('g', { id: 'cam' }, svg);
-  for (const name of ['hit', 'owners', 'borders', 'sel', 'reach', 'labels', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
+  for (const name of ['hit', 'owners', 'borders', 'sel', 'reach', 'labels', 'places', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
   for (const n of ['labels', 'borders', 'owners', 'sel']) layers[n].setAttribute('pointer-events', 'none');
 
   // Invisible province shapes catch clicks
@@ -124,6 +124,7 @@ function renderMap() {
 
   renderSelection();
   renderCities();
+  renderPlaces();
   renderArmies();
 }
 
@@ -241,7 +242,7 @@ function updateIconScale() {
   const k = clampN(Math.pow(1.3 / cam.s, 0.6), 0.62, 1.45);
   if (Math.abs(k - UI.k) / UI.k < 0.06 || iconsQueued) return;
   iconsQueued = true;
-  requestAnimationFrame(() => { iconsQueued = false; UI.k = clampN(Math.pow(1.3 / cam.s, 0.6), 0.62, 1.45); if (G) { renderCities(); renderArmies(); } });
+  requestAnimationFrame(() => { iconsQueued = false; UI.k = clampN(Math.pow(1.3 / cam.s, 0.6), 0.62, 1.45); if (G) { renderCities(); renderPlaces(); renderArmies(); } });
 }
 
 function applyCam() {
@@ -365,6 +366,7 @@ function hoverAt(e) {
   } else {
     const p = G.provinces[tg.prov];
     html = `<b>${cityOf(p)}</b> · ${regionOf(p)}<br>${fFull(p.owner)}<br>${terrName(p.terrain)} · ${t('{n}k people', { n: Math.round(p.pop) })}${p.silk ? ' · ' + t('Silk Road') : ''}`;
+    if (landmarkIn(p.id)) html += `<br><span class="gold">★ ${t(LANDMARKS[landmarkIn(p.id)].name)}</span>`;
     if (p.siege) html += `<br><span class="bad">${t('Besieged by {nation}', { nation: fName(p.siege.by) })}</span>`;
     if (UI.reach && UI.reach[p.id]) {
       const r = UI.reach[p.id];

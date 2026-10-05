@@ -110,7 +110,8 @@ async function startNew() {
   quietNotices = false;
   notices.length = 0;
   await withLoading(enterGame);
-  await new Promise(r => setTimeout(r, 1800));
+  await new Promise(r => setTimeout(r, 1200));
+  await playScene({ kind: 'coronation', start: true });
   const F = FACTIONS[pickSel];
   await showModal(`<h3>${dateText()}</h3><div class="with-portrait">${rulerPortrait(pickSel)}<div><p>${t(F.blurb)}</p><p><b>${t('Your aim:')}</b> ${t('outlast every other nation. Conquer them, or make them kneel and hand you their crowns.')} ${t(F.play)}</p></div></div>
     <p class="note">${t('Click any city to rule it, attack it or talk to its ruler. Your vizier in the corner will suggest what to do. Press End turn when you are done.')}</p>`,
@@ -149,6 +150,10 @@ async function doEndTurn() {
   await flushNotices();
   const s = pickStory();
   if (s) await showStory(s);
+  else {
+    const lm = pickLandmark();
+    if (lm) { centerOnProv(LANDMARKS[lm.id].prov); await playScene({ kind: 'place', ...lm }); await flushNotices(); }
+  }
   refresh();
   checkOverUI();
 }
