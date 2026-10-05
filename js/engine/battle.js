@@ -104,7 +104,7 @@ function menOf(side) { let n = 0; for (const { u } of sideUnits(side)) n += u.me
 function cleanArmy(a) {
   a.units = a.units.filter(u => u.men >= Math.max(5, UNITS[u.type].men * 0.08));
   if (a.general && !a.units.some(u => u.type === 'general')) {
-    generalDied(a, 'fell in battle');
+    generalDied(a, 'battle');
   }
   if (!a.units.length) delete G.armies[a.id];
 }
@@ -112,9 +112,10 @@ function cleanArmy(a) {
 function generalDied(a, how) {
   const g = a.general;
   a.general = null;
-  log(`${g.name} ${how}.`, 'big');
+  const text = how === 'age' ? t('{name} died of old age at {n}.', { name: pn(g.name), n: g.age }) : t('{name} fell in battle.', { name: pn(g.name) });
+  log(text, 'big');
   if (g.leader) succession(a.owner);
-  if (a.owner === G.player) HOOKS.notify({ title: g.leader ? 'Our ruler is dead' : 'A general has died', text: `${g.name} ${how}.` });
+  if (a.owner === G.player) HOOKS.notify({ title: t(g.leader ? 'Our ruler is dead' : 'A general has died'), text });
 }
 
 function succession(f) {
@@ -127,7 +128,7 @@ function succession(f) {
   else st.leader = st.heir || newGeneralName(f);
   st.heir = newGeneralName(f);
   st.orderBonus = -10; st.orderBonusT = 4;
-  log(`${st.leader} succeeds ${old} as ruler of the ${F.full}.`, 'big');
+  log(t('{name} succeeds {name2} as ruler of the {nation}.', { name: pn(st.leader), name2: pn(old), nation: fFull(f) }), 'big');
 }
 
 // Where a beaten army can fall back to: an adjacent province of its own or an ally's, free of enemies.
@@ -162,9 +163,8 @@ function finishBattle(b, res) {
     const to = res.rout ? null : retreatTarget(a, null);
     if (to) { a.prov = to; a.moves = 0; a.besieging = false; } else delete G.armies[id];
   }
-  let text = `${FACTIONS[wf].name} won the battle at ${p.city}`;
-  text += res.rout ? ' — the enemy was routed.' : '.';
-  log(`${dateText()}: battle at ${p.city}: ${FACTIONS[b.att.faction].name} attacked ${FACTIONS[b.def.faction].name}. ${FACTIONS[wf].name} won.`, wf === G.player || lf === G.player ? 'battle' : '');
+  let text = t(res.rout ? '{nation} won the battle at {city} — the enemy was routed.' : '{nation} won the battle at {city}.', { nation: fName(wf), city: cityOf(p) });
+  log(dateText() + ': ' + t('battle at {city}: {nation} attacked {nation2}. {nation3} won.', { city: cityOf(p), nation: fName(b.att.faction), nation2: fName(b.def.faction), nation3: fName(wf) }), wf === G.player || lf === G.player ? 'battle' : '');
   // An attacker who wins in an enemy province takes or besieges it.
   if (res.winner === 'att' && atWar(wf, p.owner) && p.owner !== wf) {
     const att = b.att.armies.map(id => G.armies[id]).filter(Boolean);
@@ -186,8 +186,8 @@ function finishBattle(b, res) {
 function startSiege(p, by) {
   p.siege = { by, turns: 0 };
   for (const a of armiesIn(p.id)) if (a.owner === by) a.besieging = true;
-  log(`${FACTIONS[by].name} lays siege to ${p.city}.`, by === G.player || p.owner === G.player ? 'battle' : '');
-  if (p.owner === G.player) HOOKS.notify({ title: p.city + ' besieged', text: `The ${FACTIONS[by].adj} army has surrounded ${p.city}. It will hold out for about ${siegeTurns(p) } more turns.`, prov: p.id });
+  log(t('{nation} lays siege to {city}.', { nation: fName(by), city: cityOf(p) }), by === G.player || p.owner === G.player ? 'battle' : '');
+  if (p.owner === G.player) HOOKS.notify({ title: t('{city} besieged', { city: cityOf(p) }), text: t('The {nation} army has surrounded {city}. It will hold out for about {n} more turns.', { nation: fAdj(by), city: cityOf(p), n: siegeTurns(p) }), prov: p.id });
 }
 function siegeTurns(p) {
   let t = 1 + p.b.walls * 2;
@@ -213,8 +213,8 @@ function captureProvince(p, by, army, mode) {
     const rest = provsOf(old).sort((x, y) => y.pop - x.pop);
     G.factions[old].capital = rest.length ? rest[0].id : null;
   }
-  log(`${dateText()}: ${FACTIONS[by].name} ${mode === 'sack' ? 'sacked' : 'captured'} ${p.city} from ${FACTIONS[old].name}.`, by === G.player || old === G.player ? 'big' : '');
-  if (old === G.player) HOOKS.notify({ title: p.city + ' has fallen', text: `${p.city} has been taken by the ${FACTIONS[by].full}.`, prov: p.id });
+  log(dateText() + ': ' + t(mode === 'sack' ? '{nation} sacked {city} from {nation2}.' : '{nation} captured {city} from {nation2}.', { nation: fName(by), city: cityOf(p), nation2: fName(old) }), by === G.player || old === G.player ? 'big' : '');
+  if (old === G.player) HOOKS.notify({ title: t('{city} has fallen', { city: cityOf(p) }), text: t('{city} has been taken by the {nation}.', { city: cityOf(p), nation: fFull(by) }), prov: p.id });
   if (old !== 'rebels') checkFactionAlive(old);
   if (by !== 'rebels') {
     const r = old !== 'rebels' ? rel(by, old) : null;

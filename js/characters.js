@@ -134,8 +134,8 @@ function comingOfAge() {
     const units = FACTIONS[c.faction].nomad ? ['horsearch', 'horsearch', 'lancer'] : ['spear', 'archer', 'lancer'];
     addArmy(c.faction, cap.id, units, makeGeneral(c.faction, c.name, 2, year() - c.born, false));
     if (c.faction === G.player) {
-      log(`${dateText()}: ${c.name} joins your court and takes command of an army.`, 'big');
-      HOOKS.notify({ title: c.name, text: `${c.name} has come of age and rides out to serve you at the head of his own troops in ${cap.city}. ${c.bio}`, who: c.id, prov: cap.id });
+      log(dateText() + ': ' + t('{name} joins your court and takes command of an army.', { name: pn(c.name) }), 'big');
+      HOOKS.notify({ title: pn(c.name), text: t('{name} has come of age and rides out to serve you at the head of his own troops in {city}.', { name: pn(c.name), city: cityOf(cap) }) + ' ' + t(c.bio), who: c.id, prov: cap.id });
     }
   }
 }

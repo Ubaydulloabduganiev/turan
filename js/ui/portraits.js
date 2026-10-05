@@ -148,5 +148,5 @@ function portraitSVG(who, opts = {}) {
 }
 
 // Portrait of a ruler of a nation, or of any named person
-function rulerPortrait(f, cls) { return portraitSVG(G.factions[f].leader, { faction: f, cls }); }
+function rulerPortrait(f, cls) { return portraitSVG(G && G.factions[f] ? G.factions[f].leader : FACTIONS[f].leader, { faction: f, cls }); }
 function personPortrait(name, faction, age, cls) { return portraitSVG(name, { faction, age, cls }); }

@@ -31,9 +31,10 @@ function startTactical(b) {
     TB.r3 = null;
     try { TB.r3 = make3D(); } catch (err) { console.error(err); TB.r3 = null; if ($('b3d')) $('b3d').remove(); }
     if (!TB.r3 && window.THREE) TB.ground = paintBattleGround(false);
-    $('b-help').textContent = TB.r3
+    $('b-help').textContent = t(TB.r3
       ? 'Drag to select · Right-click to move or attack (Shift to run) · W A S D move the camera · Q E turn · Wheel zoom · Space pause'
-      : 'Drag to select · Right-click to move or attack · Shift + right-click to run · Space to pause';
+      : 'Drag to select · Right-click to move or attack · Shift + right-click to run · Space to pause');
+    $('b-speed').textContent = t('Speed {n}×', { n: TB.speed || 1 });
     $('b-cam').classList.toggle('hidden', !TB.r3);
     resizeBattle();
     renderBattleTop();
@@ -217,7 +218,7 @@ function stepBattle(dt) {
     const general = regs.some(o => o.side === r.side && o.u.type === 'general' && !o.gone && !o.rout && Math.hypot(o.x - r.x, o.y - r.y) < 300);
     const m = r.morale - loss * 80 - (friends < 3 ? 15 : 0) + (general ? 12 : 0) - (r.flanked > 0 ? 25 : 0);
     if (r.flanked > 0) r.flanked -= dt;
-    if (m < 8) { r.rout = true; r.target = null; r.order = null; TB.fx.push({ x: r.x, y: r.y - 30, text: 'Routing!', life: 1.5, color: '#ffb0a0' }); }
+    if (m < 8) { r.rout = true; r.target = null; r.order = null; TB.fx.push({ x: r.x, y: r.y - 30, text: t('Routing!'), life: 1.5, color: '#ffb0a0' }); }
   }
   for (const a of TB.arrows) a.life -= dt;
   TB.arrows = TB.arrows.filter(a => a.life > 0);
@@ -365,7 +366,7 @@ function drawOverlay3D() {
   }
   if (TB.paused && !TB.over) {
     c.font = '28px Cinzel, Georgia, serif'; c.textAlign = 'center'; c.fillStyle = '#ffe08a'; c.strokeStyle = '#000'; c.lineWidth = 4;
-    c.strokeText('Paused — press Space', innerWidth / 2, 100); c.fillText('Paused — press Space', innerWidth / 2, 100);
+    c.strokeText(t('Paused — press Space'), innerWidth / 2, 100); c.fillText(t('Paused — press Space'), innerWidth / 2, 100);
   }
 }
 const bToWorld = (x, y) => ({ x: (x - TB.view.ox) / TB.view.s, y: (y - TB.view.oy) / TB.view.s });
@@ -500,7 +501,7 @@ function drawBattle() {
   c.restore();
   if (TB.paused && !TB.over) {
     c.font = '28px Palatino Linotype, Georgia, serif'; c.textAlign = 'center'; c.fillStyle = '#ffe08a';
-    c.fillText('Paused — press Space', window.innerWidth / 2, 90);
+    c.fillText(t('Paused — press Space'), window.innerWidth / 2, 90);
   }
 }
 
@@ -566,14 +567,14 @@ function renderBattleTop() {
   const b = TB.b, p = G.provinces[b.prov];
   const side = s => {
     const f = b[s].faction, total = TB.start[s], now = sideMen(s);
-    return `<div class="bside">${flagSVG(f)}<div><div>${FACTIONS[f].name}${s === TB.playerSide ? ' (you)' : ''}</div><div class="meter"><div style="width:${Math.round(now / total * 100)}%;background:${FACTIONS[f].color}"></div></div></div><div>${fmt(now)}</div></div>`;
+    return `<div class="bside">${flagSVG(f)}<div><div>${fName(f)}${s === TB.playerSide ? ' ' + t('(you)') : ''}</div><div class="meter"><div style="width:${Math.round(now / total * 100)}%;background:${FACTIONS[f].color}"></div></div></div><div>${fmt(now)}</div></div>`;
   };
-  $('b-top').innerHTML = side('att') + `<div>Battle of ${p.city}${TB.walls ? ' · storming the walls' + (TB.breach ? ' (breach made)' : '') : ''}</div>` + side('def');
+  $('b-top').innerHTML = side('att') + `<div>${t('Battle of {city}', { city: cityOf(p) })}${TB.walls ? ' · ' + t(TB.breach ? 'storming the walls (breach made)' : 'storming the walls') : ''}</div>` + side('def');
 }
 
 function renderBattleCards() {
   const mine = TB.regs.filter(r => r.player);
-  $('b-cards').innerHTML = mine.map(r => `<div class="ucard ${TB.sel.has(r.id) ? 'sel' : ''}" data-r="${r.id}" style="${r.gone || r.rout ? 'opacity:.35' : ''}" title="${r.d.name}">${unitSVG(r.u.type, r.faction)}<div class="men">${Math.round(r.men)}</div><div class="bar"><div style="width:${Math.round(r.men / r.max * 100)}%"></div></div></div>`).join('');
+  $('b-cards').innerHTML = mine.map(r => `<div class="ucard ${TB.sel.has(r.id) ? 'sel' : ''}" data-r="${r.id}" style="${r.gone || r.rout ? 'opacity:.35' : ''}" title="${uName(r.u.type)}">${unitSVG(r.u.type, r.faction)}<div class="men">${Math.round(r.men)}</div><div class="bar"><div style="width:${Math.round(r.men / r.max * 100)}%"></div></div></div>`).join('');
 }
 
 let cardT = 0;
@@ -677,7 +678,7 @@ $('b-cards').addEventListener('click', e => {
   TB.sel.add(id);
   renderBattleCards();
 });
-$('b-speed').onclick = () => { if (!TB) return; TB.speed = TB.speed === 1 ? 2 : TB.speed === 2 ? 4 : 1; $('b-speed').textContent = 'Speed ' + TB.speed + '×'; };
+$('b-speed').onclick = () => { if (!TB) return; TB.speed = TB.speed === 1 ? 2 : TB.speed === 2 ? 4 : 1; $('b-speed').textContent = t('Speed {n}×', { n: TB.speed }); };
 $('b-auto').onclick = () => {
   if (!TB || TB.over) return;
   // Finish the fight by the numbers from where it stands now

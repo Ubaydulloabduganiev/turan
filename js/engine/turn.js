@@ -37,7 +37,7 @@ function upkeepPhase() {
     // The garrison goes hungry
     for (const a of armiesIn(p.id)) if (a.owner === p.owner) for (const u of a.units) u.men = Math.round(u.men * 0.93);
     if (siegeTurns(p) <= 0 || p.siege.turns >= 1 + p.b.walls * 2 + 2) {
-      log(`${p.city} surrenders after a long siege.`, p.owner === G.player || p.siege.by === G.player ? 'big' : '');
+      log(t('{city} surrenders after a long siege.', { city: cityOf(p) }), p.owner === G.player || p.siege.by === G.player ? 'big' : '');
       captureProvince(p, p.siege.by, besiegers[0]);
     }
   }
@@ -66,7 +66,7 @@ function upkeepPhase() {
         const x = pick(all);
         x.a.units.splice(x.a.units.indexOf(x.u), 1);
         if (!x.a.units.length) delete G.armies[x.a.id];
-        if (f === G.player) HOOKS.notify({ title: 'Troops desert', text: `Our treasury is empty. Unpaid ${UNITS[x.u.type].name} have deserted.` });
+        if (f === G.player) HOOKS.notify({ title: t('Troops desert'), text: t('Our treasury is empty. Unpaid {unit} have deserted.', { unit: uName(x.u.type) }) });
       }
       if (st.gold < -2000) st.gold = -2000;
     }
@@ -106,7 +106,7 @@ function upkeepPhase() {
       const g = a.general;
       if (g.age > 55 && rng() < (g.age - 55) * 0.012) {
         a.units = a.units.filter(u => u.type !== 'general');
-        generalDied(a, `died of old age at ${g.age}`);
+        generalDied(a, 'age');
         if (!a.units.length) delete G.armies[a.id];
       }
     }
@@ -137,7 +137,7 @@ function finishQueues(p) {
       p.build = null;
     } else if (p.build.turns <= 0) {
       p.b[p.build.key]++;
-      if (p.owner === G.player) log(`${p.city}: ${BUILDINGS[p.build.key].levels[p.b[p.build.key]]} completed.`, 'good');
+      if (p.owner === G.player) log(t('{city}: {building} completed.', { city: cityOf(p), building: bLevel(p.build.key, p.b[p.build.key]) }), 'good');
       p.build = null;
     }
   }
@@ -157,8 +157,8 @@ function revolt(p) {
   for (const a of armiesIn(p.id)) if (a.owner === old) { const to = retreatTarget(a); if (to) a.prov = to; else delete G.armies[a.id]; }
   p.owner = 'rebels'; p.unrest = 0; p.queue = []; p.build = null; p.siege = null;
   addArmy('rebels', p.id, units, null);
-  log(`${dateText()}: ${p.city} rises in revolt against the ${FACTIONS[old].full}!`, old === G.player ? 'big' : '');
-  if (old === G.player) HOOKS.notify({ title: 'Revolt in ' + p.city, text: `The people of ${p.city} have risen against us and declared their independence. Keep public order high with low taxes, mosques and garrisons.`, prov: p.id });
+  log(dateText() + ': ' + t('{city} rises in revolt against the {nation}!', { city: cityOf(p), nation: fFull(old) }), old === G.player ? 'big' : '');
+  if (old === G.player) HOOKS.notify({ title: t('Revolt in {city}', { city: cityOf(p) }), text: t('The people of {city} have risen against us and declared their independence. Keep public order high with low taxes, mosques and garrisons.', { city: cityOf(p) }), prov: p.id });
   if (G.factions[old].capital === p.id) {
     const rest = provsOf(old).sort((x, y) => y.pop - x.pop);
     G.factions[old].capital = rest.length ? rest[0].id : null;
@@ -176,9 +176,9 @@ function randomEvent() {
   ev.apply(p, G, G.factions[p.owner]);
   p.unrest = Math.max(-30, p.unrest);
   if (p.owner === G.player) {
-    const text = ev.text.replace('{p}', p.city);
-    log(`${dateText()}: ${text}`, 'event');
-    HOOKS.notify({ title: ev.title, text, prov: p.id, minor: true });
+    const text = t(ev.text).replace('{p}', cityOf(p));
+    log(dateText() + ': ' + text, 'event');
+    HOOKS.notify({ title: t(ev.title), text, prov: p.id, minor: true });
   }
 }
 
@@ -186,8 +186,8 @@ function runEvents() {
   for (let i = 0; i < EVENTS.length; i++) {
     const e = EVENTS[i];
     if (G.fired.includes(i)) continue;
-    const t = (e.when[0] - GAME.START_YEAR) * 2 + e.when[1];
-    if (G.turn < t) continue;
+    const due = (e.when[0] - GAME.START_YEAR) * 2 + e.when[1];
+    if (G.turn < due) continue;
     G.fired.push(i);
     const x = e.effect;
     if (x.faction && !G.factions[x.faction].alive) continue;
@@ -207,8 +207,8 @@ function runEvents() {
       const p = G.provinces[x.holder];
       if (p.owner !== 'rebels') { G.factions[p.owner].gold += x.gold || 0; p.unrest = Math.max(0, p.unrest - (x.order || 0)); }
     }
-    log(`${dateText()}: ${e.title}. ${e.text}`, 'history');
-    HOOKS.notify({ title: e.title, text: e.text, history: true });
+    log(dateText() + ': ' + t(e.title) + '. ' + t(e.text), 'history');
+    HOOKS.notify({ title: t(e.title), text: t(e.text), history: true });
   }
 }
 

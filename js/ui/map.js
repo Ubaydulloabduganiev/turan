@@ -84,7 +84,8 @@ function initMap() {
     const l = named[name], x = l.reduce((t, s) => t + s.x, 0) / l.length, y = l.reduce((t, s) => t + s.y, 0) / l.length;
     const water = l[0].kind === 'water';
     const t = svgEl('text', { x, y, class: 'geo-label' + (water ? ' sea' : ''), 'text-anchor': 'middle', 'font-size': water ? 19 : 13 }, layers.labels);
-    t.textContent = name;
+    t.textContent = geoName(name);
+    t.dataset.geo = name;
   }
   bindMapInput();
   fitMap();
@@ -160,7 +161,7 @@ function renderCities() {
     // Zoomed far out, only the great cities keep their names
     if (UI.k < 1.15 || isCap || p.pop >= 20) {
       const label = svgEl('text', { y: 19, 'text-anchor': 'middle', class: 'city-label' + (isCap ? ' cap' : ''), 'font-size': isCap ? 13.5 : p.pop >= 25 ? 12 : 10.5 }, g);
-      label.textContent = p.city;
+      label.textContent = cityOf(p);
     }
     if (p.siege) {
       const s = svgEl('g', { transform: 'translate(-17 -12)', class: 'siege-mark' }, g);
@@ -351,29 +352,29 @@ function mapClick(el, right) {
 }
 
 function hoverAt(e) {
-  const t = targetOf(e.target);
-  if (!G || (!t.prov && !t.army)) return hideTip();
+  const tg = targetOf(e.target);
+  if (!G || (!tg.prov && !tg.army)) return hideTip();
   let html = '';
-  if (t.army) {
-    const a = G.armies[t.army];
+  if (tg.army) {
+    const a = G.armies[tg.army];
     if (!a) return hideTip();
     const men = a.units.reduce((n, u) => n + u.men, 0);
-    html = `<b>${a.general ? a.general.name : 'Army of ' + FACTIONS[a.owner].name}</b><br>${FACTIONS[a.owner].name} · ${a.units.length} units · ${men} men`;
+    html = `<b>${a.general ? pn(a.general.name) : t('Army of {nation}', { nation: fName(a.owner) })}</b><br>${fName(a.owner)} · ${t('{n} units', { n: a.units.length })} · ${t('{n} men', { n: men })}`;
     if (a.general) html += `<br><span class="stars">${stars(Math.min(a.general.cmd, 5))}</span>`;
-    if (a.owner !== G.player) html += `<br>Strength ${strengthWord(armyPower(a))}`;
+    if (a.owner !== G.player) html += `<br>${t('Strength')} ${strengthWord(armyPower(a))}`;
   } else {
-    const p = G.provinces[t.prov];
-    html = `<b>${p.city}</b> · ${p.name}<br>${FACTIONS[p.owner].full}<br>${TERRAIN[p.terrain].name} · ${Math.round(p.pop)}k people${p.silk ? ' · Silk Road' : ''}`;
-    if (p.siege) html += `<br><span class="bad">Besieged by ${FACTIONS[p.siege.by].name}</span>`;
+    const p = G.provinces[tg.prov];
+    html = `<b>${cityOf(p)}</b> · ${regionOf(p)}<br>${fFull(p.owner)}<br>${terrName(p.terrain)} · ${t('{n}k people', { n: Math.round(p.pop) })}${p.silk ? ' · ' + t('Silk Road') : ''}`;
+    if (p.siege) html += `<br><span class="bad">${t('Besieged by {nation}', { nation: fName(p.siege.by) })}</span>`;
     if (UI.reach && UI.reach[p.id]) {
       const r = UI.reach[p.id];
-      html += '<br>' + (r.kind === 'move' ? '<span class="good">Click to march here</span>' : r.kind === 'blocked' ? '<span class="warn">At peace: declare war to enter</span>' : '<span class="bad">Click to attack</span>');
+      html += '<br>' + (r.kind === 'move' ? `<span class="good">${t('Click to march here')}</span>` : r.kind === 'blocked' ? `<span class="warn">${t('At peace: declare war to enter')}</span>` : `<span class="bad">${t('Click to attack')}</span>`);
     }
   }
   showTip(html, e.clientX, e.clientY);
 }
 
-function strengthWord(p) { return p < 15 ? 'very weak' : p < 40 ? 'weak' : p < 80 ? 'moderate' : p < 140 ? 'strong' : 'very strong'; }
+function strengthWord(p) { return t(p < 15 ? 'very weak' : p < 40 ? 'weak' : p < 80 ? 'moderate' : p < 140 ? 'strong' : 'very strong'); }
 
 function showTip(html, x, y) {
   const t = document.getElementById('tooltip');

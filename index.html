@@ -22,11 +22,11 @@
     <div class="tb-stat" title="Nations still standing. Be the last one to win."><span class="ico crown"></span><b id="tb-nations">7</b></div>
     <div class="tb-stat" id="tb-date"></div>
     <div class="spacer"></div>
-    <button id="btn-court" title="Your court and the people of the age (K)">Court</button>
-    <button id="btn-dip" title="Diplomacy (D)">Diplomacy</button>
-    <button id="btn-realm" title="Overview of your realm (R)">Realm</button>
-    <button id="btn-chron" title="Chronicle of events (C)">Chronicle</button>
-    <button id="btn-menu" title="Menu (Esc)">Menu</button>
+    <button id="btn-court" title="Your court and the people of the age (K)" data-i18n>Court</button>
+    <button id="btn-dip" title="Diplomacy (D)" data-i18n>Diplomacy</button>
+    <button id="btn-realm" title="Overview of your realm (R)" data-i18n>Realm</button>
+    <button id="btn-chron" title="Chronicle of events (C)" data-i18n>Chronicle</button>
+    <button id="btn-menu" title="Menu (Esc)" data-i18n>Menu</button>
   </header>
 
   <aside id="panel" class="hidden"></aside>
@@ -34,8 +34,8 @@
   <div id="toasts"></div>
   <div id="hint"></div>
   <div id="advisor"></div>
-  <button id="btn-end" title="End turn (Enter)">End turn</button>
-  <div id="busy" class="hidden"><div class="spinner"></div><span id="busy-text">The rival khans are moving…</span><small id="busy-skip">Click to skip</small></div>
+  <button id="btn-end" title="End turn (Enter)" data-i18n>End turn</button>
+  <div id="busy" class="hidden"><div class="spinner"></div><span id="busy-text" data-i18n>The rival khans are moving…</span><small id="busy-skip" data-i18n>Click to skip</small></div>
 </div>
 
 <!-- Tactical battle -->
@@ -43,9 +43,9 @@
   <canvas id="bcanvas"></canvas>
   <div id="b-top"></div>
   <div id="b-cards"></div>
-  <div id="b-help">Drag to select · Right-click to move or attack · Shift + right-click to run · Space to pause</div>
+  <div id="b-help" data-i18n>Drag to select · Right-click to move or attack · Shift + right-click to run · Space to pause</div>
   <div id="b-cam" class="hidden"><button data-cam="left" title="Turn left (Q)">⟲</button><button data-cam="in" title="Zoom in">＋</button><button data-cam="out" title="Zoom out">－</button><button data-cam="right" title="Turn right (E)">⟳</button></div>
-  <div id="b-buttons"><button id="b-speed">Speed 1×</button><button id="b-retreat">Withdraw</button><button id="b-auto">Auto-resolve the rest</button></div>
+  <div id="b-buttons"><button id="b-speed">Speed 1×</button><button id="b-retreat" data-i18n>Withdraw</button><button id="b-auto" data-i18n>Auto-resolve the rest</button></div>
 </div>
 
 <canvas id="scene"></canvas>
@@ -55,30 +55,35 @@
   <div class="title-wrap">
     <div class="tile-band"></div>
     <h1>TURAN</h1>
-    <h2>Khanates of the Silk Road · 1370</h2>
-    <p class="lead">The Chagatai Ulus has broken apart. Seven crowns now contend for the cities of the Silk Road, from the Caspian to the Tian Shan. Only one will endure.</p>
+    <h2 data-i18n>Khanates of the Silk Road · 1370</h2>
+    <p class="lead" data-i18n>The Chagatai Ulus has broken apart. Seven crowns now contend for the cities of the Silk Road, from the Caspian to the Tian Shan. Only one will endure.</p>
     <div class="menu-buttons">
-      <button id="btn-new" class="big">New campaign</button>
-      <button id="btn-continue">Continue</button>
-      <button id="btn-load">Load game</button>
-      <button id="btn-help">How to play</button>
+      <button id="btn-new" class="big" data-i18n>New campaign</button>
+      <button id="btn-continue" data-i18n>Continue</button>
+      <button id="btn-load" data-i18n>Load game</button>
+      <button id="btn-help" data-i18n>How to play</button>
     </div>
     <div class="tile-band"></div>
+    <div id="title-langs"></div>
   </div>
   <div class="version">Turan · 1370</div>
 </div>
 
 <!-- Nation selection -->
 <div id="pick" class="screen hidden">
-  <h2 class="pick-h">Choose your nation</h2>
+  <h2 class="pick-h" data-i18n>Choose your nation</h2>
   <div id="pick-list"></div>
   <div id="pick-detail"></div>
-  <div class="pick-buttons"><button id="pick-back">Back</button><button id="pick-go" class="big">Begin campaign</button></div>
+  <div class="pick-buttons"><button id="pick-back" data-i18n>Back</button><button id="pick-go" class="big" data-i18n>Begin campaign</button></div>
 </div>
 
 <div id="modal-wrap" class="hidden"><div id="modal"></div></div>
-<div id="loading" class="hidden"><div class="spinner"></div><div>Painting the map of Turan…</div></div>
+<div id="loading" class="hidden"><div class="spinner"></div><div data-i18n>Painting the map of Turan…</div></div>
 
+<script src="js/i18n.js"></script>
+<script src="js/lang/uz.js"></script>
+<script src="js/lang/ru.js"></script>
+<script src="js/lang/tr.js"></script>
 <script src="js/data.js"></script>
 <script src="js/characters.js"></script>
 <script src="js/mapgen.js"></script>

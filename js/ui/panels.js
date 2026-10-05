@@ -2,7 +2,7 @@
 // The side panel: details and commands for the selected province or army, plus the top bar.
 
 const $ = id => document.getElementById(id);
-const fmt = n => Math.round(n).toLocaleString('en-US');
+const fmt = n => Math.round(n).toLocaleString(LANG === 'ru' ? 'ru-RU' : LANG === 'tr' ? 'tr-TR' : 'en-US');
 let unitPick = new Set(); // selected unit indexes in the army panel
 let lastArmyShown = null;
 
@@ -19,21 +19,21 @@ function refresh() {
 
 function renderTopbar() {
   const pl = G.player, st = G.factions[pl];
-  $('tb-faction').innerHTML = flagSVG(pl) + rulerPortrait(pl, 'tb-portrait') + `<span>${st.leader}<small>${FACTIONS[pl].title}</small></span>`;
+  $('tb-faction').innerHTML = flagSVG(pl) + rulerPortrait(pl, 'tb-portrait') + `<span>${pn(st.leader)}<small>${fTitle(pl)}</small></span>`;
   $('tb-gold').textContent = fmt(st.gold);
   const net = factionIncome(pl) - factionUpkeep(pl);
   $('tb-net').textContent = (net >= 0 ? '+' : '') + fmt(net);
   $('tb-net').className = net < 0 ? 'neg' : '';
-  $('tb-provs').textContent = provsOf(pl).length + ' provinces';
-  $('tb-nations').textContent = nationsLeft().length + ' nations left';
+  $('tb-provs').textContent = t('{n} provinces', { n: provsOf(pl).length });
+  $('tb-nations').textContent = t('{n} nations left', { n: nationsLeft().length });
   $('tb-date').textContent = dateText();
 }
 
 function orderInfo(o) {
-  if (o >= 80) return ['Content', 'good'];
-  if (o >= 55) return ['Calm', ''];
-  if (o >= 35) return ['Restless', 'warn'];
-  return ['Rebellious', 'bad'];
+  if (o >= 80) return [t('Content'), 'good'];
+  if (o >= 55) return [t('Calm'), ''];
+  if (o >= 35) return [t('Restless'), 'warn'];
+  return [t('Rebellious'), 'bad'];
 }
 
 function renderPanel() {
@@ -44,64 +44,62 @@ function renderPanel() {
   panel.classList.remove('hidden');
   UI.panelOpen = true;
   if (a) { if (lastArmyShown !== a.id) unitPick.clear(); lastArmyShown = a.id; }
-  panel.innerHTML = '<button class="close" data-act="close" title="Close (Esc)">×</button>' + (a ? armyPanel(a) : provincePanel(p));
+  panel.innerHTML = `<button class="close" data-act="close" title="${t('Close (Esc)')}">×</button>` + (a ? armyPanel(a) : provincePanel(p));
 }
 
 // ---------- Province ----------
 
 function provincePanel(p) {
   const mine = p.owner === G.player;
-  const F = FACTIONS[p.owner];
   const dist = distancesFrom(p.owner);
   const order = provinceOrder(p, dist);
   const [ow, oc] = orderInfo(order);
-  let h = `<div class="p-head">${flagSVG(p.owner)}<div><div class="p-title">${p.city}</div><div class="p-sub">${p.name} · ${F.full}</div></div></div>`;
+  let h = `<div class="p-head">${flagSVG(p.owner)}<div><div class="p-title">${cityOf(p)}</div><div class="p-sub">${regionOf(p)} · ${fFull(p.owner)}</div></div></div>`;
   h += `<div class="kv">
-    <div><span>Population</span>${fmt(p.pop * 1000)}</div>
-    <div><span>Terrain</span>${TERRAIN[p.terrain].name}</div>
-    <div><span>Walls</span>${BUILDINGS.walls.levels[p.b.walls]}</div>
-    <div><span>Silk Road</span>${p.silk ? 'Yes' : 'No'}</div>`;
-  if (mine) h += `<div><span>Public order</span><b class="${oc}">${Math.min(100, order)}% ${ow}</b></div><div><span>Income</span>${fmt(provinceIncome(p, order))}</div>`;
+    <div><span>${t('Population')}</span>${fmt(p.pop * 1000)}</div>
+    <div><span>${t('Terrain')}</span>${terrName(p.terrain)}</div>
+    <div><span>${t('Walls')}</span>${bLevel('walls', p.b.walls)}</div>
+    <div><span>${t('Silk Road')}</span>${p.silk ? t('Yes') : t('No')}</div>`;
+  if (mine) h += `<div><span>${t('Public order')}</span><b class="${oc}">${Math.min(100, order)}% ${ow}</b></div><div><span>${t('Income')}</span>${fmt(provinceIncome(p, order))}</div>`;
   h += '</div>';
-  if (p.siege) h += `<p class="note bad">Besieged by the ${FACTIONS[p.siege.by].full}. The city can hold out about ${siegeTurns(p)} more turn(s).</p>`;
-  if (mine && order < 35) h += `<p class="note bad">The people are close to revolt. Lower taxes, build a mosque or station troops here.</p>`;
-  if (p.sacked > 0) h += `<p class="note warn">The city is still recovering from a sack.</p>`;
+  if (p.siege) h += `<p class="note bad">${t('Besieged by: {faction}. The city can hold out for about {n} more turns.', { faction: fFull(p.siege.by), n: siegeTurns(p) })}</p>`;
+  if (mine && order < 35) h += `<p class="note bad">${t('The people are close to revolt. Lower taxes, build a mosque or station troops here.')}</p>`;
+  if (p.sacked > 0) h += `<p class="note warn">${t('The city is still recovering from a sack.')}</p>`;
 
   if (mine) {
-    h += '<div class="p-sec"><h4>Royal decrees</h4><div class="decrees">' + Object.keys(DECREES).map(k => {
+    h += `<div class="p-sec"><h4>${t('Royal decrees')}</h4><div class="decrees">` + Object.keys(DECREES).map(k => {
       const D = DECREES[k], why = decreeCheck(p, k);
-      const price = k === 'feast' ? `−${fmt(D.cost(p))} gold` : k === 'tax' ? `+${fmt(D.gain(p))} gold` : '+2 militia';
-      return `<button data-act="decree" data-k="${k}" ${why ? 'disabled' : ''} title="${why || D.desc}"><b>${D.name}</b><small>${price}</small></button>`;
-    }).join('') + '</div>' + (p.decree === G.turn ? '<p class="note">You have already issued a decree here this turn.</p>' : '') + '</div>';
+      const price = k === 'feast' ? t('−{n} gold', { n: fmt(D.cost(p)) }) : k === 'tax' ? t('+{n} gold', { n: fmt(D.gain(p)) }) : t('+2 militia');
+      return `<button data-act="decree" data-k="${k}" ${why ? 'disabled' : ''} title="${t(why || D.desc)}"><b>${t(D.name)}</b><small>${price}</small></button>`;
+    }).join('') + '</div>' + (p.decree === G.turn ? `<p class="note">${t('You have already issued a decree here this turn.')}</p>` : '') + '</div>';
 
-    h += '<div class="p-sec"><h4>Recruit</h4>';
+    h += `<div class="p-sec"><h4>${t('Recruit')}</h4>`;
     const list = recruitable(p);
-    if (!list.length) h += '<p class="note">Build barracks or stables to train troops here.</p>';
+    if (!list.length) h += `<p class="note">${t('Build barracks or stables to train troops here.')}</p>`;
     else {
-      h += '<div class="recruit-grid">' + list.map(t => {
-        const d = UNITS[t], ok = G.factions[p.owner].gold >= d.cost && p.queue.length < QUEUE_MAX;
-        return `<div class="rcard ${ok ? '' : 'off'}" data-act="recruit" data-t="${t}" title="${unitTip(t)}">${unitSVG(t, p.owner)}<div>${d.name}</div><div class="c">${d.cost}g</div></div>`;
+      h += '<div class="recruit-grid">' + list.map(u => {
+        const d = UNITS[u], ok = G.factions[p.owner].gold >= d.cost && p.queue.length < QUEUE_MAX;
+        return `<div class="rcard ${ok ? '' : 'off'}" data-act="recruit" data-t="${u}" title="${unitTip(u)}">${unitSVG(u, p.owner)}<div>${uName(u)}</div><div class="c">${t('{n}g', { n: d.cost })}</div></div>`;
       }).join('') + '</div>';
     }
     if (p.queue.length) {
-      h += '<p class="note">In training (ready next turn, two at a time). Click to cancel:</p><div class="queue">' +
-        p.queue.map((t, i) => `<div class="rcard" data-act="unqueue" data-i="${i}" title="Cancel and refund">${unitSVG(t, p.owner)}<div>${UNITS[t].name}</div></div>`).join('') + '</div>';
+      h += `<p class="note">${t('In training (ready next turn, two at a time). Click to cancel:')}</p><div class="queue">` +
+        p.queue.map((u, i) => `<div class="rcard" data-act="unqueue" data-i="${i}" title="${t('Cancel and refund')}">${unitSVG(u, p.owner)}<div>${uName(u)}</div></div>`).join('') + '</div>';
     }
     h += '</div>';
 
-    h += '<div class="p-sec"><h4>Buildings</h4>';
+    h += `<div class="p-sec"><h4>${t('Buildings')}</h4>`;
     if (p.build) {
-      const k = p.build.key;
-      h += `<p class="note">Building <b>${buildName(p)}</b>: ${p.build.turns} turn(s) left <button class="small" data-act="cancelbuild">Cancel</button></p>`;
+      h += `<p class="note">${t('Building {what}: {n} turns left', { what: `<b>${buildName(p)}</b>`, n: p.build.turns })} <button class="small" data-act="cancelbuild">${t('Cancel')}</button></p>`;
     }
     for (const k of BUILDING_ORDER) {
       const B = BUILDINGS[k], lvl = p.b[k], next = lvl + 1;
       let right = '';
       if (next <= 3) {
         const why = buildCheck(p, k);
-        right = `<button class="small" data-act="build" data-k="${k}" ${why ? 'disabled' : ''} title="${why || B.desc}">${B.levels[next]} · ${B.cost[next]}g · ${B.turns[next]}t</button>`;
+        right = `<button class="small" data-act="build" data-k="${k}" ${why ? 'disabled' : ''} title="${t(why || B.desc)}">${bLevel(k, next)} · ${t('{n}g', { n: B.cost[next] })} · ${t('{n}t', { n: B.turns[next] })}</button>`;
       }
-      h += `<div class="bld"><div>${B.name} <span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('')}</span><div class="lv">${lvl ? B.levels[lvl] : 'Not built'}</div></div>${right}</div>`;
+      h += `<div class="bld"><div>${bName(k)} <span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('')}</span><div class="lv">${lvl ? bLevel(k, lvl) : t('Not built')}</div></div>${right}</div>`;
     }
     h += '</div>';
   } else {
@@ -111,7 +109,7 @@ function provincePanel(p) {
   h += wonderSection(p);
   const here = armiesIn(p.id);
   if (here.length) {
-    h += '<div class="p-sec"><h4>Armies here</h4>' + here.map(a => armyRow(a)).join('') + '</div>';
+    h += `<div class="p-sec"><h4>${t('Armies here')}</h4>` + here.map(a => armyRow(a)).join('') + '</div>';
   }
   return h;
 }
@@ -125,7 +123,7 @@ function estimateDefence(p) {
   return s;
 }
 function chanceWord(ratio) {
-  return ratio > 2 ? ['Easy victory', 'good'] : ratio > 1.3 ? ['Good odds', 'good'] : ratio > 0.9 ? ['Even fight', 'warn'] : ['Risky', 'bad'];
+  return ratio > 2 ? [t('Easy victory'), 'good'] : ratio > 1.3 ? [t('Good odds'), 'good'] : ratio > 0.9 ? [t('Even fight'), 'warn'] : [t('Risky'), 'bad'];
 }
 
 function foreignActions(p) {
@@ -133,54 +131,54 @@ function foreignActions(p) {
   let h = '';
   // Who rules here
   if (o === 'rebels') {
-    h += `<div class="p-sec"><h4>Independent city</h4><p class="note">Local lords hold ${p.city} and answer to no khan. There is no one to bargain with: take it by force.</p></div>`;
+    h += `<div class="p-sec"><h4>${t('Independent city')}</h4><p class="note">${t('Local lords hold {city} and answer to no khan. There is no one to bargain with: take it by force.', { city: cityOf(p) })}</p></div>`;
   } else {
     const r = rel(pl, o), st = G.factions[o];
-    h += `<div class="p-sec"><h4>Ruler</h4><div class="ruler">${rulerPortrait(o, 'p-portrait')}<div><b>${st.leader}</b><div class="p-sub">${FACTIONS[o].title}</div>
-      <div>${statusChips(pl, o)} <span style="color:${attitudeColor(r.att)}">${attitudeWord(r.att)}</span> towards you</div></div></div></div>`;
+    h += `<div class="p-sec"><h4>${t('Ruler')}</h4><div class="ruler">${rulerPortrait(o, 'p-portrait')}<div><b>${pn(st.leader)}</b><div class="p-sub">${fTitle(o)}</div>
+      <div>${statusChips(pl, o)} <span style="color:${attitudeColor(r.att)}">${attitudeWord(r.att)}</span> ${t('towards you')}</div></div></div></div>`;
   }
   // Attack
   const def = estimateDefence(p);
   const opts = armiesOf(pl).map(a => ({ a, r: a.moves > 0 && !a.besieging ? reachable(a)[p.id] : null })).filter(x => x.r && x.r.kind !== 'move');
-  h += `<div class="p-sec"><h4>Attack ${p.city}</h4>`;
+  h += `<div class="p-sec"><h4>${t('Attack {city}', { city: cityOf(p) })}</h4>`;
   if (opts.length) {
     h += '<div class="choices">' + opts.map(({ a, r }) => {
       const [w, c] = chanceWord(armyPower(a) / (def + 1));
-      const name = a.general ? a.general.name : 'Army at ' + G.provinces[a.prov].city;
-      const how = p.b.walls && !armiesIn(p.id).some(x => x.owner === o) ? 'besiege the city' : 'attack';
-      return `<button data-act="attackwith" data-id="${a.id}" class="${r.kind === 'blocked' ? 'warwarn' : ''}"><b>${name}</b><small>${a.units.length} units · ${how}${r.kind === 'blocked' ? ' · means war' : ''} · <span class="${c}">${w}</span></small></button>`;
+      const name = a.general ? pn(a.general.name) : t('Army at {city}', { city: cityOf(G.provinces[a.prov]) });
+      const how = p.b.walls && !armiesIn(p.id).some(x => x.owner === o) ? t('besiege the city') : t('attack');
+      return `<button data-act="attackwith" data-id="${a.id}" class="${r.kind === 'blocked' ? 'warwarn' : ''}"><b>${name}</b><small>${t('{n} units', { n: a.units.length })} · ${how}${r.kind === 'blocked' ? ' · ' + t('means war') : ''} · <span class="${c}">${w}</span></small></button>`;
     }).join('') + '</div>';
   } else {
     const near = armiesOf(pl).filter(a => !a.besieging).sort((x, y) => Math.hypot(G.provinces[x.prov].x - p.x, G.provinces[x.prov].y - p.y) - Math.hypot(G.provinces[y.prov].x - p.x, G.provinces[y.prov].y - p.y))[0];
-    h += `<p class="note">None of your armies can reach ${p.city} this turn.</p>`;
-    if (near) h += `<div class="btnrow"><button data-act="selarmy" data-id="${near.id}">Select your nearest army (${G.provinces[near.prov].city})</button></div>`;
+    h += `<p class="note">${t('None of your armies can reach {city} this turn.', { city: cityOf(p) })}</p>`;
+    if (near) h += `<div class="btnrow"><button data-act="selarmy" data-id="${near.id}">${t('Select your nearest army ({city})', { city: cityOf(G.provinces[near.prov]) })}</button></div>`;
   }
-  h += `<p class="note">Defenders: ${def < 1 ? 'none to speak of' : strengthWord(def)}${p.b.walls ? ` · ${BUILDINGS.walls.levels[p.b.walls].toLowerCase()}` : ''}</p></div>`;
+  h += `<p class="note">${t('Defenders')}: ${def < 1 ? t('none to speak of') : strengthWord(def)}${p.b.walls ? ` · ${bLevel('walls', p.b.walls).toLowerCase()}` : ''}</p></div>`;
   // Diplomacy
   if (o !== 'rebels') {
     const r = rel(pl, o), gold = G.factions[pl].gold;
     const b = (type, label, extra = '', g = 0, dis = false) => `<button data-act="propose" data-type="${type}" data-g="${g}" ${dis ? 'disabled' : ''} class="${extra}">${label}</button>`;
     let btns = '';
     if (r.war) {
-      btns += b('peace', 'Offer peace') + b('peace', 'Peace + 500 gold', '', 500, gold < 500) + b('submit', 'Demand surrender');
+      btns += b('peace', t('Offer peace')) + b('peace', t('Peace + 500 gold'), '', 500, gold < 500) + b('submit', t('Demand surrender'));
     } else {
-      btns += r.trade ? b('cancelTrade', 'Cancel trade') : b('trade', 'Propose trade');
-      btns += r.alliance ? b('cancelAlliance', 'End alliance') : b('alliance', 'Propose alliance');
-      if (!r.married) btns += b('marriage', 'Arrange a marriage');
-      btns += b('tribute', `Demand tribute (~${fmt(tributeAmount(o))})`);
-      btns += b('submit', 'Demand submission');
-      btns += b('war', 'Declare war', 'danger');
+      btns += r.trade ? b('cancelTrade', t('Cancel trade')) : b('trade', t('Propose trade'));
+      btns += r.alliance ? b('cancelAlliance', t('End alliance')) : b('alliance', t('Propose alliance'));
+      if (!r.married) btns += b('marriage', t('Arrange a marriage'));
+      btns += b('tribute', t('Demand tribute (~{n})', { n: fmt(tributeAmount(o)) }));
+      btns += b('submit', t('Demand submission'));
+      btns += b('war', t('Declare war'), 'danger');
     }
-    btns += b('gift', 'Send 200 gold', '', 200, gold < 200) + b('gift', 'Send 1000 gold', '', 1000, gold < 1000);
-    h += `<div class="p-sec"><h4>Diplomacy with ${FACTIONS[o].name}</h4><div class="dipgrid">${btns}</div>`;
+    btns += b('gift', t('Send {n} gold', { n: 200 }), '', 200, gold < 200) + b('gift', t('Send {n} gold', { n: fmt(1000) }), '', 1000, gold < 1000);
+    h += `<div class="p-sec"><h4>${t('Diplomacy with {nation}', { nation: fName(o) })}</h4><div class="dipgrid">${btns}</div>`;
     if (UI.dipReply && UI.dipReply.f === o && UI.dipReply.t === G.turn) h += `<p class="reply ${UI.dipReply.ok ? 'good' : 'bad'}">“${UI.dipReply.text}”</p>`;
-    h += `<p class="note">“Demand submission” asks their ruler to hand you his whole realm without a fight. Only the weak and the beaten accept.</p></div>`;
+    h += `<p class="note">${t('“Demand submission” asks their ruler to hand you his whole realm without a fight. Only the weak and the beaten accept.')}</p></div>`;
   }
   return h;
 }
 
 function buildName(p) {
-  return p.build.key === 'wonder' ? WONDERS[p.build.id].name : BUILDINGS[p.build.key].levels[p.b[p.build.key] + 1];
+  return p.build.key === 'wonder' ? wName(p.build.id) : bLevel(p.build.key, p.b[p.build.key] + 1);
 }
 
 // The great monument that can rise in this city, if any
@@ -188,34 +186,35 @@ function wonderSection(p) {
   const id = wonderHere(p);
   if (!id) return '';
   const W = WONDERS[id];
-  let h = `<div class="p-sec wonder"><h4>Wonder of the age</h4><div class="w-name">${W.name}</div><p class="note">${W.desc}</p>`;
-  if (G.wonders && G.wonders[id]) h += `<p class="good">Standing in all its glory${p.owner === G.player ? '. Its blessing is yours.' : `. Its blessing belongs to the ${FACTIONS[p.owner].name}.`}</p>`;
-  else if (p.build && p.build.key === 'wonder') h += `<p class="warn">Under construction: ${p.build.turns} turn(s) left.</p>`;
-  else if (p.owner === G.player) { const why = wonderCheck(p); h += `<button class="big" data-act="wonder" ${why ? 'disabled' : ''} title="${why || ''}">Build it · ${fmt(W.cost)} gold · ${W.turns} turns</button>`; }
-  else h += '<p class="note">Take this city and you may build it.</p>';
+  let h = `<div class="p-sec wonder"><h4>${t('Wonder of the age')}</h4><div class="w-name">${wName(id)}</div><p class="note">${t(W.desc)}</p>`;
+  if (G.wonders && G.wonders[id]) h += `<p class="good">${p.owner === G.player ? t('Standing in all its glory. Its blessing is yours.') : t('Standing in all its glory. Its blessing belongs to: {nation}.', { nation: fName(p.owner) })}</p>`;
+  else if (p.build && p.build.key === 'wonder') h += `<p class="warn">${t('Under construction: {n} turns left.', { n: p.build.turns })}</p>`;
+  else if (p.owner === G.player) { const why = wonderCheck(p); h += `<button class="big" data-act="wonder" ${why ? 'disabled' : ''} title="${t(why || '')}">${t('Build it · {gold} gold · {n} turns', { gold: fmt(W.cost), n: W.turns })}</button>`; }
+  else h += `<p class="note">${t('Take this city and you may build it.')}</p>`;
   return h + '</div>';
 }
 
-function unitTip(t) {
-  const d = UNITS[t];
+function unitTip(u) {
+  const d = UNITS[u];
   const cls = { spear: 'Spear infantry, good against cavalry', inf: 'Heavy infantry', missile: 'Foot archers', cav: 'Shock cavalry', ha: 'Horse archers, strong on open steppe', siege: 'Siege engineers: halve the length of sieges and weaken walls in assaults' }[d.cls];
-  return `${d.name}: ${cls}. ${d.men} men, attack ${d.atk}${d.missile ? ', missiles ' + d.missile : ''}, defence ${d.def}, morale ${d.morale}. Upkeep ${unitUpkeep(t, FACTIONS[G.player].nomad)}/turn.${d.desc ? ' ' + d.desc : ''}`;
+  return `${uName(u)}: ${t(cls)}. ` + t('{men} men, attack {atk}, defence {def}, morale {morale}.', { men: d.men, atk: d.atk, def: d.def, morale: d.morale }) +
+    (d.missile ? ' ' + t('Missiles {n}.', { n: d.missile }) : '') + ' ' + t('Upkeep {n} per turn.', { n: unitUpkeep(u, FACTIONS[G.player].nomad) }) + (d.desc ? ' ' + t(d.desc) : '');
 }
 
 function armyRow(a) {
   const men = a.units.reduce((n, u) => n + u.men, 0);
-  const name = a.general ? a.general.name : (a.owner === G.player ? 'Army without a general' : 'Army');
-  const extra = a.owner === G.player ? `${a.units.length} units · ${men} men · ${a.moves ? a.moves + ' move' + (a.moves > 1 ? 's' : '') : 'no moves'}` : `${FACTIONS[a.owner].name} · ${a.units.length} units · ${strengthWord(armyPower(a))}`;
-  return `<div class="army-row" data-act="selarmy" data-id="${a.id}">${flagSVG(a.owner)}<div><div>${name}${a.besieging ? ' <span class="bad">(besieging)</span>' : ''}</div><div class="p-sub">${extra}</div></div></div>`;
+  const name = a.general ? pn(a.general.name) : (a.owner === G.player ? t('Army without a general') : t('Army'));
+  const extra = a.owner === G.player ? `${t('{n} units', { n: a.units.length })} · ${t('{n} men', { n: men })} · ${a.moves ? t('moves: {n}', { n: a.moves }) : t('no moves')}` : `${fName(a.owner)} · ${t('{n} units', { n: a.units.length })} · ${strengthWord(armyPower(a))}`;
+  return `<div class="army-row" data-act="selarmy" data-id="${a.id}">${flagSVG(a.owner)}<div><div>${name}${a.besieging ? ` <span class="bad">(${t('besieging')})</span>` : ''}</div><div class="p-sub">${extra}</div></div></div>`;
 }
 
 function statusChips(a, b) {
-  if (b === 'rebels') return '<span class="chip war">Hostile</span>';
+  if (b === 'rebels') return `<span class="chip war">${t('Hostile')}</span>`;
   const r = rel(a, b);
-  let h = r.war ? '<span class="chip war">War</span>' : '<span class="chip peace">Peace</span>';
-  if (r.alliance) h += '<span class="chip ally">Allied</span>';
-  if (r.trade) h += '<span class="chip trade">Trade</span>';
-  if (r.married) h += '<span class="chip wed">Marriage</span>';
+  let h = r.war ? `<span class="chip war">${t('War')}</span>` : `<span class="chip peace">${t('Peace')}</span>`;
+  if (r.alliance) h += `<span class="chip ally">${t('Allied')}</span>`;
+  if (r.trade) h += `<span class="chip trade">${t('Trade')}</span>`;
+  if (r.married) h += `<span class="chip wed">${t('Marriage')}</span>`;
   return h;
 }
 
@@ -225,39 +224,39 @@ function armyPanel(a) {
   const mine = a.owner === G.player, p = G.provinces[a.prov];
   const F = FACTIONS[a.owner];
   const g = a.general;
-  let h = `<div class="p-head">${g ? personPortrait(g.name, a.owner, g.age, 'p-portrait') : flagSVG(a.owner)}<div><div class="p-title">${g ? g.name : (mine ? 'Army' : F.adj + ' army')}</div>` +
-    `<div class="p-sub">${g ? `<span class="stars">${stars(Math.min(5, g.cmd))}</span> ${g.leader ? 'Ruler · ' : ''}age ${g.age}` : 'Led by a captain'}</div>` +
-    `<div class="p-sub">${F.full} · at ${p.city}</div></div></div>`;
+  let h = `<div class="p-head">${g ? personPortrait(g.name, a.owner, g.age, 'p-portrait') : flagSVG(a.owner)}<div><div class="p-title">${g ? pn(g.name) : (mine ? t('Army') : t('{nation} army', { nation: fAdj(a.owner) }))}</div>` +
+    `<div class="p-sub">${g ? `<span class="stars">${stars(Math.min(5, g.cmd))}</span> ${g.leader ? t('Ruler') + ' · ' : ''}${t('age {n}', { n: g.age })}` : t('Led by a captain')}</div>` +
+    `<div class="p-sub">${fFull(a.owner)} · ${cityOf(p)}</div></div></div>`;
   const men = a.units.reduce((n, u) => n + u.men, 0);
   if (!mine) {
-    h += `<p>${a.units.length} units, about ${fmt(Math.round(men / 50) * 50)} men. Strength: <b>${strengthWord(armyPower(a))}</b>.</p>`;
-    h += '<div class="ucards">' + a.units.map(u => `<div class="ucard" title="${UNITS[u.type].name}">${unitSVG(u.type, a.owner)}<div class="men">${UNITS[u.type].name.split(' ')[0]}</div></div>`).join('') + '</div>';
+    h += `<p>${t('{n} units, about {men} men. Strength: {s}.', { n: a.units.length, men: fmt(Math.round(men / 50) * 50), s: `<b>${strengthWord(armyPower(a))}</b>` })}</p>`;
+    h += '<div class="ucards">' + a.units.map(u => `<div class="ucard" title="${uName(u.type)}">${unitSVG(u.type, a.owner)}<div class="men">${uName(u.type).split(' ')[0]}</div></div>`).join('') + '</div>';
     if (a.owner !== 'rebels') h += `<div class="p-sec">${statusChips(G.player, a.owner)}</div>`;
     return h;
   }
-  h += `<div class="kv"><div><span>Units</span>${a.units.length} / ${GAME.MAX_ARMY}</div><div><span>Men</span>${fmt(men)}</div>
-    <div><span>Moves left</span>${a.moves} / ${armyMoves(a)}</div><div><span>Upkeep</span>${a.units.reduce((n, u) => n + unitUpkeep(u.type, F.nomad), 0)}</div></div>`;
+  h += `<div class="kv"><div><span>${t('Units')}</span>${a.units.length} / ${GAME.MAX_ARMY}</div><div><span>${t('Men')}</span>${fmt(men)}</div>
+    <div><span>${t('Moves left')}</span>${a.moves} / ${armyMoves(a)}</div><div><span>${t('Upkeep')}</span>${a.units.reduce((n, u) => n + unitUpkeep(u.type, F.nomad), 0)}</div></div>`;
   if (a.besieging && p.siege) {
-    h += `<p class="note warn">Besieging ${p.city}: turn ${p.siege.turns + 1}. The city should fall in about ${siegeTurns(p)} turn(s), or you can storm the walls now.</p>`;
-  } else if (a.moves > 0) h += `<p class="note">Click a highlighted province to march. Red means battle or siege.</p>`;
-  else h += `<p class="note">This army has marched as far as it can this turn.</p>`;
+    h += `<p class="note warn">${t('Besieging {city}: turn {turn}. The city should fall in about {n} turns, or you can storm the walls now.', { city: cityOf(p), turn: p.siege.turns + 1, n: siegeTurns(p) })}</p>`;
+  } else if (a.moves > 0) h += `<p class="note">${t('Click a highlighted province to march. Red means battle or siege.')}</p>`;
+  else h += `<p class="note">${t('This army has marched as far as it can this turn.')}</p>`;
 
-  h += '<div class="p-sec"><h4>Units</h4><div class="ucards">' + a.units.map((u, i) => {
+  h += `<div class="p-sec"><h4>${t('Units')}</h4><div class="ucards">` + a.units.map((u, i) => {
     const d = UNITS[u.type];
     return `<div class="ucard ${unitPick.has(i) ? 'sel' : ''}" data-act="pickunit" data-i="${i}" title="${unitTip(u.type)}">${unitSVG(u.type, a.owner)}` +
       `<div class="men">${u.men}</div><div class="bar"><div style="width:${Math.round(u.men / d.men * 100)}%"></div></div>${u.exp ? `<span class="exp">${'▲'.repeat(u.exp)}</span>` : ''}</div>`;
-  }).join('') + '</div><p class="note">Click units to select them for splitting or disbanding.</p></div>';
+  }).join('') + `</div><p class="note">${t('Click units to select them for splitting or disbanding.')}</p></div>`;
 
   const btns = [];
-  if (a.besieging && p.siege) btns.push('<button data-act="assault" class="danger">Storm the walls</button>');
-  if (p.siege && p.owner === G.player) btns.push('<button data-act="sally" class="danger">Sally out</button>');
-  if (unitPick.size && unitPick.size < a.units.length) btns.push(`<button data-act="split">Split off ${unitPick.size}</button>`);
-  if (unitPick.size && ![...unitPick].some(i => a.units[i].type === 'general')) btns.push(`<button data-act="disband">Disband ${unitPick.size}</button>`);
+  if (a.besieging && p.siege) btns.push(`<button data-act="assault" class="danger">${t('Storm the walls')}</button>`);
+  if (p.siege && p.owner === G.player) btns.push(`<button data-act="sally" class="danger">${t('Sally out')}</button>`);
+  if (unitPick.size && unitPick.size < a.units.length) btns.push(`<button data-act="split">${t('Split off {n}', { n: unitPick.size })}</button>`);
+  if (unitPick.size && ![...unitPick].some(i => a.units[i].type === 'general')) btns.push(`<button data-act="disband">${t('Disband {n}', { n: unitPick.size })}</button>`);
   const others = armiesIn(a.prov).filter(o => o !== a && o.owner === a.owner);
-  for (const o of others) btns.push(`<button data-act="merge" data-id="${o.id}">Merge with ${o.general ? o.general.name : 'army'} (${o.units.length})</button>`);
-  if (!a.general) btns.push(`<button data-act="appoint" ${G.factions[a.owner].gold < GENERAL_COST ? 'disabled' : ''}>Appoint a general · ${GENERAL_COST}g</button>`);
-  if (!raidCheck(a)) btns.unshift(`<button data-act="raid" class="danger" title="Burn villages and seize their grain and silver. The army cannot move again this turn.">Plunder the countryside · +${fmt(raidGold(a))} gold</button>`);
-  btns.push(`<button data-act="selprov" data-id="${a.prov}">Province: ${p.city}</button>`);
+  for (const o of others) btns.push(`<button data-act="merge" data-id="${o.id}">${t('Merge with {name} ({n})', { name: o.general ? pn(o.general.name) : t('army'), n: o.units.length })}</button>`);
+  if (!a.general) btns.push(`<button data-act="appoint" ${G.factions[a.owner].gold < GENERAL_COST ? 'disabled' : ''}>${t('Appoint a general · {n}g', { n: GENERAL_COST })}</button>`);
+  if (!raidCheck(a)) btns.unshift(`<button data-act="raid" class="danger" title="${t('Burn villages and seize their grain and silver. The army cannot move again this turn.')}">${t('Plunder the countryside · +{n} gold', { n: fmt(raidGold(a)) })}</button>`);
+  btns.push(`<button data-act="selprov" data-id="${a.prov}">${t('Province: {city}', { city: cityOf(p) })}</button>`);
   h += '<div class="btnrow">' + btns.join('') + '</div>';
   return h;
 }
@@ -284,14 +283,14 @@ $('panel').addEventListener('click', async e => {
     case 'split': { const b = splitArmy(a, [...unitPick]); unitPick.clear(); if (b) UI.selArmy = b.id; break; }
     case 'disband': {
       const idx = [...unitPick].sort((x, y) => y - x);
-      if (!(await confirmBox('Disband units', `Send ${idx.length} unit(s) home for good? This cannot be undone.`))) return;
+      if (!(await confirmBox(t('Disband units'), t('Send {n} units home for good? This cannot be undone.', { n: idx.length })))) return;
       for (const i of idx) disbandUnit(a, i);
       unitPick.clear();
       break;
     }
     case 'merge': err = mergeArmies(a, G.armies[el.dataset.id]); unitPick.clear(); break;
-    case 'appoint': err = appointGeneral(a); if (!err) toast('A new general', `${a.general.name} takes command of the army.`, 'good'); break;
-    case 'decree': err = issueDecree(p, el.dataset.k); if (!err) toast(DECREES[el.dataset.k].name, `${p.city} obeys your decree.`, 'good'); break;
+    case 'appoint': err = appointGeneral(a); if (!err) toast(t('A new general'), t('{name} takes command of the army.', { name: pn(a.general.name) }), 'good'); break;
+    case 'decree': err = issueDecree(p, el.dataset.k); if (!err) toast(t(DECREES[el.dataset.k].name), t('{city} obeys your decree.', { city: cityOf(p) }), 'good'); break;
     case 'attackwith': {
       const army = G.armies[el.dataset.id];
       UI.selArmy = army.id;
@@ -301,7 +300,7 @@ $('panel').addEventListener('click', async e => {
     }
     case 'propose': {
       const f = p.owner, type = el.dataset.type, gold = +el.dataset.g;
-      if (type === 'war' && !(await confirmBox('Declare war?', `Your envoys will carry a declaration of war to ${G.factions[f].leader}.${rel(G.player, f).alliance || rel(G.player, f).truce > 0 ? ' Breaking a treaty will make every ruler trust you less.' : ''}`, 'Declare war', 'Not yet'))) return;
+      if (type === 'war' && !(await confirmBox(t('Declare war?'), t('Your envoys will carry a declaration of war to {ruler}.', { ruler: pn(G.factions[f].leader) }) + (rel(G.player, f).alliance || rel(G.player, f).truce > 0 ? ' ' + t('Breaking a treaty will make every ruler trust you less.') : ''), t('Declare war'), t('Not yet')))) return;
       const res = propose(f, type, gold);
       UI.dipReply = { f, text: res.text, ok: res.ok, t: G.turn };
       if (type === 'submit' && res.ok) { UI.selProv = p.id; }
@@ -310,11 +309,11 @@ $('panel').addEventListener('click', async e => {
       return;
     }
     case 'assault': await doAssault(a.prov); return;
-    case 'raid': { const r = raid(a); if (r.why) err = r.why; else toast('Plunder', `Your army returns laden with loot: ${fmt(r.gold)} gold.`, 'good'); break; }
-    case 'wonder': err = startWonder(p); if (!err) toast('The work begins', `Masons gather in ${p.city} to raise the ${WONDERS[p.build.id].name}.`, 'good'); break;
+    case 'raid': { const r = raid(a); if (r.why) err = r.why; else toast(t('Plunder'), t('Your army returns laden with loot: {n} gold.', { n: fmt(r.gold) }), 'good'); break; }
+    case 'wonder': err = startWonder(p); if (!err) toast(t('The work begins'), t('Masons gather in {city} to raise the {wonder}.', { city: cityOf(p), wonder: wName(p.build.id) }), 'good'); break;
     case 'sally': await doSally(a.prov); return;
   }
-  if (err) toast('Cannot do that', err, 'bad');
+  if (err) toast(t('Cannot do that'), t(err), 'bad');
   refresh();
 });
 

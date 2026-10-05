@@ -32,7 +32,7 @@ const pick = list => list[Math.floor(rng() * list.length)];
 const clampN = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 
 function dateText(turn = G.turn) {
-  return GAME.SEASONS[turn % 2] + ' ' + (GAME.START_YEAR + Math.floor(turn / 2));
+  return t(GAME.SEASONS[turn % 2]) + ' ' + (GAME.START_YEAR + Math.floor(turn / 2));
 }
 const year = () => GAME.START_YEAR + Math.floor(G.turn / 2);
 
@@ -127,7 +127,7 @@ function newGame(player, seed) {
   rel('kart', 'temur').att = 10;
   for (const a of PLAYABLE) for (const b of PLAYABLE) if (a < b && !rel(a, b).war && rel(a, b).att >= 0) rel(a, b).trade = (a === 'temur' && b === 'kart');
   for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
-  log(`${dateText()}: you take command of the ${FACTIONS[player].full}.`);
+  log(dateText() + ': ' + t('you take command of the {nation}.', { nation: fFull(player) }));
   runEvents();
   return G;
 }
@@ -261,8 +261,8 @@ function checkFactionAlive(f) {
   G.factions[f].alive = false;
   for (const a of armiesOf(f)) delete G.armies[a.id];
   for (const g of PLAYABLE) if (g !== f) { const r = rel(f, g); r.war = false; r.alliance = false; r.trade = false; }
-  log(`The ${FACTIONS[f].full} has been destroyed.`, 'big');
-  HOOKS.notify({ title: FACTIONS[f].full + ' destroyed', text: `The last lands of the ${FACTIONS[f].full} have fallen.` });
+  log(t('The {nation} has been destroyed.', { nation: fFull(f) }), 'big');
+  HOOKS.notify({ title: t('{nation} destroyed', { nation: fFull(f) }), text: t('The last lands of the {nation} have fallen.', { nation: fFull(f) }) });
 }
 
 // ---------- Save / load ----------

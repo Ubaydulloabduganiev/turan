@@ -379,3 +379,10 @@ table.dip svg { width: 24px; height: 29px; vertical-align: middle; }
 .pc-meta { font-size: 13px; color: var(--muted); }
 .pc-bio { font-size: 14px; margin-top: 4px; }
 @media (max-width: 760px) { .with-portrait { flex-direction: column; align-items: center; } #tb-faction .tb-portrait { display: none; } }
+
+/* ---------- Languages ---------- */
+.langs { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 14px 0 4px; }
+.langs button { min-width: 0; padding: 6px 14px; font-size: 13px; letter-spacing: 0.06em; }
+#title-langs .langs { margin-top: 18px; }
+.pick-ruler { display: flex; gap: 16px; align-items: center; margin-bottom: 10px; }
+.pick-ruler .portrait { width: 92px; height: 115px; flex: none; }

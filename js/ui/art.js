@@ -50,6 +50,6 @@ function unitSVG(type, f) {
 function stars(n) { return '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n)); }
 
 function attitudeWord(att) {
-  return att >= 50 ? 'Devoted' : att >= 20 ? 'Friendly' : att > -20 ? 'Neutral' : att > -50 ? 'Hostile' : 'Bitter enemy';
+  return t(att >= 50 ? 'Devoted' : att >= 20 ? 'Friendly' : att > -20 ? 'Neutral' : att > -50 ? 'Hostile' : 'Bitter enemy');
 }
 function attitudeColor(att) { return att >= 20 ? '#5aa55a' : att > -20 ? '#c9b25a' : '#c84a3a'; }

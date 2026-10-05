@@ -9,7 +9,7 @@ function advisorTips() {
   for (const a of armiesOf(pl)) {
     if (a.besieging) {
       const b = assaultBattle(a.prov, pl);
-      if (b && battleOdds(b) > 0.65) tips.push({ score: 90, text: `Storm the walls of ${G.provinces[a.prov].city}: your army is strong enough.`, army: a.id });
+      if (b && battleOdds(b) > 0.65) tips.push({ score: 90, text: t('Storm the walls of {city}: your army is strong enough.', { city: cityOf(G.provinces[a.prov]) }), army: a.id });
       continue;
     }
     if (a.moves <= 0) continue;
@@ -20,43 +20,43 @@ function advisorTips() {
       const ratio = armyPower(a) / (estimateDefence(p) + 1);
       if (ratio < 1.4) continue;
       const score = 40 + Math.min(40, p.pop) + (p.silk ? 10 : 0) + Math.min(20, ratio * 4);
-      if (!best || score > best.score) best = { score, text: `Attack ${p.city}${p.owner === 'rebels' ? ', an independent city,' : ''} with ${a.general ? a.general.name : 'your army at ' + G.provinces[a.prov].city}. The odds are good.`, prov: pid };
+      if (!best || score > best.score) best = { score, text: t(p.owner === 'rebels' ? 'Attack {city}, an independent city, with {army}. The odds are good.' : 'Attack {city} with {army}. The odds are good.', { city: cityOf(p), army: a.general ? pn(a.general.name) : t('your army at {city}', { city: cityOf(G.provinces[a.prov]) }) }), prov: pid };
     }
   }
   if (best) tips.push(best);
   // Plunder from armies standing in enemy land
-  for (const a of armiesOf(pl)) if (!raidCheck(a)) { tips.push({ score: 60, text: `Your army at ${G.provinces[a.prov].city} can plunder the countryside for ${fmt(raidGold(a))} gold.`, army: a.id }); break; }
+  for (const a of armiesOf(pl)) if (!raidCheck(a)) { tips.push({ score: 60, text: t('Your army at {city} can plunder the countryside for {n} gold.', { city: cityOf(G.provinces[a.prov]), n: fmt(raidGold(a)) }), army: a.id }); break; }
   // A wonder within reach
-  for (const id in WONDERS) { const p = G.provinces[WONDERS[id].prov]; if (p.owner === pl && !wonderCheck(p)) { tips.push({ score: 58, text: `You can afford to raise the ${WONDERS[id].name} in ${p.city}.`, prov: p.id }); break; } }
+  for (const id in WONDERS) { const p = G.provinces[WONDERS[id].prov]; if (p.owner === pl && !wonderCheck(p)) { tips.push({ score: 58, text: t('You can afford to raise the {wonder} in {city}.', { wonder: wName(id), city: cityOf(p) }), prov: p.id }); break; } }
   // Weak rivals may kneel
   for (const f of PLAYABLE) {
     if (f === pl || !G.factions[f].alive) continue;
     if (dealValue(pl, f, 'submit') > 0) {
       const p = provsOf(f)[0];
-      tips.push({ score: 95, text: `The ${FACTIONS[f].name} is broken. Demand that ${G.factions[f].leader} submit to you.`, prov: p && p.id });
+      tips.push({ score: 95, text: t('The {nation} is broken. Demand that {ruler} submit to you.', { nation: fName(f), ruler: pn(G.factions[f].leader) }), prov: p && p.id });
     }
     const r = rel(pl, f);
     if (r.war && factionPower(f) > factionPower(pl) * 1.5 && dealValue(pl, f, 'peace') > -15)
-      tips.push({ score: 70, text: `The ${FACTIONS[f].name} is stronger than us. Consider offering peace.`, prov: (provsOf(f)[0] || {}).id });
+      tips.push({ score: 70, text: t('The {nation} is stronger than us. Consider offering peace.', { nation: fName(f) }), prov: (provsOf(f)[0] || {}).id });
   }
   // Unhappy cities
   for (const p of provsOf(pl)) {
     const o = provinceOrder(p, dist);
-    if (o < 40) tips.push({ score: 85 - o, text: `${p.city} is restless (${o}% order). Hold a feast there or lower taxes.`, prov: p.id });
+    if (o < 40) tips.push({ score: 85 - o, text: t('{city} is restless ({n}% order). Hold a feast there or lower taxes.', { city: cityOf(p), n: o }), prov: p.id });
   }
   // Money to spend
   const income = factionIncome(pl), upkeep = factionUpkeep(pl);
-  if (income - upkeep < 0) tips.push({ score: 80, text: `We spend more than we earn. Build bazaars, raise taxes or send some troops home.`, realm: true });
+  if (income - upkeep < 0) tips.push({ score: 80, text: t('We spend more than we earn. Build bazaars, raise taxes or send some troops home.'), realm: true });
   if (st.gold > 1000) {
     const idle = provsOf(pl).filter(p => !p.build && !buildCheck(p, 'market')).sort((a, b) => b.pop - a.pop)[0];
-    if (idle) tips.push({ score: 50, text: `The treasury is full. Build a ${BUILDINGS.market.levels[idle.b.market + 1]} in ${idle.city} for more gold.`, prov: idle.id });
+    if (idle) tips.push({ score: 50, text: t('The treasury is full. Build a {building} in {city} for more gold.', { building: bLevel('market', idle.b.market + 1), city: cityOf(idle) }), prov: idle.id });
     if (upkeep < income * 0.5) {
       const cap = G.provinces[st.capital];
-      if (cap && cap.owner === pl) tips.push({ score: 55, text: `We can afford a bigger army. Recruit soldiers in ${cap.city}.`, prov: cap.id });
+      if (cap && cap.owner === pl) tips.push({ score: 55, text: t('We can afford a bigger army. Recruit soldiers in {city}.', { city: cityOf(cap) }), prov: cap.id });
     }
   }
   tips.sort((a, b) => b.score - a.score);
-  if (!tips.length) tips.push({ text: 'All is quiet, your majesty. End the turn when you are ready.' });
+  if (!tips.length) tips.push({ text: t('All is quiet, your majesty. End the turn when you are ready.') });
   return tips.slice(0, 3);
 }
 
@@ -71,10 +71,10 @@ function renderAdvisor() {
   if (m) {
     const left = m.deadline - G.turn;
     const where = m.type === 'conquer' || m.type === 'build' ? m.target : m.type === 'wonder' ? WONDERS[m.target].prov : null;
-    mission = `<div class="mission ${where ? 'link' : ''}" data-mission="${where || ''}"><div class="m-head">Council request · ${left <= 0 ? 'last turn' : left + ' turn' + (left > 1 ? 's' : '') + ' left'}</div>${m.text}<div class="m-reward">Reward: ${fmt(m.reward)} gold</div></div>`;
+    mission = `<div class="mission ${where ? 'link' : ''}" data-mission="${where || ''}"><div class="m-head">${t('Council request')} · ${left <= 0 ? t('last turn') : t('turns left: {n}', { n: left })}</div>${m.text}<div class="m-reward">${t('Reward: {n} gold', { n: fmt(m.reward) })}</div></div>`;
   }
-  box.innerHTML = `<div class="adv-head" data-adv="toggle"><span>Your vizier advises</span><span>${advisorOpen ? '–' : '+'}</span></div>` +
-    (advisorOpen ? mission + tips.map((t, i) => `<div class="tip ${t.prov || t.army || t.realm ? 'link' : ''}" data-adv="${i}">${t.text}</div>`).join('') : '');
+  box.innerHTML = `<div class="adv-head" data-adv="toggle"><span>${t('Your vizier advises')}</span><span>${advisorOpen ? '–' : '+'}</span></div>` +
+    (advisorOpen ? mission + tips.map((tp, i) => `<div class="tip ${tp.prov || tp.army || tp.realm ? 'link' : ''}" data-adv="${i}">${tp.text}</div>`).join('') : '');
 }
 
 $('advisor').addEventListener('click', e => {
