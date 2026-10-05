@@ -11,6 +11,7 @@ function refresh() {
   if (UI.selArmy && !G.armies[UI.selArmy]) UI.selArmy = null;
   renderMap();
   renderTopbar();
+  if (!turnBusy && !modalOpen && !G.over) checkMission();
   renderPanel();
   updateHint();
   renderAdvisor();
@@ -91,7 +92,7 @@ function provincePanel(p) {
     h += '<div class="p-sec"><h4>Buildings</h4>';
     if (p.build) {
       const k = p.build.key;
-      h += `<p class="note">Building <b>${BUILDINGS[k].levels[p.b[k] + 1]}</b>: ${p.build.turns} turn(s) left <button class="small" data-act="cancelbuild">Cancel</button></p>`;
+      h += `<p class="note">Building <b>${buildName(p)}</b>: ${p.build.turns} turn(s) left <button class="small" data-act="cancelbuild">Cancel</button></p>`;
     }
     for (const k of BUILDING_ORDER) {
       const B = BUILDINGS[k], lvl = p.b[k], next = lvl + 1;
@@ -107,6 +108,7 @@ function provincePanel(p) {
     h += foreignActions(p);
   }
 
+  h += wonderSection(p);
   const here = armiesIn(p.id);
   if (here.length) {
     h += '<div class="p-sec"><h4>Armies here</h4>' + here.map(a => armyRow(a)).join('') + '</div>';
@@ -177,6 +179,23 @@ function foreignActions(p) {
   return h;
 }
 
+function buildName(p) {
+  return p.build.key === 'wonder' ? WONDERS[p.build.id].name : BUILDINGS[p.build.key].levels[p.b[p.build.key] + 1];
+}
+
+// The great monument that can rise in this city, if any
+function wonderSection(p) {
+  const id = wonderHere(p);
+  if (!id) return '';
+  const W = WONDERS[id];
+  let h = `<div class="p-sec wonder"><h4>Wonder of the age</h4><div class="w-name">${W.name}</div><p class="note">${W.desc}</p>`;
+  if (G.wonders && G.wonders[id]) h += `<p class="good">Standing in all its glory${p.owner === G.player ? '. Its blessing is yours.' : `. Its blessing belongs to the ${FACTIONS[p.owner].name}.`}</p>`;
+  else if (p.build && p.build.key === 'wonder') h += `<p class="warn">Under construction: ${p.build.turns} turn(s) left.</p>`;
+  else if (p.owner === G.player) { const why = wonderCheck(p); h += `<button class="big" data-act="wonder" ${why ? 'disabled' : ''} title="${why || ''}">Build it · ${fmt(W.cost)} gold · ${W.turns} turns</button>`; }
+  else h += '<p class="note">Take this city and you may build it.</p>';
+  return h + '</div>';
+}
+
 function unitTip(t) {
   const d = UNITS[t];
   const cls = { spear: 'Spear infantry, good against cavalry', inf: 'Heavy infantry', missile: 'Foot archers', cav: 'Shock cavalry', ha: 'Horse archers, strong on open steppe', siege: 'Siege engineers: halve the length of sieges and weaken walls in assaults' }[d.cls];
@@ -237,6 +256,7 @@ function armyPanel(a) {
   const others = armiesIn(a.prov).filter(o => o !== a && o.owner === a.owner);
   for (const o of others) btns.push(`<button data-act="merge" data-id="${o.id}">Merge with ${o.general ? o.general.name : 'army'} (${o.units.length})</button>`);
   if (!a.general) btns.push(`<button data-act="appoint" ${G.factions[a.owner].gold < GENERAL_COST ? 'disabled' : ''}>Appoint a general · ${GENERAL_COST}g</button>`);
+  if (!raidCheck(a)) btns.unshift(`<button data-act="raid" class="danger" title="Burn villages and seize their grain and silver. The army cannot move again this turn.">Plunder the countryside · +${fmt(raidGold(a))} gold</button>`);
   btns.push(`<button data-act="selprov" data-id="${a.prov}">Province: ${p.city}</button>`);
   h += '<div class="btnrow">' + btns.join('') + '</div>';
   return h;
@@ -290,6 +310,8 @@ $('panel').addEventListener('click', async e => {
       return;
     }
     case 'assault': await doAssault(a.prov); return;
+    case 'raid': { const r = raid(a); if (r.why) err = r.why; else toast('Plunder', `Your army returns laden with loot: ${fmt(r.gold)} gold.`, 'good'); break; }
+    case 'wonder': err = startWonder(p); if (!err) toast('The work begins', `Masons gather in ${p.city} to raise the ${WONDERS[p.build.id].name}.`, 'good'); break;
     case 'sally': await doSally(a.prov); return;
   }
   if (err) toast('Cannot do that', err, 'bad');

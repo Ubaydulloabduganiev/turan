@@ -123,6 +123,7 @@ function aiBuild(f) {
     want.push('farms');
     if (FACTIONS[f].nomad) want.push('stables', 'barracks'); else want.push('barracks', 'stables');
     if (p.id === G.factions[f].capital) want.unshift('walls');
+    if (wonderHere(p) && !wonderCheck(p) && budget > WONDERS[wonderHere(p)].cost + 1200) { budget -= WONDERS[wonderHere(p)].cost; startWonder(p); continue; }
     want.push('madrasa', 'walls');
     for (const k of want) {
       if (buildCheck(p, k)) continue;
@@ -258,6 +259,8 @@ async function aiArmies(f) {
       if (s > bs) { bs = s; best = p; bestPath = path; }
     }
     if (!best) {
+      // In enemy land with nothing to storm: plunder the countryside
+      if (!raidCheck(a) && rng() < 0.8) { raid(a); continue; }
       // Nothing to attack: drift towards the frontier
       if (here.owner === f && !frontier(here)) {
         const step = here.adj.find(n => G.provinces[n].owner === f && frontier(G.provinces[n]));

@@ -130,6 +130,7 @@ async function doEndTurn() {
   hideTip();
   $('busy').classList.remove('hidden');
   $('btn-end').disabled = true;
+  LIFE.skip = false;
   try {
     await endTurn(f => { $('busy-text').textContent = f === 'rebels' ? 'Independent lords stir…' : `The ${FACTIONS[f].full} is moving…`; renderMap(); });
   } catch (err) {
@@ -144,6 +145,10 @@ async function doEndTurn() {
   const st = G.factions[G.player];
   turnBanner(`Treasury ${fmt(st.gold)} gold · ${nationsLeft().length} nations remain`);
   await flushNotices();
+  checkMission();
+  await flushNotices();
+  const s = pickStory();
+  if (s) await showStory(s);
   refresh();
   checkOverUI();
 }
@@ -165,6 +170,7 @@ $('btn-continue').onclick = () => { if (loadGame('auto')) startLoaded(); };
 $('btn-load').onclick = () => openSaves('load');
 $('btn-help').onclick = openHelp;
 $('btn-end').onclick = doEndTurn;
+$('busy').onclick = () => { LIFE.skip = true; };
 $('btn-dip').onclick = () => !uiLocked() && openDiplomacy();
 $('btn-realm').onclick = () => !uiLocked() && openRealm();
 $('btn-chron').onclick = () => !uiLocked() && openChronicle();

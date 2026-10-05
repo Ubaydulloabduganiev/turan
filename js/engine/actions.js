@@ -33,6 +33,7 @@ async function moveArmy(a, to, opts = {}) {
   const kind = movePreview(a, to);
   leaveSiege(a);
   a.prov = to; a.moves--; a.from = from;
+  await HOOKS.march(a, from, to);
   if (kind === 'move') return { ok: true, kind };
   a.moves = 0;
   if (kind === 'battle') {
@@ -97,6 +98,7 @@ async function runBattle(b, opts = {}) {
   if (b.att.faction === pl) mode = opts.fight ? 'fight' : 'auto';
   else if (b.def.faction === pl && b.def.armies.length) mode = await HOOKS.defend(b);
   let res = null;
+  if (mode !== 'fight') await HOOKS.clash(b.prov, b);
   if (mode === 'fight') res = await HOOKS.fight(b);
   if (!res) res = autoResolve(b);
   const out = finishBattle(b, res);
@@ -143,7 +145,7 @@ function appointGeneral(a) {
   if (a.units.length >= GAME.MAX_ARMY) return 'The army is full';
   if (f.gold < GENERAL_COST) return 'Not enough gold';
   f.gold -= GENERAL_COST;
-  a.general = makeGeneral(a.owner, newGeneralName(a.owner), 1 + (rng() < 0.3 ? 1 : 0), null, false);
+  a.general = makeGeneral(a.owner, newGeneralName(a.owner), 1 + (rng() < 0.3 ? 1 : 0) + (hasWonder(a.owner, 'aksaray') ? 1 : 0), null, false);
   a.units.unshift(makeUnit('general'));
   return null;
 }
@@ -186,7 +188,7 @@ function startBuild(p, key) {
 }
 function cancelBuild(p) {
   if (!p.build) return;
-  G.factions[p.owner].gold += BUILDINGS[p.build.key].cost[p.b[p.build.key] + 1];
+  G.factions[p.owner].gold += p.build.key === 'wonder' ? WONDERS[p.build.id].cost : BUILDINGS[p.build.key].cost[p.b[p.build.key] + 1];
   p.build = null;
 }
 

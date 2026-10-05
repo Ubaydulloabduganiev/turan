@@ -13,6 +13,10 @@ const HOOKS = {
   offer: async () => false,
   // Called whenever something worth telling the player happens.
   notify: () => {},
+  // Called when an army marches from one province to the next, so the map can show it moving.
+  march: async () => {},
+  // Called just before a battle is fought at a province.
+  clash: async () => {},
 };
 
 const AGGRESSION = { temur: 0.95, golden: 0.6, white: 0.65, moghul: 0.55, khwarezm: 0.45, kart: 0.35, sarbadar: 0.45, rebels: 0 };
@@ -183,6 +187,8 @@ function provinceOrder(p, dist) {
   o -= Math.max(0, p.pop - 30) * 0.4; // big cities are harder to keep quiet
   o -= p.unrest;
   if (f.orderBonusT > 0) o += f.orderBonus;
+  if (hasWonder(p.owner, 'bibikhanym')) o += 10;
+  if (hasWonder(p.owner, 'yasawi') && (p.terrain === 'steppe' || p.terrain === 'desert')) o += 15;
   return Math.round(clampN(o, 0, 120));
 }
 
@@ -191,7 +197,8 @@ function provinceIncome(p, order) {
   if (p.owner === 'rebels') return 0;
   let tax = p.pop * TERRAIN[p.terrain].tax * [0.6, 1, 1.4][f.tax] * (1 + 0.2 * p.b.market);
   tax *= clampN(order / 70, 0.3, 1.1);
-  let trade = p.silk ? 40 + 45 * p.b.market : 0;
+  if (p.terrain === 'oasis' && hasWonder(p.owner, 'musalla')) tax *= 1.15;
+  let trade = p.silk ? 40 + 45 * p.b.market + (hasWonder(p.owner, 'saraibazaar') ? 40 : 0) : 0;
   if (p.siege) { tax *= 0.2; trade = 0; }
   const open = p.terrain === 'steppe' || p.terrain === 'desert';
   const herds = F.nomad ? (open ? 110 : p.terrain === 'river' ? 50 : 0) : (open ? 20 : 0);

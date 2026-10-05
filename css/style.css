@@ -103,6 +103,10 @@ button.small { padding: 4px 9px; font-size: 12px; }
 /* ---------- Campaign ---------- */
 #game { position: fixed; inset: 0; background: #0b1a2a; overflow: hidden; }
 #terrain { position: absolute; left: 0; top: 0; transform-origin: 0 0; pointer-events: none; }
+#life { position: absolute; left: 0; top: 0; pointer-events: none; }
+.army .cloth, .city .pennant { transform-box: fill-box; transform-origin: 0% 50%; animation: wave 2.4s ease-in-out infinite; }
+.city .pennant { animation-duration: 1.6s; }
+@keyframes wave { 0%, 100% { transform: skewY(0deg) scaleX(1); } 50% { transform: skewY(-7deg) scaleX(0.92); } }
 #map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: default; user-select: none; }
 #map.panning { cursor: grabbing; }
 .city-label { font-family: var(--display); font-weight: 600; fill: #fbf1d6; stroke: #1b1208; stroke-width: 3.2px; paint-order: stroke; letter-spacing: 0.04em; pointer-events: none; }
@@ -334,3 +338,20 @@ table.dip svg { width: 24px; height: 29px; vertical-align: middle; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* ---------- Stories, council requests and wonders ---------- */
+.choices.story { grid-template-columns: 1fr; margin-top: 14px; }
+.choices.story button { border-left: 3px solid var(--gold); padding: 11px 14px; font-size: 15px; }
+.choices.story button small { font-size: 14px; }
+#modal.parch .choices.story button { color: var(--ivory); }
+.mission { margin: 2px 8px 6px; padding: 9px 11px; border: 1px solid rgba(216, 180, 90, 0.5); border-radius: 3px; background: linear-gradient(180deg, rgba(120, 86, 24, 0.35), rgba(60, 40, 10, 0.3)); }
+.mission.link { cursor: pointer; }
+.mission.link:hover { border-color: var(--gold-hi); }
+.m-head { font: 600 11px var(--display); letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-hi); margin-bottom: 3px; }
+.m-reward { font-size: 13px; color: var(--green); margin-top: 3px; font-style: italic; }
+.p-sec.wonder { padding: 12px; border: 1px solid rgba(246, 220, 148, 0.45); border-radius: 3px; background: radial-gradient(ellipse at top, rgba(216, 180, 90, 0.18), rgba(216, 180, 90, 0.02)); }
+.w-name { font: 400 20px var(--display); color: var(--gold-hi); }
+.p-sec.wonder button.big { width: 100%; margin-top: 4px; }
+
+#busy { cursor: pointer; }
+#busy-skip { align-self: center; font-size: 13px; color: var(--muted); font-style: italic; }

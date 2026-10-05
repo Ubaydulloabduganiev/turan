@@ -55,6 +55,7 @@ function upkeepPhase() {
     }
     const upkeep = factionUpkeep(f);
     st.gold += income - upkeep;
+    payPending(f);
     st.lastIncome = income; st.lastUpkeep = upkeep;
     if (st.orderBonusT > 0) st.orderBonusT--;
     // Unpaid troops desert
@@ -130,7 +131,10 @@ function growProvince(p, order) {
 function finishQueues(p) {
   if (p.build) {
     p.build.turns--;
-    if (p.build.turns <= 0) {
+    if (p.build.turns <= 0 && p.build.key === 'wonder') {
+      completeWonder(p, p.build.id);
+      p.build = null;
+    } else if (p.build.turns <= 0) {
       p.b[p.build.key]++;
       if (p.owner === G.player) log(`${p.city}: ${BUILDINGS[p.build.key].levels[p.b[p.build.key]]} completed.`, 'good');
       p.build = null;

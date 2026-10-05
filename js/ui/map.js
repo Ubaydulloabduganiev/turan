@@ -88,6 +88,7 @@ function initMap() {
   }
   bindMapInput();
   fitMap();
+  initLife();
 }
 
 function provPath(pid) { return outlinePath(MAPDATA.outlines[G.provinces[pid].idx]); }
@@ -155,7 +156,7 @@ function renderCities() {
     // The owner's pennant flies over the city
     const F = FACTIONS[p.owner];
     svgEl('path', { d: `M2 ${k.top}v-9`, stroke: '#3a2a16', 'stroke-width': 0.8 }, g);
-    svgEl('path', { d: `M2 ${k.top - 9}h8l-2 2.2 2 2.2h-8z`, fill: F.color, stroke: F.dark, 'stroke-width': 0.5 }, g);
+    svgEl('path', { d: `M2 ${k.top - 9}h8l-2 2.2 2 2.2h-8z`, fill: F.color, stroke: F.dark, 'stroke-width': 0.5, class: 'pennant', style: `animation-delay:-${(p.idx * 0.53) % 1.6}s` }, g);
     // Zoomed far out, only the great cities keep their names
     if (UI.k < 1.15 || isCap || p.pop >= 20) {
       const label = svgEl('text', { y: 19, 'text-anchor': 'middle', class: 'city-label' + (isCap ? ' cap' : ''), 'font-size': isCap ? 13.5 : p.pop >= 25 ? 12 : 10.5 }, g);
@@ -182,6 +183,7 @@ function renderArmies() {
     const p = G.provinces[pid];
     const home = byProv[pid].filter(a => a.owner === p.owner), away = byProv[pid].filter(a => a.owner !== p.owner);
     for (const a of home.concat(away)) {
+      if (UI.hidden && UI.hidden.has(a.id)) continue; // drawn marching on the life layer instead
       const F = FACTIONS[a.owner];
       const besieger = a.owner !== p.owner;
       const k = besieger ? away.indexOf(a) : home.indexOf(a);
@@ -193,7 +195,7 @@ function renderArmies() {
       svgEl('path', { d: 'M0 10V-24', stroke: '#3b2410', 'stroke-width': 1.6, 'stroke-linecap': 'round' }, g);
       svgEl('path', { d: 'M-1-22h17', stroke: '#3b2410', 'stroke-width': 1.2 }, g);
       svgEl('circle', { cx: 0, cy: -25, r: 1.6, fill: '#e8c15c', stroke: '#6b4a10', 'stroke-width': 0.4 }, g);
-      svgEl('path', { d: 'M0-22h16v17l-8-3.5-8 3.5z', fill: F.color, stroke: F.dark, 'stroke-width': 0.9 }, g);
+      svgEl('path', { d: 'M0-22h16v17l-8-3.5-8 3.5z', fill: F.color, stroke: F.dark, 'stroke-width': 0.9, class: 'cloth', style: `animation-delay:-${(a.id.length * 0.37 + parseInt(a.id.slice(1), 10) * 0.61) % 2.4}s` }, g);
       svgEl('path', { d: 'M0-22h16v3H0z', fill: '#00000030' }, g);
       const em = svgEl('g', { transform: 'translate(2.2 -21) scale(0.3)' }, g);
       em.innerHTML = (EMBLEMS[a.owner] || EMBLEMS.rebels)(a.owner === 'white' ? '#5b4a2c' : a.owner === 'golden' ? '#7a1f12' : '#f6e7b8');

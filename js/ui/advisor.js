@@ -24,6 +24,10 @@ function advisorTips() {
     }
   }
   if (best) tips.push(best);
+  // Plunder from armies standing in enemy land
+  for (const a of armiesOf(pl)) if (!raidCheck(a)) { tips.push({ score: 60, text: `Your army at ${G.provinces[a.prov].city} can plunder the countryside for ${fmt(raidGold(a))} gold.`, army: a.id }); break; }
+  // A wonder within reach
+  for (const id in WONDERS) { const p = G.provinces[WONDERS[id].prov]; if (p.owner === pl && !wonderCheck(p)) { tips.push({ score: 58, text: `You can afford to raise the ${WONDERS[id].name} in ${p.city}.`, prov: p.id }); break; } }
   // Weak rivals may kneel
   for (const f of PLAYABLE) {
     if (f === pl || !G.factions[f].alive) continue;
@@ -62,11 +66,20 @@ function renderAdvisor() {
   if (!G || G.over) { box.innerHTML = ''; return; }
   const tips = advisorTips();
   box._tips = tips;
+  const m = G.factions[G.player].mission;
+  let mission = '';
+  if (m) {
+    const left = m.deadline - G.turn;
+    const where = m.type === 'conquer' || m.type === 'build' ? m.target : m.type === 'wonder' ? WONDERS[m.target].prov : null;
+    mission = `<div class="mission ${where ? 'link' : ''}" data-mission="${where || ''}"><div class="m-head">Council request · ${left <= 0 ? 'last turn' : left + ' turn' + (left > 1 ? 's' : '') + ' left'}</div>${m.text}<div class="m-reward">Reward: ${fmt(m.reward)} gold</div></div>`;
+  }
   box.innerHTML = `<div class="adv-head" data-adv="toggle"><span>Your vizier advises</span><span>${advisorOpen ? '–' : '+'}</span></div>` +
-    (advisorOpen ? tips.map((t, i) => `<div class="tip ${t.prov || t.army || t.realm ? 'link' : ''}" data-adv="${i}">${t.text}</div>`).join('') : '');
+    (advisorOpen ? mission + tips.map((t, i) => `<div class="tip ${t.prov || t.army || t.realm ? 'link' : ''}" data-adv="${i}">${t.text}</div>`).join('') : '');
 }
 
 $('advisor').addEventListener('click', e => {
+  const ms = e.target.closest('[data-mission]');
+  if (ms && ms.dataset.mission && G && !uiLocked()) { UI.selArmy = null; UI.selProv = ms.dataset.mission; centerOnProv(ms.dataset.mission); refresh(); return; }
   const el = e.target.closest('[data-adv]');
   if (!el || !G || uiLocked()) return;
   if (el.dataset.adv === 'toggle') { advisorOpen = !advisorOpen; renderAdvisor(); return; }

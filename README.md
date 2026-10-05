@@ -36,6 +36,11 @@ Independent cities such as Otrar, Merv, Kabul, Kandahar and Rayy are held by loc
 - **War:** field battles, sieges, storming the walls and sallies. Spearmen beat cavalry, horse archers rule the steppe, and walls favour the defender.
 - **Real-time 3D battles:** fight any battle yourself on a 3D battlefield (three.js) with hundreds of individual soldiers, cavalry, arrows, dust, city walls and a free camera, or auto-resolve it. Without WebGL the game falls back to a 2D battlefield.
 - **Diplomacy:** peace, alliances, trade, royal marriages, tribute, gifts and demands to submit. Broken rulers may surrender their whole realm, as the Sarbadars did to Temur in 1381. Rulers remember betrayals.
+- **Stories:** most turns put a choice before you (a Sufi master's request, bandits on the Silk Road, a Ming envoy, a pretender, a caught spy, Navruz…), each with real consequences.
+- **The council's requests:** tasks with deadlines and gold rewards.
+- **Plunder:** armies in enemy land can raid the countryside for gold.
+- **Wonders:** the Bibi-Khanym Mosque, Ak-Saray Palace, Mausoleum of Yasawi, Musalla of Herat and Grand Bazaar of Sarai, each with a realm-wide bonus for whoever holds the city.
+- **A living map:** caravans on the Silk Road, boats on the Caspian and Aral, grazing herds, birds, drifting clouds, smoke over besieged cities, waving banners, and armies that visibly march and clash.
 - **Royal decrees:** hold a feast, levy militia or raise a special tax in any of your cities.
 - **Vizier:** up to three suggested moves each turn; click one to jump there.
 - **Rival AI:** every rival plays by the same rules as you. It builds, recruits, declares war, besieges cities and sends you envoys.

@@ -23,7 +23,7 @@ function showModal(html, buttons, opts = {}) {
     };
     m.onclick = e => {
       const b = e.target.closest('[data-mi]');
-      if (b && modalResolve) { const btn = buttons[+b.dataset.mi]; modalResolve(btn ? btn.value : opts.cancel); }
+      if (b && modalResolve) { const btn = buttons[+b.dataset.mi]; modalResolve(btn ? btn.value : opts.pickIndex ? +b.dataset.mi : opts.cancel); }
       else if (opts.onClick) opts.onClick(e);
     };
     m._cancel = opts.cancel;
@@ -54,6 +54,19 @@ async function flushNotices() {
     await infoBox(n.title, n.text, { cls: n.history ? 'parch' : '' });
     if (n.prov && G) { UI.selProv = n.prov; UI.selArmy = null; centerOnProv(n.prov); refresh(); }
   }
+}
+
+// ---------- A choice for the ruler ----------
+
+async function showStory({ story, ctx }) {
+  const opts = story.options.map((o, i) => `<button class="choice" data-mi="${i}"><b>${o.label(ctx)}</b><small>${o.hint}</small></button>`).join('');
+  const i = await showModal(`<h3>${story.title}</h3><p>${story.text(ctx)}</p><div class="choices story">${opts}</div>`, [], { cls: 'parch', cancel: 0, pickIndex: true });
+  const result = story.options[i || 0].act(ctx);
+  log(`${dateText()}: ${story.title}. ${result}`, 'event');
+  refresh();
+  await showModal(`<h3>${story.title}</h3><p>${result}</p>`, [{ label: 'Continue', value: true, cls: 'big' }], { cls: 'parch', cancel: true });
+  checkMission();
+  await flushNotices();
 }
 
 // ---------- Battles ----------
@@ -286,7 +299,7 @@ function openRealm() {
     const rows = provs.map(p => {
       const o = provinceOrder(p, dist), [w, c] = orderInfo(o);
       return `<tr data-p="${p.id}"><td>${p.city}${G.factions[pl].capital === p.id ? ' ♛' : ''}</td><td>${fmt(p.pop)}k</td><td class="${c}">${Math.min(100, o)}%</td><td>${fmt(provinceIncome(p, o))}</td>
-        <td>${p.build ? BUILDINGS[p.build.key].levels[p.b[p.build.key] + 1] + ' (' + p.build.turns + ')' : '<span class="warn">idle</span>'}</td><td>${p.queue.length ? p.queue.length + ' units' : ''}</td></tr>`;
+        <td>${p.build ? buildName(p) + ' (' + p.build.turns + ')' : '<span class="warn">idle</span>'}</td><td>${p.queue.length ? p.queue.length + ' units' : ''}</td></tr>`;
     }).join('');
     const tax = ['Low', 'Normal', 'High'].map((t, i) => `<button data-tax="${i}" class="${st.tax === i ? 'big' : ''}">${t}</button>`).join('');
     return `<button class="modal-x small" data-close="1">Close</button><h3>The realm of ${st.leader}</h3>
@@ -328,9 +341,11 @@ function savesHTML(mode) {
 
 async function openMenu() {
   const v = await showModal(`<h3>${dateText()}</h3><p class="note">${FACTIONS[G.player].full}</p>`, [
+    { label: `Rival moves: ${LIFE.showRivals ? 'shown' : 'hidden'}`, value: 'rivals' },
     { label: 'How to play', value: 'help' }, { label: 'Save', value: 'save' }, { label: 'Load', value: 'load' },
     { label: 'Main menu', value: 'title' }, { label: 'Resume', value: null, cls: 'big' },
   ], { cancel: null });
+  if (v === 'rivals') { setRivalMoves(!LIFE.showRivals); toast('Rival moves', LIFE.showRivals ? 'You will watch rival armies march across the map.' : 'Rival armies will move instantly.', ''); return openMenu(); }
   if (v === 'help') await openHelp();
   if (v === 'save') await openSaves('save');
   if (v === 'load') await openSaves('load');
@@ -364,6 +379,10 @@ function helpHTML() {
     <li>Keep public order high with low taxes, mosques and garrisons, or cities will rebel.</li>
     <li>Bazaars raise income, irrigation grows the population, barracks and stables unlock troops. Bigger cities can build more.</li>
     <li>Use the Realm screen to set taxes and see every province at once.</li></ul>
+    <h4>Stories, requests and wonders</h4><ul><li>Most turns bring a choice: a Sufi master asking for patronage, bandits on the Silk Road, an envoy from China, a pretender, a spy. Every choice has consequences.</li>
+    <li>The council of amirs sets you tasks with a deadline (shown in the vizier's box). Fulfil them for gold and praise.</li>
+    <li>An army standing in enemy land can plunder the countryside for gold. Steppe armies take more.</li>
+    <li>Five great wonders can be raised in Samarkand, Shahrisabz, Otrar, Herat and Sarai. Their blessing belongs to whoever holds the city.</li></ul>
     <h4>Diplomacy</h4><ul><li>Offer peace, trade, alliances and marriages; demand tribute from the weak. Rulers remember gifts and betrayals.</li></ul>
     <h4>Keys</h4><p>Enter: end turn · D: diplomacy · R: realm · C: chronicle · Esc: close or menu</p></div>`;
 }
