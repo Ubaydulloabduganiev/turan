@@ -320,5 +320,29 @@ const CREDITS = [
   "date": "2018-12-05 19:16:50",
   "license": "CC BY-SA 2.0",
   "page": "https://commons.wikimedia.org/wiki/File:Issyk_kurgan_Flying_elk_with_griffin.jpg"
+ },
+ {
+  "use": "Campaign map (satellite relief)",
+  "title": "Whole world - land and oceans 12000",
+  "author": "NASA Goddard Space Flight Center (Blue Marble)",
+  "date": "2002",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Whole_world_-_land_and_oceans_12000.jpg"
+ },
+ {
+  "use": "Battlefield ground textures",
+  "title": "Mowed light green seamless healthy lawn grass turf mowed texture landscape",
+  "author": "Sisters.seamless",
+  "date": "2020-06-25",
+  "license": "CC0",
+  "page": "https://commons.wikimedia.org/wiki/File:Mowed_light_green_seamless_healthy_lawn_grass_turf_mowed_texture_landscape.jpg"
+ },
+ {
+  "use": "Battlefield sand texture",
+  "title": "Smooth clean beach shore sand seamless ground texture",
+  "author": "Sisters.seamless",
+  "date": "2020-06-25",
+  "license": "CC0",
+  "page": "https://commons.wikimedia.org/wiki/File:Smooth_clean_beach_shore_sand_seamless_ground_texture.jpg"
  }
 ];

@@ -1003,4 +1003,6 @@ Object.assign(I18N.tr, {
   "Pictures and sources": "Resimler ve kaynaklar",
   "Pictures in this game": "Oyundaki resimler",
   "The portraits and scenes come from Timurid, Persian and Mughal manuscripts painted in the 15th and 16th centuries, many of them made for Temur’s own grandsons. Photographs show the special places as they are today. All are public domain or shared under free licences.": "Portreler ve sahneler, 15. ve 16. yüzyıllarda resimlenmiş Timurlu, Fars ve Babürlü yazmalarından alınmıştır; birçoğu Timur’un torunları için yapılmıştır. Fotoğraflar özel yerleri bugünkü halleriyle gösterir. Hepsi kamu malıdır ya da özgür lisanslarla paylaşılmaktadır.",
+  "Skimmed by officials": "Memurların zimmetine geçen",
+  "So much gold lies idle that the treasurers skim {n} a turn. Spend it: build, recruit, or raise a wonder.": "Hazinede o kadar çok altın boşta duruyor ki hazinedarlar her tur {n} altın zimmetine geçiriyor. Harcayın: inşa edin, asker toplayın ya da bir harika yükseltin.",
 });

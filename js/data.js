@@ -6,6 +6,8 @@ const GAME = {
   START_YEAR: 1370,
   MAX_ARMY: 16,
   SEASONS: ['Spring', 'Autumn'],
+  INCOME: 0.5,
+  UPKEEP: 0.75, // scales what armies cost each turn // scales every source of gold; keeps the treasury tight enough that choices cost something
 };
 
 // nomad: steppe people (horse units need no stables, cities rarely accept them gladly)

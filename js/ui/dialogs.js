@@ -368,7 +368,7 @@ function openRealm() {
     return `<button class="modal-x small" data-close="1">${t('Close')}</button><h3>${t('The realm of {ruler}', { ruler: pn(st.leader) })}</h3>
       <div class="kv"><div><span>${t('Treasury')}</span>${fmt(st.gold)}</div><div><span>${t('Provinces')}</span>${provs.length}</div>
       <div><span>${t('Income')}</span>${fmt(income)}</div><div><span>${t('Army upkeep')}</span>${fmt(upkeep)}</div>
-      <div><span>${t('Trade agreements')}</span>${fmt(tradeIncome(pl))}</div><div><span>${t('Heir')}</span>${st.heir ? pn(st.heir) : '—'}</div></div>
+      <div><span>${t('Trade agreements')}</span>${fmt(tradeIncome(pl))}</div>${treasuryLoss(pl) ? `<div><span>${t('Skimmed by officials')}</span><b class="bad">−${fmt(treasuryLoss(pl))}</b></div>` : ''}<div><span>${t('Heir')}</span>${st.heir ? pn(st.heir) : '—'}</div></div>
       <div class="p-sec"><h4>${t('Taxes')}</h4><div class="btnrow">${tax}</div><p class="note">${t('Low taxes: more order and growth, less gold. High taxes: more gold, unrest and slower growth.')}</p></div>
       <div class="p-sec"><h4>${t('Provinces')}</h4><table class="dip"><tr><th>${t('City')}</th><th>${t('People')}</th><th>${t('Order')}</th><th>${t('Income')}</th><th>${t('Building')}</th><th>${t('Training')}</th></tr>${rows}</table></div>`;
   };

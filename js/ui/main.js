@@ -12,6 +12,7 @@ function showScreen(id) {
 async function withLoading(fn) {
   if (TERRAIN_CV) return fn();
   $('loading').classList.remove('hidden');
+  await Promise.race([SAT.ready, new Promise(r => setTimeout(r, 8000))]);
   await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
   try { return fn(); } finally { $('loading').classList.add('hidden'); }
 }

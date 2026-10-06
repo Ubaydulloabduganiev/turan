@@ -21,7 +21,7 @@ function renderTopbar() {
   const pl = G.player, st = G.factions[pl];
   $('tb-faction').innerHTML = flagSVG(pl) + rulerPortrait(pl, 'tb-portrait') + `<span>${pn(st.leader)}<small>${fTitle(pl)}</small></span>`;
   $('tb-gold').textContent = fmt(st.gold);
-  const net = factionIncome(pl) - factionUpkeep(pl);
+  const net = factionIncome(pl) - factionUpkeep(pl) - treasuryLoss(pl);
   $('tb-net').textContent = (net >= 0 ? '+' : '') + fmt(net);
   $('tb-net').className = net < 0 ? 'neg' : '';
   $('tb-provs').textContent = t('{n} provinces', { n: provsOf(pl).length });

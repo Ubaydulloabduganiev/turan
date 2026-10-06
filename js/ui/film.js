@@ -12,6 +12,7 @@ function img(src) {
 }
 function imgFailed(src) { return !!(IMGS[src] && IMGS[src].bad); }
 function preload(src) { img(src); }
+if (typeof ART !== 'undefined' && ART.ground) for (const k in ART.ground) preload(ART.ground[k]);
 
 // Film grain: a small noise tile, redrawn at a random offset every frame
 let grainTile = null;

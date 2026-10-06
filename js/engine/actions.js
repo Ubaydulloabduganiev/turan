@@ -309,7 +309,7 @@ function annex(winner, loser) {
 const DECREES = {
   feast: { name: 'Hold a feast', desc: 'Feed the city and fill the squares with music. Public order rises sharply for a few turns.', cost: p => Math.round(60 + p.pop * 6) },
   levy: { name: 'Levy militia', desc: 'Call up two units of town militia for free. Costs a thousand people and some goodwill.' },
-  tax: { name: 'Special tax', desc: 'Squeeze the merchants for gold now. The city will resent it.', gain: p => Math.round(60 + p.pop * 14) },
+  tax: { name: 'Special tax', desc: 'Squeeze the merchants for gold now. The city will resent it.', gain: p => Math.round((60 + p.pop * 14) * GAME.INCOME * 1.2) },
 };
 function decreeCheck(p, key) {
   if (p.decree === G.turn) return 'Only one decree per city each turn';

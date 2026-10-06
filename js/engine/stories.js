@@ -57,7 +57,7 @@ function raidCheck(a) {
 }
 function raidGold(a) {
   const p = G.provinces[a.prov];
-  return Math.round((p.pop * 9 + 60) * (FACTIONS[a.owner].nomad ? 1.5 : 1));
+  return Math.round((p.pop * 9 + 60) * (FACTIONS[a.owner].nomad ? 1.5 : 1) * GAME.INCOME * 1.4);
 }
 function raid(a) {
   const why = raidCheck(a);

@@ -47,6 +47,7 @@ function advisorTips() {
   // Money to spend
   const income = factionIncome(pl), upkeep = factionUpkeep(pl);
   if (income - upkeep < 0) tips.push({ score: 80, text: t('We spend more than we earn. Build bazaars, raise taxes or send some troops home.'), realm: true });
+  if (treasuryLoss(pl) > 0) tips.push({ score: 75, text: t('So much gold lies idle that the treasurers skim {n} a turn. Spend it: build, recruit, or raise a wonder.', { n: fmt(treasuryLoss(pl)) }), realm: true });
   if (st.gold > 1000) {
     const idle = provsOf(pl).filter(p => !p.build && !buildCheck(p, 'market')).sort((a, b) => b.pop - a.pop)[0];
     if (idle) tips.push({ score: 50, text: t('The treasury is full. Build a {building} in {city} for more gold.', { building: bLevel('market', idle.b.market + 1), city: cityOf(idle) }), prov: idle.id });

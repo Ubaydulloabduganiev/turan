@@ -60,6 +60,18 @@ function biomeOf(i) {
 }
 
 let TERRAIN_CV = null;
+
+// NASA's Blue Marble satellite relief of Central Asia, when it has loaded. The map is a plain
+// longitude/latitude grid, so the picture lines up with it exactly.
+const SAT = { im: null, ready: null };
+SAT.ready = new Promise(res => {
+  if (typeof ART === 'undefined' || !ART.terrain) return res(null);
+  const im = new Image();
+  im.onload = () => { SAT.im = im; res(im); };
+  im.onerror = () => res(null);
+  im.src = ART.terrain;
+});
+
 function getTerrain() {
   MAPDATA = MAPDATA || buildMap();
   if (!TERRAIN_CV) TERRAIN_CV = paintTerrain();
@@ -77,6 +89,7 @@ function paintTerrain() {
   const sites = MAPDATA.sites, N = sites.length;
   const isWater = i => sites[i].kind === 'water';
   const nearCity = (px, py, r) => sites.some(s => s.kind === 'province' && Math.hypot(s.x - px, s.y - py) < r);
+  if (SAT.im) return paintSatellite(c, x, S, W, H);
 
   // 1. Biomes, softly blended. Water cells take the colour of the shore so blue does not bleed inland.
   for (let i = 0; i < N; i++) {
@@ -246,6 +259,45 @@ function paintTerrain() {
   x.fillStyle = v;
   x.fillRect(0, 0, MAP.W, MAP.H);
   x.restore();
+  return c;
+}
+
+// The map from the satellite picture: real relief, with the seas and rivers of 1370 painted over it
+// (the Aral Sea was still full) and a warm, slightly faded grade so it sits with the miniatures.
+function paintSatellite(c, x, S, W, H) {
+  x.save();
+  x.filter = 'saturate(0.82) contrast(1.06) brightness(0.97)';
+  x.drawImage(SAT.im, 0, 0, MAP.W, MAP.H);
+  x.restore();
+  x.save(); x.globalCompositeOperation = 'soft-light'; x.fillStyle = 'rgba(255,205,140,0.4)'; x.fillRect(0, 0, MAP.W, MAP.H); x.restore();
+  // The Aral Sea as it was before the 20th century drained it: the satellite shows today's remnant
+  const aral = [[61.0, 46.85], [61.6, 46.6], [61.95, 46.25], [61.85, 45.6], [61.55, 45.0], [61.15, 44.45], [60.6, 43.95], [59.9, 43.55], [59.1, 43.5], [58.5, 43.85], [58.2, 44.4], [58.15, 45.1], [58.25, 45.8], [58.6, 46.3], [59.3, 46.6], [60.0, 46.75], [60.5, 46.95]].map(([lo, la]) => project(lo, la));
+  const sea = new Path2D(); sea.moveTo(aral[0].x, aral[0].y);
+  for (let i = 0; i < aral.length; i++) { const a = aral[i], b = aral[(i + 1) % aral.length]; sea.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2); }
+  sea.closePath();
+  x.save(); x.filter = `blur(${Math.round(2 * S)}px)`;
+  x.fillStyle = 'rgba(24,82,96,0.95)'; x.fill(sea);
+  x.restore();
+  x.save(); x.clip(sea);
+  const sh = x.createRadialGradient(aral[12].x + 40, aral[12].y, 10, aral[12].x + 40, aral[12].y, 160); sh.addColorStop(0, 'rgba(10,40,60,0.6)'); sh.addColorStop(1, 'rgba(70,150,150,0.25)');
+  x.fillStyle = sh; x.fillRect(0, 0, MAP.W, MAP.H);
+  x.lineWidth = 10; x.strokeStyle = 'rgba(120,180,170,0.35)'; x.stroke(sea);
+  x.restore();
+  x.strokeStyle = 'rgba(230,220,190,0.45)'; x.lineWidth = 1; x.stroke(sea);
+  // Rivers, thin and clear
+  const riverPts = RIVERS.map(r => ({ ...r, p: r.pts.map(([lon, lat]) => project(lon, lat)) }));
+  x.lineCap = 'round'; x.lineJoin = 'round';
+  for (const r of riverPts) {
+    x.beginPath(); x.moveTo(r.p[0].x, r.p[0].y);
+    for (let i = 1; i < r.p.length - 1; i++) { const mx = (r.p[i].x + r.p[i + 1].x) / 2, my = (r.p[i].y + r.p[i + 1].y) / 2; x.quadraticCurveTo(r.p[i].x, r.p[i].y, mx, my); }
+    x.lineTo(r.p[r.p.length - 1].x, r.p[r.p.length - 1].y);
+    x.strokeStyle = 'rgba(70,110,50,0.25)'; x.lineWidth = r.w * 4; x.stroke();
+    x.strokeStyle = 'rgba(52,104,140,0.85)'; x.lineWidth = Math.max(1, r.w * 0.8); x.stroke();
+  }
+  // Vignette
+  const v = x.createRadialGradient(MAP.W / 2, MAP.H / 2, MAP.H * 0.4, MAP.W / 2, MAP.H / 2, MAP.W * 0.75);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(14,10,4,0.5)');
+  x.fillStyle = v; x.fillRect(0, 0, MAP.W, MAP.H);
   return c;
 }
 

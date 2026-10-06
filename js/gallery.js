@@ -33,6 +33,8 @@ const ART = {
   },
   places: {},
   title: 'img/title.jpg',
+  terrain: 'img/terrain.jpg',
+  ground: typeof GROUND_TEX !== 'undefined' ? GROUND_TEX : null,
   // Where the slow camera drifts in each picture
   focus: {
     'img/scenes/wedding.jpg': { focus: [0.72, 0.45] },

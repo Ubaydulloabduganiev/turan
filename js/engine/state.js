@@ -204,14 +204,20 @@ function provinceIncome(p, order) {
   let trade = p.silk ? 40 + 45 * p.b.market + (hasWonder(p.owner, 'saraibazaar') ? 40 : 0) : 0;
   if (p.siege) { tax *= 0.2; trade = 0; }
   const open = p.terrain === 'steppe' || p.terrain === 'desert';
-  const herds = F.nomad ? (open ? 110 : p.terrain === 'river' ? 50 : 0) : (open ? 20 : 0);
-  return Math.round(tax + trade + herds + landmarkGold(p));
+  const herds = F.nomad ? (open ? 150 : p.terrain === 'river' ? 70 : 0) : (open ? 20 : 0);
+  return Math.round((tax + trade + herds + landmarkGold(p)) * GAME.INCOME);
 }
 
 // Steppe horsemen live off their own herds, so nomad nations pay less to keep them.
 function unitUpkeep(type, nomad) {
   const d = UNITS[type];
-  return Math.round(d.upkeep * (nomad && (d.cls === 'ha' || type === 'lancer') ? 0.6 : 1));
+  return Math.round(d.upkeep * GAME.UPKEEP * (nomad && (d.cls === 'ha' || type === 'lancer') ? 0.6 : 1));
+}
+
+// A great hoard in the treasury tempts the officials who guard it: some of it goes missing every turn.
+function treasuryLoss(f) {
+  const g = G.factions[f] ? G.factions[f].gold : 0;
+  return g > 3000 ? Math.round((g - 3000) * 0.1) : 0;
 }
 
 function factionUpkeep(f) {
@@ -226,9 +232,9 @@ function tradeIncome(f) {
   for (const g of PLAYABLE) {
     if (g === f || !G.factions[g].alive || !rel(f, g).trade) continue;
     const silk = provsOf(g).filter(p => p.silk).length + provsOf(f).filter(p => p.silk).length;
-    s += 30 + silk * 12;
+    s += (30 + silk * 12) * GAME.INCOME;
   }
-  return s;
+  return Math.round(s);
 }
 
 function factionIncome(f) {

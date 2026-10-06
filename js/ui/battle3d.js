@@ -67,6 +67,7 @@ function make3D() {
   fieldGeo.computeVertexNormals();
   const tex = new T.CanvasTexture(TB.ground);
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  tex.minFilter = T.LinearMipmapLinearFilter;
   // polygonOffset keeps the field drawn over the land beneath it at any distance
   const field = new T.Mesh(fieldGeo, new T.MeshLambertMaterial({ map: tex, color: '#cdc3a4', polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 }));
   field.receiveShadow = true;
@@ -88,7 +89,10 @@ function make3D() {
   }
   outerGeo.setAttribute('color', new T.Float32BufferAttribute(ocol, 3));
   outerGeo.computeVertexNormals();
-  const outer = new T.Mesh(outerGeo, new T.MeshLambertMaterial({ vertexColors: true }));
+  const gp = typeof ART !== 'undefined' && ART.ground ? img(TB.terrain === 'desert' ? ART.ground.sand : ART.ground.grass) : null;
+  let omap = null;
+  if (gp) { omap = new T.Texture(gp); omap.wrapS = omap.wrapT = T.RepeatWrapping; omap.repeat.set(36, 36); omap.anisotropy = renderer.capabilities.getMaxAnisotropy(); omap.needsUpdate = true; }
+  const outer = new T.Mesh(outerGeo, new T.MeshLambertMaterial({ vertexColors: true, map: omap }));
   outer.receiveShadow = true;
   scene.add(outer);
 
@@ -206,43 +210,71 @@ function merge(list) {
   return m;
 }
 
-// Each soldier is two meshes: fixed-colour parts (skin, steel, wood, leather) and parts in the nation's colour.
+// Each soldier is built from instanced meshes: fixed-colour parts (skin, steel, wood, leather), parts in the
+// nation's colour, and separate legs so that men can march and horses gallop.
 // Local forward is +x, up is +y. Sizes are roughly in metres times 2.
+function lathe(profile, seg = 10) { return new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), seg); }
 function soldierGeos(kind) {
   const T = THREE;
-  const skin = '#d1a67c', steel = '#9ea2a6', wood = '#5c3f22', leather = '#3d3127', boot = '#2c241c';
-  const head = (x, y) => colored(new T.SphereGeometry(0.72, 7, 6).translate(x, y, 0), skin);
-  const helmet = (x, y) => merge([colored(new T.ConeGeometry(0.84, 1.6, 7).translate(x, y, 0), steel), colored(new T.CylinderGeometry(0.86, 0.86, 0.3, 7).translate(x, y - 0.75, 0), leather)]);
+  const skin = '#c99a72', steel = '#8f959b', wood = '#5c3f22', leather = '#3d3127', boot = '#2a211a', trouser = '#4a3d30', mail = '#5f6468', hair = '#2a1d14';
+  const head = (x, y) => merge([colored(new T.SphereGeometry(0.62, 12, 9).scale(1, 1.12, 0.95).translate(x, y, 0), skin), colored(new T.ConeGeometry(0.42, 0.9, 7).rotateZ(Math.PI).translate(x + 0.35, y - 0.65, 0), hair)]);
+  // A pointed Turkic helmet with a mail neck-guard
+  const helmet = (x, y) => merge([
+    colored(lathe([[0.74, 0], [0.76, 0.28], [0.66, 0.75], [0.4, 1.2], [0.1, 1.62], [0.03, 1.95], [0, 2.0]]).translate(x, y, 0), steel),
+    colored(new T.CylinderGeometry(0.72, 0.85, 0.95, 10, 1, true).translate(x - 0.1, y - 0.42, 0), mail),
+  ]);
+  // A flared kaftan: shoulders, waist and skirt
+  const kaftan = (y0, len = 1) => lathe([[1.45, y0], [1.32, y0 + 0.6 * len], [1.05, y0 + 1.6 * len], [0.86, y0 + 2.2 * len], [1.02, y0 + 3.0 * len], [0.95, y0 + 3.75 * len], [0.42, y0 + 4.1 * len], [0, y0 + 4.15 * len]], 12);
+  const sleeves = (y, fwd) => [1, -1].map(sz => new T.CylinderGeometry(0.27, 0.32, 2.5, 7).rotateX(sz * 0.18).rotateZ(-fwd).translate(0.45 + Math.sin(fwd) * 1.1, y - 1.05, sz * 1.08));
+  const hands = (y, fwd) => [1, -1].map(sz => colored(new T.SphereGeometry(0.26, 7, 6).translate(0.45 + Math.sin(fwd) * 2.2, y - 2.1, sz * 1.18), skin));
   if (kind === 'cav' || kind === 'ha' || kind === 'general') {
+    // The horse: a rounded barrel, deep chest, arched neck and long head
     const horse = merge([
-      colored(new T.BoxGeometry(6.2, 2.5, 2).translate(0, 4.7, 0), '#ffffff'),
-      colored(new T.BoxGeometry(2.8, 1.2, 1.1).rotateZ(0.9).translate(3.6, 6.3, 0), '#ffffff'),
-      colored(new T.BoxGeometry(2.1, 0.9, 0.9).rotateZ(-0.35).translate(4.8, 7.2, 0), '#ffffff'),
-      ...[[2.3, 0.65], [2.3, -0.65], [-2.3, 0.65], [-2.3, -0.65]].map(([x, z]) => colored(new T.BoxGeometry(0.5, 3.6, 0.5).translate(x, 1.8, z), '#ffffff')),
-      colored(new T.BoxGeometry(0.4, 2.6, 0.35).rotateZ(-0.5).translate(-3.6, 4.4, 0), '#ffffff'),
+      colored(new T.SphereGeometry(1, 14, 10).scale(3.15, 1.35, 1.1).translate(-0.1, 4.95, 0), '#ffffff'),
+      colored(new T.SphereGeometry(1, 10, 8).scale(1.3, 1.25, 1.05).translate(2.3, 5.1, 0), '#ffffff'),
+      colored(new T.SphereGeometry(1, 10, 8).scale(1.25, 1.2, 1.05).translate(-2.6, 5.15, 0), '#ffffff'),
+      colored(new T.CylinderGeometry(0.55, 0.95, 3.4, 9).rotateZ(-0.72).translate(3.35, 6.6, 0), '#ffffff'),
+      colored(new T.CylinderGeometry(0.32, 0.58, 2.4, 8).rotateZ(-2.05).translate(4.95, 7.4, 0), '#ffffff'),
     ]);
-    const fixed = [
-      colored(new T.BoxGeometry(1.4, 0.25, 2.2).translate(-0.2, 6.05, 0), '#7a2a1a'), // saddle cloth
-      colored(new T.BoxGeometry(0.5, 2.4, 0.5).translate(0.1, 5.3, 1.1), boot), colored(new T.BoxGeometry(0.5, 2.4, 0.5).translate(0.1, 5.3, -1.1), boot),
-      head(-0.1, 9.65), helmet(-0.1, 10.55),
+    const tack = [
+      colored(new T.CylinderGeometry(0.08, 0.08, 3.2, 4).rotateZ(-0.72).translate(3.0, 7.35, 0), hair), // mane
+      colored(new T.BoxGeometry(2.6, 0.5, 0.18).rotateZ(-0.72).translate(3.15, 7.15, 0), hair),
+      colored(new T.ConeGeometry(0.45, 3.2, 6).rotateZ(2.6).translate(-3.9, 4.5, 0), hair), // tail
+      colored(new T.ConeGeometry(0.16, 0.5, 4).translate(4.2, 8.55, 0.3), hair), colored(new T.ConeGeometry(0.16, 0.5, 4).translate(4.2, 8.55, -0.3), hair),
+      colored(new T.BoxGeometry(2.0, 0.3, 2.5).translate(-0.3, 6.25, 0), '#6a1e14'), // saddle cloth
+      colored(new T.BoxGeometry(1.3, 0.45, 1.3).translate(-0.3, 6.55, 0), leather), // saddle
     ];
-    if (kind === 'cav') fixed.push(colored(new T.CylinderGeometry(0.11, 0.11, 15, 4).rotateZ(-1.15).translate(3, 8.6, 0.9), wood), colored(new T.ConeGeometry(0.3, 1.2, 4).rotateZ(-1.15).translate(9.9, 11.6, 0.9), steel));
-    if (kind === 'ha') fixed.push(colored(new T.TorusGeometry(1.7, 0.1, 4, 10, Math.PI).rotateZ(-Math.PI / 2).translate(0.9, 8, 0.9), wood), colored(new T.CylinderGeometry(0.4, 0.4, 2.2, 5).rotateX(0.3).translate(-1, 7.8, -1.1), leather));
-    if (kind === 'general') fixed.push(colored(new T.CylinderGeometry(0.12, 0.12, 9, 4).translate(-0.8, 12.5, -1), wood), colored(new T.BoxGeometry(0.15, 3, 3.8).translate(-0.8, 15.2, -2.9), '#d8b45a'));
-    const tunic = merge([colored(new T.CylinderGeometry(0.8, 1.15, 3.1, 7).translate(-0.2, 7.6, 0), '#ffffff')]);
-    return { horse, fixed: merge(fixed), tunic };
+    // The rider sits with bent legs
+    const y0 = 6.45;
+    const rider = [
+      ...tack,
+      ...[1, -1].map(sz => colored(new T.CylinderGeometry(0.33, 0.33, 2.0, 7).rotateZ(Math.PI / 2 - 0.25).translate(0.55, y0 + 0.35, sz * 1.05), trouser)),
+      ...[1, -1].map(sz => colored(new T.CylinderGeometry(0.3, 0.26, 2.0, 7).translate(1.45, y0 - 0.65, sz * 1.15), boot)),
+      head(-0.1, y0 + 4.85), helmet(-0.1, y0 + 5.1), ...hands(y0 + 4.0, 0.5),
+    ];
+    if (kind === 'cav') rider.push(colored(new T.CylinderGeometry(0.11, 0.11, 15, 5).rotateZ(-1.15).translate(3, y0 + 2.4, 1.1), wood), colored(new T.ConeGeometry(0.3, 1.3, 4).rotateZ(-1.15).translate(9.9, y0 + 5.4, 1.1), steel), colored(new T.CylinderGeometry(1.15, 1.15, 0.25, 12).rotateZ(Math.PI / 2).translate(0.2, y0 + 2.8, -1.25), '#6e4a2a'));
+    if (kind === 'ha') rider.push(colored(new T.TorusGeometry(1.7, 0.1, 4, 12, Math.PI).rotateZ(-Math.PI / 2).translate(1.2, y0 + 2.7, 1.1), wood), colored(new T.CylinderGeometry(0.4, 0.4, 2.2, 6).rotateX(0.3).translate(-1, y0 + 1.6, -1.25), leather));
+    if (kind === 'general') rider.push(colored(new T.CylinderGeometry(0.12, 0.12, 9, 4).translate(-0.8, y0 + 6.2, -1), wood), colored(new T.BoxGeometry(0.15, 3, 3.8).translate(-0.8, y0 + 8.9, -2.9), '#d8b45a'));
+    const tunic = merge([colored(kaftan(y0, 0.92), '#ffffff'), ...sleeves(y0 + 4.0, 0.5).map(g => colored(g, '#ffffff'))]);
+    // One horse leg, hanging from its shoulder or hip; the hoof is darker
+    const hleg = merge([colored(new T.CylinderGeometry(0.36, 0.2, 3.3, 7).translate(0, -1.65, 0), '#ffffff'), colored(new T.CylinderGeometry(0.24, 0.3, 0.55, 7).translate(0, -3.55, 0), '#555555')]);
+    const HIPS = [[2.2, 4.15, 0.62], [2.2, 4.15, -0.62], [-2.45, 4.25, 0.6], [-2.45, 4.25, -0.6]];
+    const horseWhole = merge([horse, ...HIPS.map(([x, y, z]) => hleg.clone().translate(x, y, z))]);
+    return { horse, fixed: merge(rider), tunic, hleg, HIPS, horseWhole, whole: merge(rider) };
   }
-  const fixed = [
-    colored(new T.BoxGeometry(0.5, 3.1, 0.55).translate(0, 1.55, 0.42), boot), colored(new T.BoxGeometry(0.5, 3.1, 0.55).translate(0, 1.55, -0.42), boot),
-    head(0.05, 6.95), helmet(0.05, 7.9),
-  ];
-  if (kind === 'spear' || kind === 'inf') fixed.push(merge([colored(new T.CylinderGeometry(1.4, 1.4, 0.3, 10).rotateZ(Math.PI / 2).translate(0.85, 4.5, -0.95), kind === 'inf' ? '#8c7650' : '#6e4a2a'), colored(new T.SphereGeometry(0.35, 5, 4).translate(1.02, 4.5, -0.95), steel)]));
-  if (kind === 'spear') fixed.push(colored(new T.CylinderGeometry(0.11, 0.11, 13, 4).rotateZ(-0.22).translate(0.95, 6.9, 0.95), wood), colored(new T.ConeGeometry(0.28, 1.1, 4).rotateZ(-0.22).translate(2.45, 13.2, 0.95), steel));
-  if (kind === 'inf') fixed.push(colored(new T.BoxGeometry(0.18, 2.8, 0.35).rotateZ(-0.5).translate(1.4, 4.9, 0.95), steel));
-  if (kind === 'missile') fixed.push(colored(new T.TorusGeometry(1.8, 0.1, 4, 10, Math.PI).rotateZ(-Math.PI / 2).translate(1, 4.9, 0.7), wood), colored(new T.CylinderGeometry(0.4, 0.4, 2.4, 5).rotateX(0.25).translate(-0.7, 5, -0.8), leather));
-  if (kind === 'siege') fixed.push(colored(new T.BoxGeometry(0.2, 3.2, 0.2).translate(0.8, 4, 0.9), wood), colored(new T.BoxGeometry(1.4, 0.6, 0.4).translate(0.8, 5.6, 0.9), steel));
-  const tunic = merge([colored(new T.CylinderGeometry(0.88, 1.28, 3.5, 7).translate(0, 4.65, 0), '#ffffff'), colored(new T.BoxGeometry(1.6, 0.3, 2.3).translate(0, 3.1, 0), '#ffffff')]);
-  return { fixed: merge(fixed), tunic };
+  // On foot
+  const fixed = [head(0.05, 7.1), helmet(0.05, 7.35), colored(new T.CylinderGeometry(1.0, 1.02, 0.28, 12).translate(0, 4.25, 0), leather), ...hands(6.1, 0.35)];
+  if (kind === 'spear' || kind === 'inf') fixed.push(merge([colored(new T.CylinderGeometry(1.4, 1.4, 0.3, 14).rotateZ(Math.PI / 2).translate(0.95, 4.6, -1.05), kind === 'inf' ? '#8c7650' : '#6e4a2a'), colored(new T.SphereGeometry(0.35, 6, 5).translate(1.12, 4.6, -1.05), steel)]));
+  if (kind === 'spear') fixed.push(colored(new T.CylinderGeometry(0.11, 0.11, 13, 5).rotateZ(-0.22).translate(1.05, 6.9, 1.15), wood), colored(new T.ConeGeometry(0.28, 1.1, 4).rotateZ(-0.22).translate(2.55, 13.2, 1.15), steel));
+  if (kind === 'inf') fixed.push(colored(new T.BoxGeometry(0.18, 2.8, 0.35).rotateZ(-0.5).translate(1.6, 4.9, 1.15), steel), colored(new T.CylinderGeometry(1.06, 1.1, 1.6, 12, 1, true).translate(0, 5.6, 0), mail));
+  if (kind === 'missile') fixed.push(colored(new T.TorusGeometry(1.8, 0.1, 4, 12, Math.PI).rotateZ(-Math.PI / 2).translate(1.2, 5.0, 1.0), wood), colored(new T.CylinderGeometry(0.4, 0.4, 2.4, 6).rotateX(0.25).translate(-0.8, 5.2, -0.9), leather));
+  if (kind === 'siege') fixed.push(colored(new T.BoxGeometry(0.2, 3.2, 0.2).translate(0.9, 4.2, 1.0), wood), colored(new T.BoxGeometry(1.4, 0.6, 0.4).translate(0.9, 5.8, 1.0), steel));
+  const tunic = merge([colored(kaftan(2.45), '#ffffff'), ...sleeves(6.1, 0.35).map(g => colored(g, '#ffffff'))]);
+  // One leg: trouser and boot, hanging from the hip
+  const leg = merge([colored(new T.CylinderGeometry(0.36, 0.3, 2.0, 7).translate(0, -1.0, 0), trouser), colored(new T.CylinderGeometry(0.31, 0.3, 1.25, 7).translate(0, -2.45, 0), boot), colored(new T.BoxGeometry(0.75, 0.25, 0.5).translate(0.2, -3.0, 0), boot)]);
+  const HIPS = [[0, 3.1, 0.45], [0, 3.1, -0.45]];
+  const whole = merge([...fixed, ...HIPS.map(([x, y, z]) => leg.clone().translate(x, y, z))]);
+  return { fixed: merge(fixed), tunic, leg, HIPS, whole };
 }
 
 function buildArmies3D(R) {
@@ -265,9 +297,10 @@ function buildArmies3D(R) {
   R.pools = {};
   for (const k in need) {
     const g = soldierGeos(k), cap = need[k];
-    const pool = { cap, used: 0, fixed: new T.InstancedMesh(g.fixed, fixedMat, cap), tunic: tinted(g.tunic, cap) };
-    if (g.horse) pool.horse = tinted(g.horse, cap);
-    for (const m of [pool.fixed, pool.tunic, pool.horse]) if (m) { m.castShadow = true; m.frustumCulled = false; R.scene.add(m); }
+    const pool = { cap, used: 0, fixed: new T.InstancedMesh(g.fixed, fixedMat, cap), tunic: tinted(g.tunic, cap), HIPS: g.HIPS };
+    if (g.horse) { pool.horse = tinted(g.horse, cap); pool.legs = tinted(g.hleg, cap * 4); }
+    else pool.legs = new T.InstancedMesh(g.leg, fixedMat, cap * 2);
+    for (const m of [pool.fixed, pool.tunic, pool.horse, pool.legs]) if (m) { m.castShadow = true; m.frustumCulled = false; R.scene.add(m); }
     R.pools[k] = pool;
   }
   // The fallen: bodies (and horses) left lying on the field
@@ -275,8 +308,8 @@ function buildArmies3D(R) {
   const cavG = soldierGeos('cav');
   R.deadCap = 1400;
   R.deadUsed = 0;
-  R.dead = { fixed: new T.InstancedMesh(infG.fixed, fixedMat, R.deadCap), tunic: tinted(infG.tunic, R.deadCap) };
-  R.deadHorse = tinted(cavG.horse, 400);
+  R.dead = { fixed: new T.InstancedMesh(infG.whole, fixedMat, R.deadCap), tunic: tinted(infG.tunic, R.deadCap) };
+  R.deadHorse = tinted(cavG.horseWhole, 400);
   R.deadHorseUsed = 0;
   for (const m of [R.dead.fixed, R.dead.tunic, R.deadHorse]) { m.count = 0; m.frustumCulled = false; m.receiveShadow = true; R.scene.add(m); }
 
@@ -294,7 +327,13 @@ function buildArmies3D(R) {
     const col = new T.Color(r.u.type === 'general' ? '#d9b04a' : FACTIONS[r.faction].color);
     for (const f of r.figs) {
       pool.tunic.setColorAt(f.slot, col.clone().offsetHSL(0, 0, (Math.random() - 0.5) * 0.06));
-      if (pool.horse) pool.horse.setColorAt(f.slot, new T.Color().setHSL(0.07 + Math.random() * 0.03, 0.45 + Math.random() * 0.2, 0.16 + Math.random() * 0.22));
+      if (pool.horse) {
+        // bay, chestnut, dun, grey and black horses
+        const hc = [[0.06, 0.55, 0.22], [0.05, 0.6, 0.3], [0.09, 0.4, 0.45], [0.08, 0.05, 0.62], [0.07, 0.2, 0.1], [0.06, 0.5, 0.17]][Math.floor(Math.random() * 6)];
+        const c = new T.Color().setHSL(hc[0], hc[1], hc[2] + (Math.random() - 0.5) * 0.06);
+        pool.horse.setColorAt(f.slot, c);
+        for (let k = 0; k < 4; k++) pool.legs.setColorAt(f.slot * 4 + k, c);
+      }
     }
     // Banner on a pole, carried at the back of the regiment
     const flag = bannerTexture(r.faction);
@@ -315,7 +354,7 @@ function buildArmies3D(R) {
     r.ring = ring;
   }
   d.scale.set(0, 0, 0); d.updateMatrix();
-  for (const k in R.pools) for (const m of ['fixed', 'tunic', 'horse']) if (R.pools[k][m]) for (let i = 0; i < R.pools[k].cap; i++) R.pools[k][m].setMatrixAt(i, d.matrix);
+  for (const k in R.pools) for (const m of ['fixed', 'tunic', 'horse', 'legs']) if (R.pools[k][m]) for (let i = 0; i < R.pools[k][m].count; i++) R.pools[k][m].setMatrixAt(i, d.matrix);
 }
 
 const bannerCache = {};
@@ -394,6 +433,8 @@ function buildWalls3D(R, wz) {
 
 // ---------- Per frame ----------
 
+const LEG = new (window.THREE ? THREE.Matrix4 : Object)(), LEGW = new (window.THREE ? THREE.Matrix4 : Object)();
+
 function resize3D(R) {
   R.renderer.setSize(innerWidth, innerHeight, false);
   R.camera.aspect = innerWidth / innerHeight;
@@ -469,8 +510,20 @@ function render3D(R, dt) {
       pool.fixed.setMatrixAt(f.slot, d.matrix);
       pool.tunic.setMatrixAt(f.slot, d.matrix);
       if (pool.horse) pool.horse.setMatrixAt(f.slot, d.matrix);
+      // Legs swing from the hip: a marching stride, or a horse's gallop (front pair, then hind pair)
+      const H = pool.HIPS, gallop = mounted, freq = mounted ? (r.run || r.d.cls !== 'inf' ? 11 : 8) : 8;
+      for (let k = 0; k < H.length; k++) {
+        const ph = gallop ? [0, 0.6, Math.PI, Math.PI + 0.6][k] : k * Math.PI;
+        const a = walking ? Math.sin(R.t * freq + f.ph + ph) * (gallop ? 0.62 : 0.5) : (fight && !gallop ? Math.sin(R.t * 3 + f.ph + ph) * 0.08 : 0);
+        LEG.makeRotationZ(a); LEG.setPosition(H[k][0], H[k][1], H[k][2]);
+        LEGW.multiplyMatrices(d.matrix, LEG);
+        pool.legs.setMatrixAt(f.slot * H.length + k, LEGW);
+      }
     }
-    for (const f of r.figs) if (!f.alive) { pool.fixed.setMatrixAt(f.slot, zero); pool.tunic.setMatrixAt(f.slot, zero); if (pool.horse) pool.horse.setMatrixAt(f.slot, zero); }
+    for (const f of r.figs) if (!f.alive) {
+      pool.fixed.setMatrixAt(f.slot, zero); pool.tunic.setMatrixAt(f.slot, zero); if (pool.horse) pool.horse.setMatrixAt(f.slot, zero);
+      for (let k = 0; k < pool.HIPS.length; k++) pool.legs.setMatrixAt(f.slot * pool.HIPS.length + k, zero);
+    }
     // Banner follows the regiment; hidden once it has fled or died
     const show = !r.gone && alive.length > 0;
     r.banner.visible = show;
@@ -486,7 +539,7 @@ function render3D(R, dt) {
       r.ring.position.set(r.x, R.hgt(r.x, r.y) + 1.5, r.y);
     }
   }
-  for (const k in R.pools) { const p = R.pools[k]; p.fixed.instanceMatrix.needsUpdate = p.tunic.instanceMatrix.needsUpdate = true; if (p.horse) p.horse.instanceMatrix.needsUpdate = true; }
+  for (const k in R.pools) { const p = R.pools[k]; p.fixed.instanceMatrix.needsUpdate = p.tunic.instanceMatrix.needsUpdate = p.legs.instanceMatrix.needsUpdate = true; if (p.horse) p.horse.instanceMatrix.needsUpdate = true; }
   // Arrows on their arcs
   let ai = 0;
   for (const a of TB.arrows) {

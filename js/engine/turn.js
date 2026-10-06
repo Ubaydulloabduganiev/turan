@@ -57,7 +57,7 @@ function upkeepPhase() {
       if (order < 25 && !p.siege && rng() < (25 - order) * 0.025) revolt(p);
     }
     const upkeep = factionUpkeep(f);
-    st.gold += income - upkeep;
+    st.gold += income - upkeep - treasuryLoss(f);
     payPending(f);
     st.lastIncome = income; st.lastUpkeep = upkeep;
     if (st.orderBonusT > 0) st.orderBonusT--;

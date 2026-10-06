@@ -380,8 +380,14 @@ function paintBattleGround(for3d) {
   const x = c.getContext('2d'), rnd = mulberry32(TB.b.prov.length * 977 + G.turn);
   const g = GROUND[TB.terrain] || GROUND.steppe;
   x.fillStyle = g[0]; x.fillRect(0, 0, BF.W, BF.H);
+  // A photographed ground texture, tinted to the terrain, when it has loaded
+  const photo = typeof ART !== 'undefined' && ART.ground ? img(TB.terrain === 'desert' ? ART.ground.sand : ART.ground.grass) : null;
+  if (photo) {
+    x.save(); x.scale(0.5, 0.5); x.fillStyle = x.createPattern(photo, 'repeat'); x.fillRect(0, 0, BF.W * 2, BF.H * 2); x.restore();
+    x.save(); x.globalCompositeOperation = 'color'; x.globalAlpha = TB.terrain === 'desert' ? 0.35 : 0.3; x.fillStyle = g[0]; x.fillRect(0, 0, BF.W, BF.H); x.restore();
+  }
   const n = noiseCanvas(128, 3 + G.turn, [4, 8, 16, 32]);
-  x.globalCompositeOperation = 'overlay'; x.globalAlpha = 0.55; x.drawImage(n, 0, 0, BF.W, BF.H);
+  x.globalCompositeOperation = 'overlay'; x.globalAlpha = photo ? 0.35 : 0.55; x.drawImage(n, 0, 0, BF.W, BF.H);
   x.globalAlpha = 0.25; x.fillStyle = x.createPattern(noiseCanvas(64, 9, [16, 32]), 'repeat'); x.fillRect(0, 0, BF.W, BF.H);
   x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
   if (TB.terrain === 'desert') {
@@ -391,7 +397,7 @@ function paintBattleGround(for3d) {
       x.strokeStyle = 'rgba(140,100,50,0.3)'; x.beginPath(); x.moveTo(px - w * 0.3, py - w * 0.2); x.quadraticCurveTo(px + w * 0.4, py - w * 0.08, px + w, py); x.stroke();
     }
   } else {
-    for (let i = 0; i < 1400; i++) {
+    for (let i = 0; i < (photo ? 0 : 1400); i++) {
       const px = rnd() * BF.W, py = rnd() * BF.H;
       x.strokeStyle = rnd() < 0.5 ? 'rgba(60,70,30,0.5)' : 'rgba(200,190,120,0.45)'; x.lineWidth = 1;
       x.beginPath(); x.moveTo(px, py); x.lineTo(px - 1.5, py - 4); x.moveTo(px + 1.5, py); x.lineTo(px + 2.5, py - 5); x.stroke();

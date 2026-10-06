@@ -207,8 +207,8 @@ function captureProvince(p, by, army, mode) {
   for (const a of armiesIn(p.id)) { if (a.owner === old) delete G.armies[a.id]; else a.besieging = false; }
   p.unrest = 35;
   for (const k of BUILDING_ORDER) if (p.b[k] > 0 && rng() < 0.25) p.b[k]--;
-  let loot = Math.round(p.pop * 8);
-  if (mode === 'sack') { loot = Math.round(p.pop * 25); p.pop *= 0.8; p.unrest = 55; p.sacked = 6; }
+  let loot = Math.round(p.pop * 8 * GAME.INCOME);
+  if (mode === 'sack') { loot = Math.round(p.pop * 25 * GAME.INCOME); p.pop *= 0.8; p.unrest = 55; p.sacked = 6; }
   if (by !== 'rebels') G.factions[by].gold += loot;
   G.stats[by] && G.stats[by].taken++;
   const wasCap = old !== 'rebels' && G.factions[old].capital === p.id;
