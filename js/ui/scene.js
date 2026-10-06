@@ -178,6 +178,21 @@ function sceneFrame(now) {
   scene.last = now; scene.t += dt;
   const c = scene.c, x = c.getContext('2d'), W = scene.W, H = scene.H, s = Math.max(0.6, Math.min(1.2, H / 800));
   x.setTransform(scene.dpr, 0, 0, scene.dpr, 0, 0);
+  // A real photograph or painting of Samarkand when the gallery has one
+  const photo = typeof ART !== 'undefined' && ART.title ? img(ART.title) : null;
+  if (photo) {
+    kenBurns(x, photo, W, H, scene.t % 120, { focus: ART.titleFocus || [0.5, 0.4], dur: 60 });
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(8,6,14,0.55)'); g.addColorStop(0.45, 'rgba(8,6,14,0.35)'); g.addColorStop(1, 'rgba(8,6,14,0.75)');
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    for (const m of scene.motes) {
+      m.x += m.v * dt; if (m.x > W + 10) m.x = -10;
+      x.fillStyle = `rgba(255,214,150,${0.15 + 0.2 * Math.sin(scene.t * 1.5 + m.p)})`;
+      x.beginPath(); x.arc(m.x, m.y + Math.sin(scene.t + m.p) * 4, m.r, 0, Math.PI * 2); x.fill();
+    }
+    vignette(x, W, H, 0.7); grain(x, W, H, 0.06);
+    requestAnimationFrame(sceneFrame);
+    return;
+  }
   x.drawImage(scene.still, 0, 0, W, H);
   // Birds
   x.strokeStyle = 'rgba(30,14,24,0.8)'; x.lineWidth = 1.3;

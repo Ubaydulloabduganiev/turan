@@ -174,6 +174,7 @@ $('pick-go').onclick = startNew;
 $('btn-continue').onclick = () => { if (loadGame('auto')) startLoaded(); };
 $('btn-load').onclick = () => openSaves('load');
 $('btn-help').onclick = openHelp;
+$('btn-credits').onclick = openCredits;
 $('btn-end').onclick = doEndTurn;
 $('busy').onclick = () => { LIFE.skip = true; };
 $('btn-dip').onclick = () => !uiLocked() && openDiplomacy();

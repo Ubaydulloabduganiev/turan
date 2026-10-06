@@ -544,6 +544,72 @@ const SCENE_SPEC = {
   },
 };
 
+// ---------- Scenes over real paintings and photographs ----------
+
+function sceneArt(sc) {
+  if (typeof ART === 'undefined') return null;
+  if (sc.kind === 'place') return ART.places[sc.id] || null;
+  return ART.scenes[sc.kind] || null;
+}
+
+// What moves over each picture: petals at a wedding, smoke over a conquered city, dust in the light
+const SCENE_FX = {
+  wedding(x, W, H, t, dt) {
+    lightLeak(x, W, H, t, 'rgba(255,200,120,A)', 0.8, 0.15);
+    if (CINE.parts.length < 70) spawn(1, () => ({ x: Math.random() * W, y: -20, vx: -8 + Math.random() * 16, vy: 22 + Math.random() * 26, vr: -1.5 + Math.random() * 3, r: Math.random() * 6, c: ['#f6b0c0', '#fde2e8', '#d8506a', '#fff6f0'][Math.floor(Math.random() * 4)] }));
+    stepParts(x, dt, W, H, p => { x.save(); x.globalAlpha = 0.85; x.translate(p.x + Math.sin(p.life * 1.7) * 14, p.y); x.rotate(p.r); x.fillStyle = p.c; x.beginPath(); x.ellipse(0, 0, 4.5, 2.6, 0, 0, 7); x.fill(); x.restore(); });
+  },
+  coronation(x, W, H, t, dt) {
+    lightLeak(x, W, H, t, 'rgba(255,215,140,A)', 0.5, 0.05);
+    motes(x, W, H, dt, '255,226,160');
+  },
+  conquest(x, W, H, t, dt) {
+    x.save(); x.globalCompositeOperation = 'multiply'; x.fillStyle = 'rgba(200,110,70,0.35)'; x.fillRect(0, 0, W, H); x.restore();
+    if (CINE.parts.length < 120) {
+      spawn(1, () => ({ k: 'smoke', x: W * Math.random(), y: H * (0.5 + Math.random() * 0.3), vx: 10 + Math.random() * 8, vy: -14 - Math.random() * 14, s: 30 + Math.random() * 40, max: 12 }));
+      spawn(1, () => ({ k: 'ember', x: W * Math.random(), y: H * (0.6 + Math.random() * 0.3), vx: (Math.random() - 0.3) * 30, vy: -35 - Math.random() * 50, max: 4 }));
+    }
+    stepParts(x, dt, W, H, p => {
+      if (p.k === 'smoke') { p.s += dt * 10; x.globalAlpha = Math.max(0, 0.22 * Math.sin(Math.min(Math.PI, p.life / 12 * Math.PI))); x.fillStyle = '#2a2224'; x.beginPath(); x.arc(p.x, p.y, p.s, 0, 7); x.fill(); x.globalAlpha = 1; }
+      else { x.globalAlpha = Math.max(0, 1 - p.life / 4); x.fillStyle = '#ffb048'; x.fillRect(p.x, p.y, 2.2, 2.2); x.globalAlpha = 1; }
+    });
+  },
+  birth(x, W, H, t, dt) {
+    const f = 0.85 + 0.1 * Math.sin(t * 9) + 0.05 * Math.sin(t * 23);
+    x.save(); x.globalCompositeOperation = 'soft-light'; x.fillStyle = `rgba(255,170,80,${0.35 * f})`; x.fillRect(0, 0, W, H); x.restore();
+    motes(x, W, H, dt, '255,232,170');
+  },
+  place(x, W, H, t, dt, sc) {
+    const k = LANDMARKS[sc.id].kind;
+    if (k === 'caravanserai') {
+      if (CINE.parts.length < 200) spawn(2, () => ({ x: Math.random() * W, y: -10, vx: -14 + Math.random() * 8, vy: 28 + Math.random() * 30 }));
+      stepParts(x, dt, W, H, p => { x.fillStyle = 'rgba(255,255,255,0.8)'; x.fillRect(p.x, p.y, 2.2, 2.2); });
+    } else motes(x, W, H, dt, k === 'mine' ? '200,220,255' : '255,236,200');
+    lightLeak(x, W, H, t, 'rgba(255,230,180,A)', 0.85, 0.1);
+  },
+};
+function motes(x, W, H, dt, rgb) {
+  if (CINE.parts.length < 60) spawn(1, () => ({ x: Math.random() * W, y: H * (0.2 + Math.random() * 0.7), vx: 4 + Math.random() * 8, vy: -3 - Math.random() * 5, max: 9, r: 0.6 + Math.random() * 1.6 }));
+  stepParts(x, dt, W, H, p => { x.globalAlpha = 0.6 * Math.sin(Math.min(Math.PI, p.life / 9 * Math.PI)); x.fillStyle = `rgb(${rgb})`; x.beginPath(); x.arc(p.x, p.y, p.r, 0, 7); x.fill(); x.globalAlpha = 1; });
+}
+
+function drawImageScene(x, W, H, t, dt, sc, src) {
+  const im = img(src);
+  x.fillStyle = '#050407'; x.fillRect(0, 0, W, H);
+  if (!im) return;
+  const tall = im.width / im.height < 1.15;
+  const art = (ART.focus || {})[src] || {};
+  // A tall manuscript page is shown whole, above the caption
+  const top = CINE.el.querySelector('.cine-text').getBoundingClientRect().top + 50;
+  const area = tall ? { x: 0, y: H * 0.05, w: W, h: Math.max(H * 0.35, top - H * 0.05) } : { x: 0, y: 0, w: W, h: H };
+  x.globalAlpha = Math.min(1, CINE.imgT = (CINE.imgT || 0) + dt * 0.8);
+  kenBurns(x, im, W, H, t, { ...area, focus: art.focus, dur: 45 });
+  x.globalAlpha = 1;
+  try { (SCENE_FX[sc.kind] || (() => {}))(x, W, H, t, dt, sc); } catch (e) { console.error(e); }
+  vignette(x, W, H, 0.6);
+  grain(x, W, H, 0.07);
+}
+
 // ---------- Playing a scene ----------
 
 function layoutPeople(spec) {
@@ -556,6 +622,12 @@ function layoutPeople(spec) {
 function playScene(sc) {
   const spec = SCENE_SPEC[sc.kind](sc);
   const el = cineEl(), cv = el.querySelector('canvas'), x = cv.getContext('2d');
+  // A real painting or photograph when the gallery has one; the people then stand in the caption
+  const src = sceneArt(sc);
+  if (src) { preload(src); spec.layout = 'inline'; }
+  const peopleEl = el.querySelector('.cine-people');
+  if (src) el.querySelector('.cine-text').prepend(peopleEl); else el.insertBefore(peopleEl, el.querySelector('.cine-text'));
+  CINE.imgT = 0;
   CINE.spec = sc; CINE.parts = []; CINE.t = 0; CINE.last = performance.now();
   el.querySelector('.cine-kicker').textContent = spec.kicker || '';
   el.querySelector('.cine-title').textContent = spec.title || '';
@@ -577,7 +649,7 @@ function playScene(sc) {
   requestAnimationFrame(() => el.classList.add('shown'));
   const frame = now => {
     const dt = Math.min(0.05, (now - CINE.last) / 1000); CINE.last = now; CINE.t += dt;
-    try { SCENE_DRAW[sc.kind](x, innerWidth, innerHeight, CINE.t, dt, sc); } catch (e) { console.error(e); }
+    try { if (src && !imgFailed(src)) drawImageScene(x, innerWidth, innerHeight, CINE.t, dt, sc, src); else SCENE_DRAW[sc.kind](x, innerWidth, innerHeight, CINE.t, dt, sc); } catch (e) { console.error(e); }
     CINE.raf = requestAnimationFrame(frame);
   };
   CINE.raf = requestAnimationFrame(frame);

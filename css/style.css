@@ -448,3 +448,13 @@ table.dip svg { width: 24px; height: 29px; vertical-align: middle; }
 .kid .portrait { width: 64px; height: 80px; }
 .kid small { color: var(--muted); }
 @media (max-width: 760px) { .couple { grid-template-columns: 1fr; } .couple .knot { text-align: center; } }
+
+/* ---------- Real paintings ---------- */
+.cine-people.inline { position: static; display: flex; justify-content: center; gap: 22px; margin: 0 0 10px; }
+.cine-people.inline .portrait { width: clamp(70px, 7vw, 96px); }
+.cine-people.inline .cp-name { font-size: 15px; margin-top: 4px; }
+.cine-people.inline .cine-person { animation-delay: 0.2s; }
+#cinema:has(.cine-people.inline) #cine-cv { animation: none; }
+.credits { font-size: 14px; line-height: 1.4; max-height: 56vh; overflow: auto; padding-left: 18px; }
+.credits li { margin-bottom: 6px; }
+.credits a { color: var(--tile); }

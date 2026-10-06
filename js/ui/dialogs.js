@@ -471,6 +471,13 @@ function helpHTML() {
   }
   return h + (open ? '</ul>' : '') + '</div>';
 }
+// Where the paintings and photographs come from
+function openCredits() {
+  const list = (typeof CREDITS !== 'undefined' ? CREDITS : []).map(c =>
+    `<li><b>${c.use}</b> — <i>${c.title}</i>${c.author ? ', ' + c.author : ''}${c.date ? ' (' + c.date + ')' : ''}. ${c.license}${c.page ? ` · <a href="${c.page}" target="_blank" rel="noopener">Wikimedia Commons</a>` : ''}</li>`).join('');
+  return showModal(`<h3>${t('Pictures in this game')}</h3><p class="note">${t('The portraits and scenes come from Timurid, Persian and Mughal manuscripts painted in the 15th and 16th centuries, many of them made for Temur’s own grandsons. Photographs show the special places as they are today. All are public domain or shared under free licences.')}</p><ul class="credits">${list}</ul>`,
+    [{ label: t('Close'), value: null, cls: 'big' }], { cls: 'wide', cancel: null });
+}
 function openHelp() { return showModal(helpHTML(), [{ label: t('Close'), value: null, cls: 'big' }], { cls: 'wide', cancel: null }); }
 
 // Language buttons, shown on the title screen and in the menu

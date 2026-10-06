@@ -48,8 +48,30 @@ function lookFor(who, faction, age) {
   };
 }
 
+// A painted portrait from a real miniature, when the gallery has one for this person
+function portraitArt(who, faction, L) {
+  if (typeof ART === 'undefined') return null;
+  const c = typeof who === 'string' ? (CHAR_BY_ID[who] || charByName(who)) : who;
+  if (c && c.id && ART.portraits[c.id]) return ART.portraits[c.id];
+  if (typeof who === 'string' && ART.types[who]) return ART.types[who];
+  const pool = L.female ? ART.generic.female : L.age < 14 ? ART.generic.young : ART.generic[(FACTIONS[faction || L.faction] || FACTIONS.rebels).names] || ART.generic.turkic;
+  return pool && pool.length ? pool[L.seed % pool.length] : null;
+}
+
 function portraitSVG(who, opts = {}) {
   const L = lookFor(who, opts.faction, opts.age);
+  const art = portraitArt(who, opts.faction, L);
+  if (art) {
+    const id = 'pt' + (portraitN++), F = FACTIONS[opts.faction || L.faction] || null;
+    return `<svg class="portrait painted ${opts.cls || ''}" viewBox="0 0 100 125" xmlns="http://www.w3.org/2000/svg"><defs>
+      <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6dc94"/><stop offset=".5" stop-color="#c9973a"/><stop offset="1" stop-color="#7a5a1a"/></linearGradient>
+      <clipPath id="${id}a"><path d="M7 125V42Q7 9 50 5Q93 9 93 42V125Z"/></clipPath>
+      <radialGradient id="${id}v" cx=".5" cy=".42" r=".75"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient></defs>
+      <rect width="100" height="125" fill="url(#${id}g)"/><rect x="2.5" y="2.5" width="95" height="120" fill="${F ? F.dark : '#120c06'}"/>
+      <image href="${art}" x="7" y="5" width="86" height="120" preserveAspectRatio="xMidYMin slice" clip-path="url(#${id}a)"/>
+      <path d="M7 125V42Q7 9 50 5Q93 9 93 42V125Z" fill="url(#${id}v)"/>
+      <path d="M7 125V42Q7 9 50 5Q93 9 93 42V125" fill="none" stroke="#d8b45a" stroke-width="1.4"/></svg>`;
+  }
   if (L.age < 16 && !L.female) L.beard = 'none';
   const id = 'pt' + (portraitN++);
   const F = FACTIONS[opts.faction || L.faction] || null;
