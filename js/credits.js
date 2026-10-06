@@ -192,5 +192,133 @@ const CREDITS = [
   "date": "1433",
   "license": "Public domain",
   "page": "https://commons.wikimedia.org/wiki/File:Portrait_of_a_Man_in_a_Turban_(Jan_van_Eyck).jpg"
+ },
+ {
+  "use": "Title screen",
+  "title": "Gorskii 03978u",
+  "author": "Sergei Prokudin-Gorskii",
+  "date": "between 1905 and 1915date QS:P,+1950-00-",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Gorskii_03978u.jpg"
+ },
+ {
+  "use": "Afrasiyab",
+  "title": "Afrasiab - details from The Ambassadors' Painting 3 - great procession",
+  "author": "anonymous",
+  "date": "(dated ca. 650) ; 2012-04-15 11:59:07",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Afrasiab_-_details_from_The_Ambassadors%27_Painting_3_-_great_procession.JPG"
+ },
+ {
+  "use": "Samanid Mausoleum",
+  "title": "UZ Bukhara Samanid-mausoleum",
+  "author": "Apfel51",
+  "date": "2012-05-08",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:UZ_Bukhara_Samanid-mausoleum.jpg"
+ },
+ {
+  "use": "Iron Gate (a gorge of the Kugitang range nearby)",
+  "title": "Rocky gorge and cliffs of Kuhitang Ridge",
+  "author": "Panpanchik",
+  "date": "2026-05-03 21:31:46",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Rocky_gorge_and_cliffs_of_Kuhitang_Ridge.jpg"
+ },
+ {
+  "use": "Heavenly horses",
+  "title": "Horses alpine meadow Kyrgyzstan",
+  "author": "Peretz Partensky from San Francisco, USA",
+  "date": "2009-09-26 11:23",
+  "license": "CC BY-SA 2.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Horses_alpine_meadow_Kyrgyzstan.jpg"
+ },
+ {
+  "use": "Issyk-Kul",
+  "title": "Issyk-Kul, Kyrgyzstan (42812885110)",
+  "author": "Ninara from Helsinki, Finland",
+  "date": "2018-07-18 08:09",
+  "license": "CC BY 2.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Issyk-Kul,_Kyrgyzstan_(42812885110).jpg"
+ },
+ {
+  "use": "Tash Rabat",
+  "title": "Tash Rabat in mountains",
+  "author": "Firespeaker",
+  "date": "2008-03-22",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Tash_Rabat_in_mountains.jpg"
+ },
+ {
+  "use": "Jade rivers of Khotan",
+  "title": "Malikwat Yulongkashi Hotan Xinjiang China 新疆 和田 玉龙河 - panoramio (1)",
+  "author": "Hiroki Ogawa",
+  "date": "11 November 2015 (original upload date)",
+  "license": "CC BY 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Malikwat_Yulongkashi_Hotan_Xinjiang_China_%E6%96%B0%E7%96%86_%E5%92%8C%E7%94%B0_%E7%8E%89%E9%BE%99%E6%B2%B3_-_panoramio_(1).jpg"
+ },
+ {
+  "use": "Ulytau",
+  "title": "Ulutay 2",
+  "author": "AlyonaKaptyonkina",
+  "date": "2024-06-08 17:05:51",
+  "license": "CC BY-SA 4.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Ulutay_2.jpg"
+ },
+ {
+  "use": "Volga sturgeon",
+  "title": "Jean Pierre Moynet - Fishing the sturgeon on the Volga river Russia 1867 (engraving) - (MeisterDrucke-1473318)",
+  "author": "Jean-Pierre-Moyne",
+  "date": "1867",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Jean_Pierre_Moynet_-_Fishing_the_sturgeon_on_the_Volga_river_Russia_1867_(engraving)_-_(MeisterDrucke-1473318).jpg"
+ },
+ {
+  "use": "Ayaz-Kala",
+  "title": "Ayaz-Kala 02",
+  "author": "Bgag",
+  "date": "2023-10-05",
+  "license": "CC0",
+  "page": "https://commons.wikimedia.org/wiki/File:Ayaz-Kala_02.jpg"
+ },
+ {
+  "use": "Bamiyan",
+  "title": "Buddhas of Bamiyan D39",
+  "author": "František Řiháček",
+  "date": "1961-05",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Buddhas_of_Bamiyan_D39.jpg"
+ },
+ {
+  "use": "Nishapur turquoise",
+  "title": "Turquoise of Nishapur - village of Ma'dan 11",
+  "author": "Sonia Sevilla",
+  "date": "2014-03-24 17:47:09",
+  "license": "CC0",
+  "page": "https://commons.wikimedia.org/wiki/File:Turquoise_of_Nishapur_-_village_of_Ma%27dan_11.JPG"
+ },
+ {
+  "use": "Sar-i Sang lapis",
+  "title": "Lazuryt - Ladjuar Medam, prow. Badakshan, Afganistan.",
+  "author": "Lech Darski",
+  "date": "2012-12-07 13:15:55",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Lazuryt_-_Ladjuar_Medam,_prow._Badakshan,_Afganistan..jpg"
+ },
+ {
+  "use": "Old Merv",
+  "title": "SultanSanjarMausoleum1",
+  "author": "Hergit",
+  "date": "2011-09-16",
+  "license": "CC BY-SA 3.0",
+  "page": "https://commons.wikimedia.org/wiki/File:SultanSanjarMausoleum1.jpg"
+ },
+ {
+  "use": "Altai gold (Saka gold from the Issyk kurgan)",
+  "title": "Issyk kurgan Flying elk with griffin",
+  "author": "eggry",
+  "date": "2018-12-05 19:16:50",
+  "license": "CC BY-SA 2.0",
+  "page": "https://commons.wikimedia.org/wiki/File:Issyk_kurgan_Flying_elk_with_griffin.jpg"
  }
 ];

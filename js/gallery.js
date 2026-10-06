@@ -38,7 +38,8 @@ const ART = {
     'img/scenes/wedding.jpg': { focus: [0.72, 0.45] },
     'img/scenes/coronation.jpg': { focus: [0.5, 0.55] },
     'img/scenes/conquest.jpg': { focus: [0.62, 0.3] },
-    'img/scenes/birth.jpg': { focus: [0.62, 0.35] },
+    'img/scenes/birth.jpg': { focus: [0.6, 0.4] },
+    'img/title.jpg': { focus: [0.5, 0.45] },
   },
 };
 // Special places, when their picture is present
