@@ -61,7 +61,8 @@ function advisorTips() {
   return tips.slice(0, 3);
 }
 
-let advisorOpen = true;
+// Folded on phones, where the map needs the room
+let advisorOpen = !(window.matchMedia && matchMedia('(max-width: 760px), (max-height: 520px)').matches);
 function renderAdvisor() {
   const box = $('advisor');
   if (!G || G.over) { box.innerHTML = ''; return; }

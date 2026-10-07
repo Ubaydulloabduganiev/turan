@@ -37,6 +37,9 @@ function vignette(x, W, H, strength = 0.65) {
 // Draws a picture with a slow push-in toward its focus point. area: the part of the screen to fill.
 // A picture much taller (or wider) than the area is shown whole over a blurred copy of itself,
 // the way documentaries show manuscript pages.
+// Older iPhones draw canvas images without filters, so the backdrop is darkened by hand there
+const CANVAS_FILTER = (() => { try { const c = document.createElement('canvas').getContext('2d'); c.filter = 'blur(2px)'; return c.filter === 'blur(2px)'; } catch (e) { return false; } })();
+
 function kenBurns(x, im, W, H, t, o = {}) {
   const ax = o.x || 0, ay = o.y || 0, aw = o.w || W, ah = o.h || H;
   const dur = o.dur || 40, k = Math.min(1, t / dur), ease = k * (2 - k);
@@ -49,6 +52,7 @@ function kenBurns(x, im, W, H, t, o = {}) {
     // blurred backdrop
     x.save(); x.filter = 'blur(22px) brightness(0.45) saturate(1.1)';
     const s = cover * 1.15; x.drawImage(im, ax + aw / 2 - im.width * s / 2, ay + ah / 2 - im.height * s / 2, im.width * s, im.height * s);
+    if (!CANVAS_FILTER) { x.fillStyle = 'rgba(6, 5, 10, 0.72)'; x.fillRect(ax, ay, aw, ah); }
     x.restore();
   }
   const base = fits ? cover : contain * (o.fill || 0.98);
