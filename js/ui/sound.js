@@ -112,7 +112,7 @@ document.addEventListener('click', e => {
 
 // ---------- Battle sounds, driven by what happens on the field ----------
 function battleSounds() {
-  if (!TB || TB.paused || TB.over) return;
+  if (typeof TB === 'undefined' || !TB || TB.paused || TB.over) return;
   let melee = 0, riders = 0;
   for (const r of TB.regs) {
     if (r.gone || r.men <= 0) continue;

@@ -53,6 +53,7 @@ function upkeepPhase() {
       const order = provinceOrder(p, dist);
       income += provinceIncome(p, order);
       growProvince(p, order);
+      if (p.taxFree > 0) p.taxFree--;
       finishQueues(p);
       if (order < 25 && !p.siege && rng() < (25 - order) * 0.025) revolt(p);
     }
@@ -120,7 +121,7 @@ function upkeepPhase() {
 
 function growProvince(p, order) {
   const T = TERRAIN[p.terrain], f = G.factions[p.owner];
-  let g = (0.008 + 0.006 * p.b.farms) * T.grow + [0.004, 0, -0.004][f.tax];
+  let g = (0.008 + 0.006 * p.b.farms) * T.grow + TAX_GROWTH[taxOf(p)];
   if (order < 40) g -= 0.006;
   if (p.siege) g = -0.02;
   const cap = 30 + 40 * p.b.farms + (p.terrain === 'oasis' ? 40 : 0);

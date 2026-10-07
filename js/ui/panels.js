@@ -66,13 +66,25 @@ function provincePanel(p) {
   if (mine && order < 35) h += `<p class="note bad">${t('The people are close to revolt. Lower taxes, build a mosque or station troops here.')}</p>`;
   if (p.sacked > 0) h += `<p class="note warn">${t('The city is still recovering from a sack.')}</p>`;
 
-  if (mine) {
+  // Tabs: for your city Rule / Army / Build; for another's War / Diplomacy / Dealings
+  const tabs = mine ? [['rule', t('Rule')], ['army', t('Army')], ['build', t('Build')]] : [['war', t('War')], ['dip', t('Diplomacy')], ['deal', t('Dealings')]];
+  if (!tabs.some(([k]) => k === UI.ptab)) UI.ptab = tabs[0][0];
+  if (!mine && p.owner === 'rebels' && UI.ptab === 'dip') UI.ptab = 'war';
+  h += `<div class="ptabs">${tabs.map(([k, l]) => `<button data-act="ptab" data-k="${k}" class="${UI.ptab === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  const tab = UI.ptab;
+
+  if (mine && tab === 'rule') {
+    h += citySectionTax(p) + cityActionGroups(p, ['Treasury']);
+  }
+  if (mine && tab === 'rule') {
     h += `<div class="p-sec"><h4>${t('Royal decrees')}</h4><div class="decrees">` + Object.keys(DECREES).map(k => {
       const D = DECREES[k], why = decreeCheck(p, k);
       const price = k === 'feast' ? t('−{n} gold', { n: fmt(D.cost(p)) }) : k === 'tax' ? t('+{n} gold', { n: fmt(D.gain(p)) }) : t('+2 militia');
       return `<button data-act="decree" data-k="${k}" ${why ? 'disabled' : ''} title="${t(why || D.desc)}"><b>${t(D.name)}</b><small>${price}</small></button>`;
     }).join('') + '</div>' + (p.decree === G.turn ? `<p class="note">${t('You have already issued a decree here this turn.')}</p>` : '') + '</div>';
-
+    h += cityActionGroups(p, ['Government', 'Give away']);
+  }
+  if (mine && tab === 'army') {
     h += `<div class="p-sec"><h4>${t('Recruit')}</h4>`;
     const list = recruitable(p);
     if (!list.length) h += `<p class="note">${t('Build barracks or stables to train troops here.')}</p>`;
@@ -87,7 +99,8 @@ function provincePanel(p) {
         p.queue.map((u, i) => `<div class="rcard" data-act="unqueue" data-i="${i}" title="${t('Cancel and refund')}">${unitSVG(u, p.owner)}<div>${uName(u)}</div></div>`).join('') + '</div>';
     }
     h += '</div>';
-
+  }
+  if (mine && tab === 'build') {
     h += `<div class="p-sec"><h4>${t('Buildings')}</h4>`;
     if (p.build) {
       h += `<p class="note">${t('Building {what}: {n} turns left', { what: `<b>${buildName(p)}</b>`, n: p.build.turns })} <button class="small" data-act="cancelbuild">${t('Cancel')}</button></p>`;
@@ -102,14 +115,14 @@ function provincePanel(p) {
       h += `<div class="bld"><div>${bName(k)} <span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('')}</span><div class="lv">${lvl ? bLevel(k, lvl) : t('Not built')}</div></div>${right}</div>`;
     }
     h += '</div>';
-  } else {
-    h += foreignActions(p);
+    h += wonderSection(p);
   }
-
-  h += wonderSection(p);
-  h += placeSection(p);
+  if (!mine) h += foreignActions(p, tab);
+  if (!mine && tab === 'deal') h += cityActionGroups(p, ['Dealings', 'Secret work']);
+  if (!mine && tab === 'war') h += wonderSection(p);
+  if (tab === 'rule' || tab === 'war') h += placeSection(p);
   const here = armiesIn(p.id);
-  if (here.length) {
+  if (here.length && (tab === 'army' || tab === 'war')) {
     h += `<div class="p-sec"><h4>${t('Armies here')}</h4>` + here.map(a => armyRow(a)).join('') + '</div>';
   }
   return h;
@@ -127,9 +140,10 @@ function chanceWord(ratio) {
   return ratio > 2 ? [t('Easy victory'), 'good'] : ratio > 1.3 ? [t('Good odds'), 'good'] : ratio > 0.9 ? [t('Even fight'), 'warn'] : [t('Risky'), 'bad'];
 }
 
-function foreignActions(p) {
+function foreignActions(p, tab) {
   const o = p.owner, pl = G.player;
   let h = '';
+  if (tab === 'deal') return h;
   // Who rules here
   if (o === 'rebels') {
     h += `<div class="p-sec"><h4>${t('Independent city')}</h4><p class="note">${t('Local lords hold {city} and answer to no khan. There is no one to bargain with: take it by force.', { city: cityOf(p) })}</p></div>`;
@@ -138,6 +152,7 @@ function foreignActions(p) {
     h += `<div class="p-sec"><h4>${t('Ruler')}</h4><div class="ruler">${rulerPortrait(o, 'p-portrait')}<div><b>${pn(st.leader)}</b><div class="p-sub">${fTitle(o)}</div>
       <div>${statusChips(pl, o)} <span style="color:${attitudeColor(r.att)}">${attitudeWord(r.att)}</span> ${t('towards you')}</div></div></div></div>`;
   }
+  if (tab === 'dip') return h + diplomacySection(p);
   // Attack
   const def = estimateDefence(p);
   const opts = armiesOf(pl).map(a => ({ a, r: a.moves > 0 && !a.besieging ? reachable(a)[p.id] : null })).filter(x => x.r && x.r.kind !== 'move');
@@ -155,7 +170,12 @@ function foreignActions(p) {
     if (near) h += `<div class="btnrow"><button data-act="selarmy" data-id="${near.id}">${t('Select your nearest army ({city})', { city: cityOf(G.provinces[near.prov]) })}</button></div>`;
   }
   h += `<p class="note">${t('Defenders')}: ${def < 1 ? t('none to speak of') : strengthWord(def)}${p.b.walls ? ` · ${bLevel('walls', p.b.walls).toLowerCase()}` : ''}</p></div>`;
-  // Diplomacy
+  return h;
+}
+
+function diplomacySection(p) {
+  const o = p.owner, pl = G.player;
+  let h = '';
   if (o !== 'rebels') {
     const r = rel(pl, o), gold = G.factions[pl].gold;
     const b = (type, label, extra = '', g = 0, dis = false) => `<button data-act="propose" data-type="${type}" data-g="${g}" ${dis ? 'disabled' : ''} class="${extra}">${label}</button>`;
@@ -262,6 +282,47 @@ function armyPanel(a) {
   return h;
 }
 
+// ---------- City actions (js/engine/cityacts.js) ----------
+
+function citySectionTax(p) {
+  const cur = taxOf(p), own = p.tax !== undefined && p.tax !== null;
+  const btns = TAX_LEVELS.map((l, i) => `<button data-act="citytax" data-k="${i}" class="${cur === i ? 'on' : ''}">${t(l)}</button>`).join('');
+  return `<div class="p-sec"><h4>${t('City taxes')}</h4><div class="taxrow">${btns}</div>
+    <p class="note">${p.taxFree > 0 ? t('Tax-free for {n} more turns.', { n: p.taxFree }) : own ? t('This city has its own tax rate.') + ` <a href="#" data-act="citytax" data-k="realm">${t('Use the realm’s rate')}</a>` : t('Following the realm’s tax rate (set in the Realm screen).')}</p></div>`;
+}
+function cityActionGroups(p, groups) {
+  const list = cityActionsFor(p).filter(A => groups.includes(A.group));
+  let h = '';
+  for (const g of groups) {
+    const acts = list.filter(A => A.group === g);
+    if (!acts.length) continue;
+    h += `<div class="p-sec"><h4>${t(g)}</h4><div class="decrees">` + acts.map(A => {
+      const why = A.check(p), c = A.cost(p);
+      return `<button data-act="cityact" data-k="${A.id}" class="${A.danger ? 'danger-soft' : ''}" ${why ? 'disabled' : ''} title="${t(why || A.desc)}"><b>${t(A.name)}</b><small>${why ? t(why) : c ? t('−{n} gold', { n: fmt(c) }) : A.sub ? A.sub(p) : ''}</small></button>`;
+    }).join('') + '</div></div>';
+  }
+  return h;
+}
+async function doCityAction(p, id) {
+  const A = CITY_ACTIONS.find(x => x.id === id);
+  if (!A || A.check(p)) return;
+  let f = null;
+  if (A.pick) {
+    const opts = A.pick(p);
+    f = await showModal(`<h3>${t(A.name)}</h3><p>${t(A.desc)}</p>`, opts.map(o => ({ label: `${fFull(o)} · ${attitudeWord(rel(G.player, o).att)}`, value: o })).concat([{ label: t('Cancel'), value: null }]), { cancel: null });
+    if (!f) return;
+  } else if (A.danger && !(await confirmBox(t(A.name), t(A.desc), t('Do it'), t('Not yet')))) return;
+  const city = cityOf(p), text = A.act(p, f);
+  log(dateText() + ': ' + text, 'event');
+  sfx(A.cost(p) ? 'coins' : 'click');
+  toast(t(A.name), text, p.owner === G.player || A.own ? 'good' : '');
+  if (p.owner === G.player && !A.own) HOOKS.notify({ scene: { kind: 'conquest', prov: p.id, from: null, sack: false, capital: false } });
+  if (A.own && p.owner !== G.player) { UI.selProv = null; }
+  checkMission();
+  refresh();
+  checkOverUI();
+}
+
 // ---------- Panel clicks ----------
 
 $('panel').addEventListener('click', async e => {
@@ -273,6 +334,9 @@ $('panel').addEventListener('click', async e => {
   let err = null;
   switch (act) {
     case 'close': UI.selArmy = null; UI.selProv = null; break;
+    case 'ptab': UI.ptab = el.dataset.k; break;
+    case 'citytax': e.preventDefault(); setCityTax(p, el.dataset.k === 'realm' ? null : +el.dataset.k); break;
+    case 'cityact': await doCityAction(p, el.dataset.k); return;
     case 'build': err = startBuild(p, el.dataset.k); if (!err) sfx('build'); break;
     case 'cancelbuild': cancelBuild(p); break;
     case 'recruit': if (el.classList.contains('off')) return; err = recruit(p, el.dataset.t); if (!err) sfx('coins', { vol: 0.7 }); break;

@@ -231,13 +231,14 @@ HOOKS.defend = async b => {
 };
 HOOKS.offer = async o => {
   $('busy').classList.add('hidden');
-  const st = G.factions[o.from], v0 = { ruler: pn(st.leader), n: `<b>${fmt(o.gold)}</b>`, nation: fFull(o.from) };
+  const st = G.factions[o.from], v0 = { ruler: pn(st.leader), n: `<b>${fmt(o.gold)}</b>`, nation: fFull(o.from), city: o.city ? cityById(o.city) : '' };
   const texts = {
     peace: '{ruler} is weary of war and offers peace between our peoples.',
     trade: '{ruler} proposes a trade agreement: caravans would travel freely between our lands, enriching both treasuries.',
     alliance: "{ruler} proposes a military alliance. Allies may march through each other's lands and come to each other's aid.",
     marriage: '{ruler} proposes a marriage between our two houses, as Temur himself sealed his alliances.',
     tribute: '{ruler} demands a tribute of {n} gold. If we refuse, there may be war.',
+    buycity: '{ruler} offers {n} gold for our city of {city}. Its people would become his subjects.',
     yield: '{ruler} knows his realm cannot stand against you. He offers to submit to you: all the cities, armies and treasure of his realm ({nation}) would become yours.',
   };
   const v = await showModal(`<div class="with-portrait">${rulerPortrait(o.from)}<div><h3>${t('Envoy from: {nation}', { nation: fFull(o.from) })}</h3><p>${t(texts[o.type], v0)}</p></div></div>`,

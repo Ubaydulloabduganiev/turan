@@ -226,3 +226,6 @@ $('title-langs').addEventListener('click', e => {
 
 applyLang();
 toTitle();
+
+// Installable web app: keep every file for offline play (only when served over http/https)
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});

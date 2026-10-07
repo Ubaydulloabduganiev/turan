@@ -179,7 +179,7 @@ function provinceOrder(p, dist) {
   const F = FACTIONS[p.owner], f = G.factions[p.owner];
   if (p.owner === 'rebels') return 60;
   let o = 70 + p.b.madrasa * 8;
-  o += [12, 0, -18][f.tax];
+  o += TAX_ORDER[taxOf(p)] + (p.taxFree > 0 ? 15 : 0) + (p.governor ? 8 : 0);
   const d = dist ? dist[p.id] : undefined;
   o -= d === undefined ? 25 : Math.min(30, d * 4);
   if (F.nomad && (p.terrain === 'oasis') && p.pop > 15) o -= 10;
@@ -198,7 +198,7 @@ function provinceOrder(p, dist) {
 function provinceIncome(p, order) {
   const f = G.factions[p.owner], F = FACTIONS[p.owner];
   if (p.owner === 'rebels') return 0;
-  let tax = p.pop * TERRAIN[p.terrain].tax * [0.6, 1, 1.4][f.tax] * (1 + 0.2 * p.b.market);
+  let tax = p.taxFree > 0 ? 0 : p.pop * TERRAIN[p.terrain].tax * TAX_INCOME[taxOf(p)] * (1 + 0.2 * p.b.market) * (p.governor ? 1.1 : 1);
   tax *= clampN(order / 70, 0.3, 1.1);
   if (p.terrain === 'oasis' && hasWonder(p.owner, 'musalla')) tax *= 1.15;
   let trade = p.silk ? 40 + 45 * p.b.market + (hasWonder(p.owner, 'saraibazaar') ? 40 : 0) : 0;
@@ -214,16 +214,17 @@ function unitUpkeep(type, nomad) {
   return Math.round(d.upkeep * GAME.UPKEEP * (nomad && (d.cls === 'ha' || type === 'lancer') ? 0.6 : 1));
 }
 
-// A great hoard in the treasury tempts the officials who guard it: some of it goes missing every turn.
+// A great hoard (over 5000 gold) in the treasury tempts the officials who guard it: some of it goes missing every turn.
 function treasuryLoss(f) {
   const g = G.factions[f] ? G.factions[f].gold : 0;
-  return g > 3000 ? Math.round((g - 3000) * 0.1) : 0;
+  return g > 5000 ? Math.round((g - 5000) * 0.1) : 0;
 }
 
 function factionUpkeep(f) {
   let s = 0;
   const nomad = FACTIONS[f].nomad;
   for (const a of armiesOf(f)) for (const u of a.units) s += unitUpkeep(u.type, nomad);
+  for (const p of provsOf(f)) if (p.governor) s += GOVERNOR_UPKEEP;
   return s;
 }
 

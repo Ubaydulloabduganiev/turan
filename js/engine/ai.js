@@ -84,19 +84,22 @@ async function aiOffers(f) {
   if (!G.factions[pl].alive || G.offerTurn === G.turn) return;
   const r = rel(f, pl);
   const chance = rng();
-  let type = null, gold = 0;
+  let type = null, gold = 0, city = null;
   if (dealValue(pl, f, 'submit') > 12 && chance < 0.4) type = 'yield';
   else if (r.war && r.warTurns > 3 && dealValue(pl, f, 'peace') > 10 && chance < 0.35) type = 'peace';
   else if (!r.war && !r.trade && r.att > -5 && chance < 0.08) type = 'trade';
   else if (!r.war && !r.alliance && r.att > 35 && chance < 0.08) type = 'alliance';
   else if (!r.war && !r.married && r.att > 20 && chance < 0.04) type = 'marriage';
+  else if (!r.war && r.att > -5 && chance < 0.1 && (city = provsOf(pl).filter(p => p.adj.some(n => G.provinces[n].owner === f) && G.factions[pl].capital !== p.id && p.pop < 25).sort((a, b) => a.pop - b.pop)[0]) && G.factions[f].gold > cityPrice(city) * 1.2) type = 'buycity';
   else if (!r.war && (factionPower(f) + 40) / (factionPower(pl) + 40) > 2.2 && neighbourFactions(f).has(pl) && chance < 0.06 * AGGRESSION[f]) type = 'tribute';
   if (!type) return;
   G.offerTurn = G.turn;
   if (type === 'tribute') gold = tributeAmount(pl);
-  const yes = await HOOKS.offer({ from: f, type, gold });
+  if (type === 'buycity') gold = Math.round(cityPrice(city) * 1.15 / 50) * 50;
+  const yes = await HOOKS.offer({ from: f, type, gold, city: city && city.id });
   if (yes) {
-    if (type === 'tribute') applyDeal(f, pl, 'tribute');
+    if (type === 'buycity') { G.factions[f].gold -= gold; G.factions[pl].gold += gold; r.att += 8; transferProvince(city, f, 15); }
+    else if (type === 'tribute') applyDeal(f, pl, 'tribute');
     else if (type === 'yield') applyDeal(pl, f, 'submit');
     else applyDeal(f, pl, type);
   } else {
