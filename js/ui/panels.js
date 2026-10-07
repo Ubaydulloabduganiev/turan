@@ -6,7 +6,15 @@ const fmt = n => Math.round(n).toLocaleString(LANG === 'ru' ? 'ru-RU' : LANG ===
 let unitPick = new Set(); // selected unit indexes in the army panel
 let lastArmyShown = null;
 
+// Achievements and campaign goals are looked at after the player's own deeds too, at most once a second
+let lastAchCheck = 0;
 function refresh() {
+  if (G && performance.now() - lastAchCheck > 1000) { lastAchCheck = performance.now(); setTimeout(checkAchievements, 0); }
+  // A campaign goal reached by the player's own hand ends the campaign at once
+  if (G && G.scenario && !G.scenario.result) {
+    const pr = scenarioProgress();
+    if (pr && pr.met && pr.sc.goal.type !== 'hold') setTimeout(function tryEnd() { if (!G || !G.scenario || G.scenario.shown) return; if (uiLocked()) setTimeout(tryEnd, 800); else checkScenarioUI(); }, 0);
+  }
   if (!G) return;
   if (UI.selArmy && !G.armies[UI.selArmy]) UI.selArmy = null;
   renderMap();

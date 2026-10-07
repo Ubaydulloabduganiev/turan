@@ -203,6 +203,7 @@ function siegeTurns(p) {
 function captureProvince(p, by, army, mode) {
   const old = p.owner;
   mode = mode || (by === G.player ? 'occupy' : (rng() < AGGRESSION[by] * 0.25 ? 'sack' : 'occupy'));
+  if (by === G.player && p.b.walls >= 3 && !turnBusy) feat('storm'); // taken by assault, not starved out
   p.owner = by;
   p.siege = null; p.queue = []; p.build = null;
   for (const a of armiesIn(p.id)) { if (a.owner === old) delete G.armies[a.id]; else a.besieging = false; }

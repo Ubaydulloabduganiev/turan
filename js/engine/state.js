@@ -132,6 +132,13 @@ function newGame(player, seed) {
   return G;
 }
 
+// Remembers a deed of the player's, for the achievements
+function feat(k, n = 1) {
+  if (!G) return;
+  G.feats = G.feats || {};
+  G.feats[k] = (G.feats[k] || 0) + n;
+}
+
 function log(text, kind) {
   G.log.push({ t: G.turn, text, kind: kind || '' });
   if (G.log.length > 300) G.log.splice(0, G.log.length - 300);

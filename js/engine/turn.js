@@ -26,6 +26,7 @@ async function endTurn(onProgress) {
     peopleComeOfAge();
     familyTurn();
     checkVictory();
+    checkScenario(true);
   } finally {
     turnBusy = false;
   }

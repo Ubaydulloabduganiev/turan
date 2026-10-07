@@ -84,7 +84,8 @@ function renderAdvisor() {
     mission = `<div class="mission ${where ? 'link' : ''}" data-mission="${where || ''}"><div class="m-head">${t('Council request')} · ${left <= 0 ? t('last turn') : t('turns left: {n}', { n: left })}</div>${m.text}<div class="m-reward">${t('Reward: {n} gold', { n: fmt(m.reward) })}</div></div>`;
   }
   box.innerHTML = `<div class="adv-head" data-adv="toggle"><span>${t('Your vizier advises')}</span><span>${advisorOpen ? '–' : '+'}</span></div>` +
-    (advisorOpen ? mission + tips.map((tp, i) => `<div class="tip ${tp.prov || tp.army || tp.realm || tp.dev ? 'link' : ''}" data-adv="${i}">${tp.text}</div>`).join('') : '');
+    (advisorOpen ? '' : scenarioCard()) + // the campaign goal stays in sight even when the vizier is folded
+    (advisorOpen ? scenarioCard() + mission + tips.map((tp, i) => `<div class="tip ${tp.prov || tp.army || tp.realm || tp.dev ? 'link' : ''}" data-adv="${i}">${tp.text}</div>`).join('') : '');
 }
 
 $('advisor').addEventListener('click', e => {

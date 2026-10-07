@@ -288,6 +288,7 @@ function applyDeal(from, to, type, gold = 0) {
 
 // `loser` bows to `winner`: its cities, treasury and armies change hands and the nation ends.
 function annex(winner, loser) {
+  if (winner === G.player) feat('submit');
   for (const p of provsOf(loser)) {
     p.owner = winner; p.unrest = Math.max(p.unrest, 15); p.queue = []; p.siege = null;
   }

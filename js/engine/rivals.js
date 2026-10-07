@@ -71,6 +71,7 @@ function coalitionTurn(L) {
     // It breaks up when the danger has passed, or after twenty seasons
     if (!G.factions[c.target].alive || dominance(c.target) < 0.22 || G.turn - c.turn > 20 || c.members.filter(m => G.factions[m].alive).length < 1) {
       G.coalition = null;
+      if (c.target === G.player && G.factions[G.player].alive) feat('coalition');
       log(dateText() + ': ' + t('The coalition against the {nation} breaks up.', { nation: fFull(c.target) }), c.target === G.player ? 'dip' : '');
       if (c.target === G.player) HOOKS.notify({ minor: true, title: t('The coalition breaks up'), text: t('Our enemies no longer fight as one.') });
     }

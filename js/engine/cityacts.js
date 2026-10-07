@@ -110,6 +110,7 @@ const CITY_ACTIONS = [
       r.asked = G.turn + ':buy';
       const want = (r.att + 20) / 100 + (st.gold < 600 ? 0.25 : 0) + (provsOf(f).length > 8 ? 0.15 : 0) - (p.pop > 30 ? 0.25 : 0);
       if (!chance(want)) { r.att -= 3; return t('{ruler} will not sell {city}.', { ruler: pn(st.leader), city: cityOf(p) }); }
+      feat('buycity');
       G.factions[G.player].gold -= price; st.gold += price; transferProvince(p, G.player, 15);
       return t('{ruler} accepts {n} gold. {city} is yours.', { ruler: pn(st.leader), n: fmt(price), city: cityOf(p) });
     } },

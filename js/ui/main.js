@@ -4,7 +4,7 @@
 let pickSel = 'temur';
 
 function showScreen(id) {
-  for (const s of ['title', 'pick', 'game']) $(s).classList.toggle('hidden', s !== id);
+  for (const s of ['title', 'pick', 'camps', 'game']) $(s).classList.toggle('hidden', s !== id);
   if (id === 'game') { sceneStop(); music('map'); } else { sceneStart(); music('title'); }
 }
 
@@ -156,7 +156,9 @@ async function doEndTurn() {
     if (lm) { centerOnProv(LANDMARKS[lm.id].prov); await playScene({ kind: 'place', ...lm }); await flushNotices(); }
   }
   refresh();
+  achTurn();
   await checkGoldenAgeUI();
+  await checkScenarioUI();
   checkOverUI();
 }
 
@@ -170,8 +172,10 @@ function updateHint() {
 
 // ---------- Input ----------
 
-$('btn-new').onclick = () => withLoading(() => { showScreen('pick'); renderPick(); });
-$('pick-back').onclick = () => showScreen('title');
+$('btn-new').onclick = () => { showScreen('camps'); renderCampaigns(); };
+$('pick-back').onclick = () => { showScreen('camps'); renderCampaigns(); };
+$('camp-back').onclick = () => showScreen('title');
+$('btn-ach').onclick = () => openAchievements();
 $('pick-go').onclick = startNew;
 $('btn-continue').onclick = () => { if (loadGame('auto')) startLoaded(); };
 $('btn-load').onclick = () => openSaves('load');
@@ -189,13 +193,14 @@ $('btn-code').onclick = () => !uiLocked() && openSecretCode();
 
 // A secret word for the treasury: "Temurthegreat" brings 100,000 gold
 async function openSecretCode() {
-  const v = await showModal(`<h3>${t('Secret code')}</h3><input id="code-in" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" class="code-in">`,
+  const v = await showModal(`<h3>${t('Secret code')}</h3><input id="code-in" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" class="code-in"><p class="note">${t('A campaign in which a code is used earns no achievements.')}</p>`,
     [{ label: t('Cancel'), value: null }, { label: t('Enter'), value: 'ok', cls: 'big' }], {
       cancel: null,
       onOpen: m => { const i = m.querySelector('#code-in'); i.focus(); i.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') closeModal('ok'); }; },
     });
   if (v !== 'ok') return;
   const word = codeWord($('code-in') ? $('code-in').value : '');
+  if (word === 'temurthegreat' || ARMY_WORDS.includes(word)) G.cheated = true;
   if (word === 'temurthegreat') {
     G.factions[G.player].gold += 100000;
     sfx('coins');
