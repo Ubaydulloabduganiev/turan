@@ -8,7 +8,7 @@ const B3 = {};
 function make3D() {
   if (!window.THREE) return null;
   const T = THREE;
-  const small = Math.min(innerWidth, innerHeight) < 700;
+  const small = Math.min(innerWidth, innerHeight) < 700 || GFX.low;
   const canvas = document.createElement('canvas');
   canvas.id = 'b3d';
   $('battle').insertBefore(canvas, $('bcanvas'));
@@ -16,7 +16,7 @@ function make3D() {
   try {
     renderer = new T.WebGLRenderer({ canvas, antialias: !small, powerPreference: 'high-performance' });
   } catch (e) { canvas.remove(); return null; }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, small ? 1.5 : 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, GFX.low ? 1 : small ? 1.5 : 2));
   renderer.shadowMap.enabled = !small;
   renderer.shadowMap.type = T.PCFSoftShadowMap;
 

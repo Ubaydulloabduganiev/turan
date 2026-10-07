@@ -16,6 +16,7 @@ function showModal(html, buttons, opts = {}) {
     m.innerHTML = html + (buttons && buttons.length ? '<div class="actions">' + buttons.map((b, i) =>
       `<button data-mi="${i}" class="${b.cls || ''}" ${b.disabled ? 'disabled' : ''}>${b.label}</button>`).join('') + '</div>' : '');
     $('modal-wrap').classList.remove('hidden');
+    m.scrollTop = 0; // a new window starts at its top, not where the last one was scrolled to
     modalResolve = v => {
       modalResolve = null; modalOpen = false;
       $('modal-wrap').classList.add('hidden');
@@ -408,11 +409,17 @@ function savesHTML(mode) {
 
 async function openMenu() {
   const v = await showModal(`<h3>${dateText()}</h3><p class="note">${fFull(G.player)}</p>${langPicker()}${soundControls()}`, [
-    { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' },
+    { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' }, { label: gfxLabel(), value: 'gfx' },
     { label: t('Chronicle'), value: 'chron' }, { label: t('How to play'), value: 'help' }, { label: t('Guide'), value: 'guide' }, { label: t('Save'), value: 'save' }, { label: t('Load'), value: 'load' },
     { label: t('Main menu'), value: 'title' }, { label: t('Resume'), value: null, cls: 'big' },
   ], { cancel: null, onClick: e => { const l = e.target.closest('[data-lang]'); if (l) { setLang(l.dataset.lang); applyLang(); closeModal(null); openMenu(); } } });
   if (v === 'rivals') { setRivalMoves(!LIFE.showRivals); toast(t('Rival moves'), t(LIFE.showRivals ? 'You will watch rival armies march across the map.' : 'Rival armies will move instantly.'), ''); return openMenu(); }
+  if (v === 'gfx') {
+    setGfxMode(nextGfxMode());
+    const what = { light: 'Simpler drawing for older phones. Takes full effect on the next map you load.', auto: 'The game will choose by itself how much to draw on this device.', full: 'Everything is drawn in full.' };
+    toast(gfxLabel(), t(what[GFX.mode]), '');
+    return openMenu();
+  }
   if (v === 'help') await openHelp();
   if (v === 'guide') startTutorial();
   if (v === 'chron') openChronicle();

@@ -81,7 +81,7 @@ function cloudSprite(rnd, shadow) {
   return c;
 }
 
-function puff(x, y, o) { if (LIFE.puffs.length < 360) LIFE.puffs.push({ x, y, vx: o.vx || 0, vy: o.vy || -6, r: o.r || 3, g: o.g || 4, life: 1, decay: o.decay || 0.35, col: o.col || '120,110,100', a: o.a || 0.35 }); }
+function puff(x, y, o) { if (LIFE.puffs.length < (GFX.low ? 90 : 360)) LIFE.puffs.push({ x, y, vx: o.vx || 0, vy: o.vy || -6, r: o.r || 3, g: o.g || 4, life: 1, decay: o.decay || 0.35, col: o.col || '120,110,100', a: o.a || 0.35 }); }
 
 function onScreen(x, y, pad = 60) {
   const sx = (x - cam.x) * cam.s, sy = (y - cam.y) * cam.s;
@@ -92,9 +92,13 @@ function lifeFrame(now) {
   if (!LIFE.on) return;
   requestAnimationFrame(lifeFrame);
   if (!G || $('game').classList.contains('hidden')) { LIFE.last = now; return; }
-  const dt = Math.min(0.05, (now - (LIFE.last || now)) / 1000);
+  // Light graphics: every other frame (the time still adds up, so marches keep their pace)
+  if (GFX.low && (LIFE.odd = !LIFE.odd)) return;
+  const raw = (now - (LIFE.last || now)) / 1000;
+  if (!GFX.low) gfxSample(raw);
+  const dt = Math.min(GFX.low ? 0.09 : 0.05, raw);
   LIFE.last = now; LIFE.t += dt;
-  const c = LIFE.c, x = LIFE.x, dpr = Math.min(2, window.devicePixelRatio || 1);
+  const c = LIFE.c, x = LIFE.x, dpr = Math.min(GFX.low ? 1 : 2, window.devicePixelRatio || 1);
   const W = svg.clientWidth, H = svg.clientHeight;
   if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); c.style.width = W + 'px'; c.style.height = H + 'px'; }
   x.setTransform(1, 0, 0, 1, 0, 0);
@@ -104,7 +108,7 @@ function lifeFrame(now) {
   const t = LIFE.t;
 
   // Glints on the water
-  for (const g of LIFE.glints) {
+  if (!GFX.low) for (const g of LIFE.glints) {
     const a = Math.max(0, Math.sin(t * 1.3 + g.ph * 3)) ** 6;
     if (a < 0.05) continue;
     x.strokeStyle = `rgba(255,250,225,${a * 0.7})`; x.lineWidth = 0.9;
@@ -127,7 +131,7 @@ function lifeFrame(now) {
     x.fillStyle = b.sail; x.beginPath(); x.moveTo(b.x + 0.4, b.y - 8); x.quadraticCurveTo(b.x + 5 * dir, b.y - 4, b.x + 0.4, b.y - 1); x.fill();
   }
   // Herds
-  for (const h of LIFE.herds) {
+  if (!GFX.low) for (const h of LIFE.herds) {
     if (!onScreen(h.cx, h.cy)) continue;
     for (const a of h.beasts) {
       if (Math.hypot(a.tx - a.x, a.ty - a.y) < 0.5 && Math.random() < dt * 0.4) { a.tx = h.cx + (Math.random() - 0.5) * 34; a.ty = h.cy + (Math.random() - 0.5) * 18; }
@@ -196,7 +200,7 @@ function lifeFrame(now) {
   LIFE.clashes = LIFE.clashes.filter(c => !c.done);
   // Birds
   x.strokeStyle = 'rgba(30,22,14,0.75)'; x.lineWidth = 0.9;
-  for (const b of LIFE.birds) {
+  if (!GFX.low) for (const b of LIFE.birds) {
     b.a += Math.sin(t * 0.3 + b.n) * 0.2 * dt;
     b.x += Math.cos(b.a) * b.sp * dt; b.y += Math.sin(b.a) * b.sp * dt;
     if (b.x < -50) b.x = MAP.W + 40; if (b.x > MAP.W + 50) b.x = -40; if (b.y < -50) b.y = MAP.H + 40; if (b.y > MAP.H + 50) b.y = -40;
@@ -208,7 +212,7 @@ function lifeFrame(now) {
     }
   }
   // Clouds drift west to east, their shadows sliding over the land
-  for (const cl of LIFE.clouds) {
+  if (!GFX.low) for (const cl of LIFE.clouds) {
     cl.x += cl.sp * dt;
     if (cl.x > MAP.W + 200) { cl.x = -360 * cl.s; cl.y = Math.random() * MAP.H; }
     const w = 320 * cl.s, h = 200 * cl.s;

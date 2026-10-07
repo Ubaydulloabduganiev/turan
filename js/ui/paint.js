@@ -79,7 +79,7 @@ function getTerrain() {
 }
 
 function paintTerrain() {
-  const S = (window.devicePixelRatio || 1) > 1.4 ? 2 : 1.5;
+  const S = GFX.low ? 1 : (window.devicePixelRatio || 1) > 1.4 ? 2 : 1.5;
   const W = Math.round(MAP.W * S), H = Math.round(MAP.H * S);
   const c = document.createElement('canvas');
   c.width = W; c.height = H;

@@ -49,10 +49,10 @@ function kenBurns(x, im, W, H, t, o = {}) {
   const fits = ir / ar > 0.72 && ir / ar < 1.4; // close enough to the screen's shape to fill it
   x.save(); x.beginPath(); x.rect(ax, ay, aw, ah); x.clip();
   if (!fits) {
-    // blurred backdrop
-    x.save(); x.filter = 'blur(22px) brightness(0.45) saturate(1.1)';
+    // blurred backdrop (a plain dark one in light graphics)
+    x.save(); if (!GFX.low) x.filter = 'blur(22px) brightness(0.45) saturate(1.1)';
     const s = cover * 1.15; x.drawImage(im, ax + aw / 2 - im.width * s / 2, ay + ah / 2 - im.height * s / 2, im.width * s, im.height * s);
-    if (!CANVAS_FILTER) { x.fillStyle = 'rgba(6, 5, 10, 0.72)'; x.fillRect(ax, ay, aw, ah); }
+    if (!CANVAS_FILTER || GFX.low) { x.fillStyle = 'rgba(6, 5, 10, 0.72)'; x.fillRect(ax, ay, aw, ah); }
     x.restore();
   }
   const base = fits ? cover : contain * (o.fill || 0.98);

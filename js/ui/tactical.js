@@ -32,9 +32,15 @@ function startTactical(b) {
     TB.r3 = null;
     try { TB.r3 = make3D(); } catch (err) { console.error(err); TB.r3 = null; if ($('b3d')) $('b3d').remove(); }
     if (!TB.r3 && window.THREE) TB.ground = paintBattleGround(false);
-    $('b-help').textContent = t(TB.r3
+    TB.touch = matchMedia('(hover: none), (pointer: coarse)').matches;
+    $('b-help').textContent = TB.touch
+      ? t('Tap a unit to select it, tap its card to add more · tap the ground to move, an enemy to attack · drag to look around, pinch to zoom')
+      : t(TB.r3
       ? 'Drag to select · Right-click to move or attack (Shift to run) · W A S D move the camera · Q E turn · Wheel zoom · Space pause'
       : 'Drag to select · Right-click to move or attack · Shift + right-click to run · Space to pause');
+    $('b-help').classList.remove('faded');
+    clearTimeout(TB.helpTimer); TB.helpTimer = setTimeout(() => $('b-help').classList.add('faded'), TB.touch ? 9000 : 15000);
+    TB.runMode = false; syncBattleButtons();
     $('b-speed').textContent = t('Speed {n}×', { n: TB.speed || 1 });
     $('b-cam').classList.toggle('hidden', !TB.r3);
     resizeBattle();
@@ -369,7 +375,7 @@ function drawOverlay3D() {
   }
   if (TB.paused && !TB.over) {
     c.font = '28px Cinzel, Georgia, serif'; c.textAlign = 'center'; c.fillStyle = '#ffe08a'; c.strokeStyle = '#000'; c.lineWidth = 4;
-    c.strokeText(t('Paused — press Space'), innerWidth / 2, 100); c.fillText(t('Paused — press Space'), innerWidth / 2, 100);
+    c.strokeText(t(TB.touch ? 'Paused' : 'Paused — press Space'), innerWidth / 2, 100); c.fillText(t(TB.touch ? 'Paused' : 'Paused — press Space'), innerWidth / 2, 100);
   }
 }
 const bToWorld = (x, y) => ({ x: (x - TB.view.ox) / TB.view.s, y: (y - TB.view.oy) / TB.view.s });
@@ -510,7 +516,7 @@ function drawBattle() {
   c.restore();
   if (TB.paused && !TB.over) {
     c.font = '28px Palatino Linotype, Georgia, serif'; c.textAlign = 'center'; c.fillStyle = '#ffe08a';
-    c.fillText(t('Paused — press Space'), window.innerWidth / 2, 90);
+    c.fillText(t(TB.touch ? 'Paused' : 'Paused — press Space'), window.innerWidth / 2, 90);
   }
 }
 
@@ -578,7 +584,7 @@ function renderBattleTop() {
     const f = b[s].faction, total = TB.start[s], now = sideMen(s);
     return `<div class="bside">${flagSVG(f)}<div><div>${fName(f)}${s === TB.playerSide ? ' ' + t('(you)') : ''}</div><div class="meter"><div style="width:${Math.round(now / total * 100)}%;background:${FACTIONS[f].color}"></div></div></div><div>${fmt(now)}</div></div>`;
   };
-  $('b-top').innerHTML = side('att') + `<div>${t('Battle of {city}', { city: cityOf(p) })}${TB.walls ? ' · ' + t(TB.breach ? 'storming the walls (breach made)' : 'storming the walls') : ''}</div>` + side('def');
+  $('b-top').innerHTML = side('att') + `<div class="b-title">${t('Battle of {city}', { city: cityOf(p) })}${TB.walls ? ' · ' + t(TB.breach ? 'storming the walls (breach made)' : 'storming the walls') : ''}</div>` + side('def');
 }
 
 function renderBattleCards() {
@@ -608,7 +614,7 @@ bc.addEventListener('pointerdown', e => {
     if (e.button === 1 || touches.size === 2) { TB.pan = { x: e.clientX, y: e.clientY, pinch: touches.size === 2 ? touchSpan() : 0 }; TB.drag = null; e.preventDefault(); return; }
   }
   if (e.button === 2) { battleOrder(e); return; }
-  TB.drag = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY, moved: false, shift: e.shiftKey };
+  TB.drag = { x0: e.clientX, y0: e.clientY, x1: e.clientX, y1: e.clientY, moved: false, shift: e.shiftKey, touch: e.pointerType === 'touch' };
 });
 function touchSpan() { const [a, b] = [...touches.values()]; return Math.hypot(a.x - b.x, a.y - b.y); }
 bc.addEventListener('pointermove', e => {
@@ -625,7 +631,9 @@ bc.addEventListener('pointermove', e => {
   }
   if (!TB.drag) return;
   TB.drag.x1 = e.clientX; TB.drag.y1 = e.clientY;
-  if (Math.abs(TB.drag.x1 - TB.drag.x0) + Math.abs(TB.drag.y1 - TB.drag.y0) > 6) TB.drag.moved = true;
+  if (Math.abs(TB.drag.x1 - TB.drag.x0) + Math.abs(TB.drag.y1 - TB.drag.y0) > (TB.drag.touch ? 10 : 6)) TB.drag.moved = true;
+  // On a touch screen one finger moves the camera; the cards and Select all choose several units
+  if (TB.drag.moved && TB.drag.touch && TB.r3) { TB.pan = { x: e.clientX, y: e.clientY, pinch: 0 }; TB.drag = null; }
 });
 bc.addEventListener('pointerup', e => {
   touches.delete(e.pointerId);
@@ -649,9 +657,9 @@ bc.addEventListener('pointerup', e => {
       if (!d.shift) TB.sel.clear();
       TB.sel.add(hit.id);
     } else if (hit && !hit.player && TB.sel.size) {
-      orderAttackReg(hit, false); // left-click on an enemy with troops selected = attack (good for touch)
+      orderAttackReg(hit, TB.runMode); // left-click on an enemy with troops selected = attack (good for touch)
     } else if (!hit && TB.sel.size && e.pointerType !== 'mouse') {
-      battleMoveTo(w, false);
+      battleMoveTo(w, TB.runMode);
     } else if (!d.shift) TB.sel.clear();
   }
   renderBattleCards();
@@ -662,7 +670,7 @@ function battleOrder(e) {
   if (!TB.sel.size) return;
   const w = toField(e.clientX, e.clientY);
   const hit = pickReg(e.clientX, e.clientY, r => !r.player);
-  if (hit) orderAttackReg(hit, e.shiftKey); else battleMoveTo(w, e.shiftKey);
+  if (hit) orderAttackReg(hit, e.shiftKey || TB.runMode); else battleMoveTo(w, e.shiftKey || TB.runMode);
 }
 function orderAttackReg(t, run) {
   for (const id of TB.sel) { const r = TB.regs[id]; if (r.gone || r.rout) continue; r.target = t; r.order = 'attack'; r.run = run; }
@@ -679,14 +687,27 @@ function battleMoveTo(w, run) {
   TB.fx.push({ x: w.x, y: w.y, text: '✕', life: 0.5, color: '#fff' });
 }
 
-$('b-cards').addEventListener('click', e => {
+// Cards are redrawn several times a second, so a tap is taken the moment the finger lands
+$('b-cards').addEventListener('pointerdown', e => {
   const c = e.target.closest('[data-r]');
   if (!c || !TB) return;
   const id = +c.dataset.r;
-  if (!e.shiftKey) TB.sel.clear();
-  TB.sel.add(id);
+  if (TB.touch || e.shiftKey || e.ctrlKey || e.metaKey) { if (TB.sel.has(id)) TB.sel.delete(id); else TB.sel.add(id); }
+  else { TB.sel.clear(); TB.sel.add(id); }
   renderBattleCards();
 });
+function selectAllRegs() { for (const r of TB.regs) if (r.player && !r.gone && !r.rout) TB.sel.add(r.id); renderBattleCards(); }
+function syncBattleButtons() {
+  if (!TB) return;
+  $('b-pause').textContent = t(TB.paused ? 'Resume' : 'Pause');
+  $('b-pause').classList.toggle('on', !!TB.paused);
+  $('b-run').classList.toggle('on', !!TB.runMode);
+}
+$('b-all').onclick = () => { if (TB && !TB.over) selectAllRegs(); };
+$('b-pause').onclick = () => { if (!TB || TB.over) return; TB.paused = !TB.paused; syncBattleButtons(); };
+$('b-run').onclick = () => { if (!TB || TB.over) return; TB.runMode = !TB.runMode; syncBattleButtons(); battleFlash(t(TB.runMode ? 'New orders are carried out at a run: about 45% faster.' : 'Your men march at a steady pace again.')); };
+// A short message over the battlefield (the campaign's messages are hidden behind it)
+function battleFlash(text) { const h = $('b-help'); h.textContent = text; h.classList.remove('faded'); clearTimeout(TB.helpTimer); TB.helpTimer = setTimeout(() => h.classList.add('faded'), 3500); }
 $('b-speed').onclick = () => { if (!TB) return; TB.speed = TB.speed === 1 ? 2 : TB.speed === 2 ? 4 : 1; $('b-speed').textContent = t('Speed {n}×', { n: TB.speed }); };
 $('b-auto').onclick = () => {
   if (!TB || TB.over) return;
@@ -718,6 +739,6 @@ $('b-cam').addEventListener('click', e => {
 window.addEventListener('keydown', e => {
   if (!TB || $('battle').classList.contains('hidden')) return;
   if (TB.r3 && !e.ctrlKey && !e.metaKey) TB.r3.keys[e.code] = true;
-  if (e.code === 'Space') { TB.paused = !TB.paused; e.preventDefault(); }
-  if (e.key === 'a' && e.ctrlKey) { e.preventDefault(); for (const r of TB.regs) if (r.player && !r.gone && !r.rout) TB.sel.add(r.id); renderBattleCards(); }
+  if (e.code === 'Space') { TB.paused = !TB.paused; syncBattleButtons(); e.preventDefault(); }
+  if (e.key === 'a' && e.ctrlKey) { e.preventDefault(); selectAllRegs(); }
 });

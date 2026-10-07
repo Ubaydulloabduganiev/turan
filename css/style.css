@@ -503,7 +503,7 @@ body { overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highli
 #tb-faction small { display: block; overflow: hidden; text-overflow: ellipsis; }
 
 /* Tablets and small laptops */
-@media (max-width: 1280px) {
+@media (max-width: 1600px) {
   #topbar { gap: 12px; }
   #topbar button { font-size: 0; gap: 0; padding: 8px 11px; }
   #topbar button::before { width: 20px; height: 20px; }
@@ -517,9 +517,6 @@ body { overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highli
 }
 @media (max-width: 900px) {
   #tb-faction span { display: none; }
-}
-@media (hover: none) {
-  #b-help { display: none; }
 }
 
 /* Phones, both ways round */
@@ -662,7 +659,7 @@ body { overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highli
 /* Secret code button */
 #topbar #btn-code { padding: 4px 8px; font-size: 13px; opacity: 0.7; }
 #topbar #btn-code::before { display: none; }
-@media (max-width: 1280px) { #topbar #btn-code { font-size: 13px; } }
+@media (max-width: 1600px) { #topbar #btn-code { font-size: 13px; } }
 @media (max-width: 430px) { #topbar #btn-code { padding: 4px 5px; } #topbar button { padding: 7px 6px; } }
 .code-in { width: 100%; font: 18px var(--ui); padding: 10px 12px; border-radius: 3px; border: 1px solid var(--gold-lo); background: rgba(5, 9, 18, 0.7); color: var(--ivory); }
 #update-bar { position: fixed; left: 50%; bottom: calc(80px + var(--safe-b)); transform: translateX(-50%); z-index: 70; white-space: normal; max-width: calc(100% - 24px); font-size: 15px; padding: 10px 20px; }
@@ -717,3 +714,46 @@ body { overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highli
 @media (max-width: 430px) { #topbar #btn-chron { display: none; } }
 select.code-in { appearance: auto; -webkit-appearance: menulist; }
 select.code-in option, select.code-in optgroup { background: #0f1a30; color: var(--ivory); }
+
+/* ---------- Battle buttons and help ---------- */
+#b-help { transition: opacity 0.6s; pointer-events: none; }
+#b-help.faded { opacity: 0; }
+#b-buttons button.on { background: linear-gradient(180deg, #f6dc94, #d8b45a); color: #2a1806; }
+@media (hover: none) { #b-help { display: block; left: 50%; right: auto; transform: translateX(-50%); bottom: auto; top: calc(52px + var(--safe-t)); width: max-content; max-width: calc(100% - 20px); text-align: center; font-size: 13.5px; white-space: normal; } }
+
+/* Phones on their side: a narrower top bar */
+@media (max-height: 520px) and (min-width: 521px) and (max-width: 900px) {
+  #topbar { gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .tb-stat:nth-child(4) { display: none; }
+  .tb-stat { font-size: 13px; }
+  #topbar button { padding: 6px 7px; }
+}
+.tb-short { display: none; }
+@media (max-width: 900px), (max-height: 520px) { .tb-long { display: none; } .tb-short { display: inline; } }
+@media (max-width: 1180px) { #tb-faction span { display: none; } .tb-long { display: none; } .tb-short { display: inline; } }
+/* Tables scroll sideways on phones instead of losing their right-hand columns */
+@media (max-width: 760px) {
+  table.dip { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  table.dip td .p-sub, table.dip td div { white-space: normal; }
+}
+/* The smallest phones (iPhone SE): the date goes to the turn banner, info rows stack */
+@media (max-width: 360px) {
+  #tb-date { display: none; }
+  #topbar { gap: 4px; }
+  #topbar button { padding: 6px 6px; }
+  #topbar button::before { width: 17px; height: 17px; }
+  .kv { grid-template-columns: 1fr; }
+  .p-title { font-size: 20px; }
+}
+
+/* The battle screen on phones */
+@media (max-width: 760px), (max-height: 520px) {
+  #b-top .bside > div:nth-child(2) > div:first-child { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #b-help { top: calc(96px + var(--safe-t)) !important; left: calc(8px + var(--safe-l)) !important; transform: none !important; max-width: calc(100% - 205px) !important; text-align: left !important; }
+}
+@media (max-width: 560px) { #b-top .b-title { display: none; } }
+@media (max-width: 760px), (max-height: 520px) { #b-buttons button { max-width: 170px; white-space: normal; text-align: center; line-height: 1.2; } }
+
+/* Light graphics: no waving flags, no slow zooms, no glass blur */
+.gfx-low .army .cloth, .gfx-low .city .pennant, .gfx-low #cine-cv, .gfx-low .title-wrap { animation: none !important; }
+.gfx-low .menu-buttons button { backdrop-filter: none; }

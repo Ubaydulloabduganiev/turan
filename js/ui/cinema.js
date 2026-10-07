@@ -643,7 +643,7 @@ function playScene(sc) {
   go.textContent = t('Continue');
   go.classList.toggle('hidden', !!(spec.options && spec.options.length));
   const resize = () => {
-    const dpr = Math.min(2, devicePixelRatio || 1);
+    const dpr = Math.min(GFX.low ? 1 : 2, devicePixelRatio || 1);
     cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; cv.style.width = innerWidth + 'px'; cv.style.height = innerHeight + 'px';
     x.setTransform(dpr, 0, 0, dpr, 0, 0);
     layoutPeople(spec);

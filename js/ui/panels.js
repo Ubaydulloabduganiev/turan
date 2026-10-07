@@ -24,8 +24,10 @@ function renderTopbar() {
   const net = factionIncome(pl) - factionUpkeep(pl) - treasuryLoss(pl);
   $('tb-net').textContent = (net >= 0 ? '+' : '') + fmt(net);
   $('tb-net').className = net < 0 ? 'neg' : '';
-  $('tb-provs').textContent = t('{n} provinces', { n: provsOf(pl).length });
-  $('tb-nations').textContent = t('{n} nations left', { n: nationsLeft().length });
+  // The full words on wide screens, just the number on phones
+  const np = provsOf(pl).length, nn = nationsLeft().length;
+  $('tb-provs').innerHTML = `<span class="tb-long">${t('{n} provinces', { n: np })}</span><span class="tb-short">${np}</span>`;
+  $('tb-nations').innerHTML = `<span class="tb-long">${t('{n} nations left', { n: nn })}</span><span class="tb-short">${nn}</span>`;
   $('tb-date').textContent = dateText();
 }
 
