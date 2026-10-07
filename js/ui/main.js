@@ -315,3 +315,12 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
     document.body.appendChild(bar);
   });
 }
+
+// The opening splash: the author's mark, for a moment, then the game (a tap skips it)
+(function splash() {
+  const el = $('splash');
+  if (!el) return;
+  const hide = () => { if (el.classList.contains('out')) return; el.classList.add('out'); setTimeout(() => el.remove(), 800); };
+  el.addEventListener('click', hide);
+  setTimeout(hide, 2200);
+})();

@@ -757,3 +757,11 @@ select.code-in option, select.code-in optgroup { background: #0f1a30; color: var
 /* Light graphics: no waving flags, no slow zooms, no glass blur */
 .gfx-low .army .cloth, .gfx-low .city .pennant, .gfx-low #cine-cv, .gfx-low .title-wrap { animation: none !important; }
 .gfx-low .menu-buttons button { backdrop-filter: none; }
+
+/* ---------- The author's mark ---------- */
+#loading .brand-logo { position: absolute; left: 50%; bottom: calc(28px + var(--safe-b)); transform: translateX(-50%); width: min(220px, 46vw); height: auto; opacity: 0.85; }
+#splash { position: fixed; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at center, #13203c, #05080f); transition: opacity 0.7s ease; cursor: pointer; }
+#splash img { width: min(460px, 72vw); height: auto; animation: splash-in 1.3s ease-out both; }
+#splash.out { opacity: 0; pointer-events: none; }
+@keyframes splash-in { from { opacity: 0; transform: scale(0.94); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+#loading { text-align: center; padding: 0 20px; }
