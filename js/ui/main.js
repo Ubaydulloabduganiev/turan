@@ -189,21 +189,31 @@ $('btn-code').onclick = () => !uiLocked() && openSecretCode();
 
 // A secret word for the treasury: "Temurthegreat" brings 100,000 gold
 async function openSecretCode() {
-  const v = await showModal(`<h3>${t('Secret code')}</h3><input id="code-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" class="code-in">`,
+  const v = await showModal(`<h3>${t('Secret code')}</h3><input id="code-in" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" class="code-in">`,
     [{ label: t('Cancel'), value: null }, { label: t('Enter'), value: 'ok', cls: 'big' }], {
       cancel: null,
       onOpen: m => { const i = m.querySelector('#code-in'); i.focus(); i.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') closeModal('ok'); }; },
     });
   if (v !== 'ok') return;
-  const word = ($('code-in') ? $('code-in').value : '').replace(/\s+/g, '').toLowerCase();
+  const word = codeWord($('code-in') ? $('code-in').value : '');
   if (word === 'temurthegreat') {
     G.factions[G.player].gold += 100000;
     sfx('coins');
     toast(t('The treasury overflows'), t('100,000 gold has been added to your treasury.'), 'good');
     refresh();
-  } else if (word === 'lashkar') await secretArmy();
+  } else if (ARMY_WORDS.includes(word)) await secretArmy();
   else toast(t('Secret code'), t('Nothing happens.'), 'bad');
 }
+
+// A code typed with the Russian keyboard layout still on ("Дфырфк" for "Lashkar") is read by key position,
+// and spaces, capitals and apostrophes are ignored
+const RU_KEYS = { й: 'q', ц: 'w', у: 'e', к: 'r', е: 't', н: 'y', г: 'u', ш: 'i', щ: 'o', з: 'p', ф: 'a', ы: 's', в: 'd', а: 'f', п: 'g', р: 'h', о: 'j', л: 'k', д: 'l', я: 'z', ч: 'x', с: 'c', м: 'v', и: 'b', т: 'n', ь: 'm' };
+function codeWord(s) {
+  const w = String(s).toLowerCase().replace(/[\s'’ʻʼ`.\-_]+/g, '');
+  if (['лашкар', 'армия', 'кошин', 'қўшин'].includes(w)) return 'lashkar';
+  return [...w].map(ch => RU_KEYS[ch] || ch).join('');
+}
+const ARMY_WORDS = ['lashkar', 'army', 'qoshin', 'qushin'];
 
 // "Lashkar" raises an army of 1,000 mixed soldiers in any province
 const SECRET_ARMY = ['spear', 'spear', 'spear', 'archer', 'archer', 'heavyinf', 'heavyinf', 'horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'heavycav'];
