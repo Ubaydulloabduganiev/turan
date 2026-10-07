@@ -183,6 +183,24 @@ $('btn-court').onclick = () => !uiLocked() && openCourt();
 $('btn-realm').onclick = () => !uiLocked() && openRealm();
 $('btn-chron').onclick = () => !uiLocked() && openChronicle();
 $('btn-menu').onclick = () => !uiLocked() && openMenu();
+$('btn-code').onclick = () => !uiLocked() && openSecretCode();
+
+// A secret word for the treasury: "Temurthegreat" brings 100,000 gold
+async function openSecretCode() {
+  const v = await showModal(`<h3>${t('Secret code')}</h3><input id="code-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" class="code-in">`,
+    [{ label: t('Cancel'), value: null }, { label: t('Enter'), value: 'ok', cls: 'big' }], {
+      cancel: null,
+      onOpen: m => { const i = m.querySelector('#code-in'); i.focus(); i.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') closeModal('ok'); }; },
+    });
+  if (v !== 'ok') return;
+  const word = ($('code-in') ? $('code-in').value : '').replace(/\s+/g, '').toLowerCase();
+  if (word === 'temurthegreat') {
+    G.factions[G.player].gold += 100000;
+    sfx('coins');
+    toast(t('The treasury overflows'), t('100,000 gold has been added to your treasury.'), 'good');
+    refresh();
+  } else toast(t('Secret code'), t('Nothing happens.'), 'bad');
+}
 
 window.addEventListener('keydown', e => {
   if (!$('battle').classList.contains('hidden')) return; // the battle screen has its own keys

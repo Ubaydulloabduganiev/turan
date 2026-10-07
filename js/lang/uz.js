@@ -1146,4 +1146,9 @@ Object.assign(I18N.uz, {
   "{ruler} offers {n} gold for our city of {city}. Its people would become his subjects.": "{ruler} bizning {city} shahrimiz uchun {n} oltin taklif qilmoqda. Uning aholisi unga fuqaro boʻladi.",
   "{ruler} tears up your letter.": "{ruler} maktubingizni yirtib tashladi.",
   "{ruler} will not sell {city}.": "{ruler} {city} shahrini sotmaydi.",
+  "Secret code": "Maxfiy kod",
+  "The treasury overflows": "Xazina to‘lib-toshdi",
+  "100,000 gold has been added to your treasury.": "Xazinangizga 100 000 oltin qo‘shildi.",
+  "Nothing happens.": "Hech narsa bo‘lmadi.",
+  "Enter": "Kiritish",
 });

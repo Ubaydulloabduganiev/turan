@@ -1146,4 +1146,9 @@ Object.assign(I18N.ru, {
   "{ruler} offers {n} gold for our city of {city}. Its people would become his subjects.": "{ruler} предлагает {n} золота за наш город {city}. Его жители станут подданными нового господина.",
   "{ruler} tears up your letter.": "{ruler} рвёт ваше письмо.",
   "{ruler} will not sell {city}.": "{ruler} не продаст город {city}.",
+  "Secret code": "Секретный код",
+  "The treasury overflows": "Казна переполнена",
+  "100,000 gold has been added to your treasury.": "В вашу казну добавлено 100 000 золота.",
+  "Nothing happens.": "Ничего не происходит.",
+  "Enter": "Ввести",
 });

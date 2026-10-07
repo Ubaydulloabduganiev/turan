@@ -1146,4 +1146,9 @@ Object.assign(I18N.tr, {
   "{ruler} offers {n} gold for our city of {city}. Its people would become his subjects.": "{ruler}, {city} şehrimiz için {n} altın teklif ediyor. Halkı onun tebaası olacak.",
   "{ruler} tears up your letter.": "{ruler} mektubunuzu yırtıyor.",
   "{ruler} will not sell {city}.": "{ruler}, {city} şehrini satmayacak.",
+  "Secret code": "Gizli kod",
+  "The treasury overflows": "Hazine taşıyor",
+  "100,000 gold has been added to your treasury.": "Hazinenize 100.000 altın eklendi.",
+  "Nothing happens.": "Hiçbir şey olmuyor.",
+  "Enter": "Gir",
 });
