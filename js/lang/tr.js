@@ -1344,4 +1344,7 @@ Object.assign(I18N.tr, {
   "This is not a Turan save file.": "Bu bir Turan kayıt dosyası değil.",
   "This save file is from a different version of the map.": "Bu kayıt dosyası haritanın başka bir sürümünden.",
   "The file could not be read.": "Dosya okunamadı.",
+  "The game was updated": "Oyun güncellendi",
+  "Your campaign continues where you left it.": "Seferiniz kaldığınız yerden sürüyor.",
+  "Version {v}": "Sürüm {v}",
 });

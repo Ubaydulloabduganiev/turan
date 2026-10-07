@@ -408,11 +408,11 @@ function savesHTML(mode) {
 }
 
 async function openMenu() {
-  const v = await showModal(`<h3>${dateText()}</h3><p class="note">${fFull(G.player)}</p>${langPicker()}${soundControls()}`, [
+  const v = await showModal(`<h3>${dateText()}</h3><p class="note">${fFull(G.player)}</p>${langPicker()}${soundControls()}<p class="note ver-note" id="ver-note"></p>`, [
     { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' }, { label: gfxLabel(), value: 'gfx' },
     { label: t('Chronicle'), value: 'chron' }, { label: t('How to play'), value: 'help' }, { label: t('Guide'), value: 'guide' }, { label: t('Save'), value: 'save' }, { label: t('Load'), value: 'load' },
     { label: t('Main menu'), value: 'title' }, { label: t('Resume'), value: null, cls: 'big' },
-  ], { cancel: null, onClick: e => { const l = e.target.closest('[data-lang]'); if (l) { setLang(l.dataset.lang); applyLang(); closeModal(null); openMenu(); } } });
+  ], { cancel: null, onOpen: m => fillVersion(m.querySelector('#ver-note')), onClick: e => { const l = e.target.closest('[data-lang]'); if (l) { setLang(l.dataset.lang); applyLang(); closeModal(null); openMenu(); } } });
   if (v === 'rivals') { setRivalMoves(!LIFE.showRivals); toast(t('Rival moves'), t(LIFE.showRivals ? 'You will watch rival armies march across the map.' : 'Rival armies will move instantly.'), ''); return openMenu(); }
   if (v === 'gfx') {
     setGfxMode(nextGfxMode());

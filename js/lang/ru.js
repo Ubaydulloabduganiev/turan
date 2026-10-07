@@ -1344,4 +1344,7 @@ Object.assign(I18N.ru, {
   "This is not a Turan save file.": "Это не файл сохранения «Турана».",
   "This save file is from a different version of the map.": "Этот файл сохранения от другой версии карты.",
   "The file could not be read.": "Не удалось прочитать файл.",
+  "The game was updated": "Игра обновлена",
+  "Your campaign continues where you left it.": "Ваша кампания продолжается с того же места.",
+  "Version {v}": "Версия {v}",
 });

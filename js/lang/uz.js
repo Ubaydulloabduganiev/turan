@@ -1344,4 +1344,7 @@ Object.assign(I18N.uz, {
   "This is not a Turan save file.": "Bu Turon saqlash fayli emas.",
   "This save file is from a different version of the map.": "Bu saqlash fayli xaritaning boshqa versiyasiga tegishli.",
   "The file could not be read.": "Faylni o‘qib bo‘lmadi.",
+  "The game was updated": "O‘yin yangilandi",
+  "Your campaign continues where you left it.": "Yurishingiz qolgan joyidan davom etadi.",
+  "Version {v}": "Versiya {v}",
 });

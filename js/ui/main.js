@@ -317,12 +317,13 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!hadSW) return;
     if ($('game').classList.contains('hidden')) { location.reload(); return; }
-    if ($('update-bar')) return;
-    const bar = document.createElement('button');
-    bar.id = 'update-bar'; bar.className = 'big';
-    bar.textContent = t('A new version of the game is ready. Save, then tap here to reload.');
-    bar.onclick = () => location.reload();
-    document.body.appendChild(bar);
+    // In a campaign: wait for a quiet moment, keep the campaign, reload and carry straight on
+    const whenQuiet = () => {
+      if (G && (uiLocked() || flushing)) { setTimeout(whenQuiet, 1500); return; }
+      if (G && saveGame('auto')) { try { sessionStorage.setItem('turan-resume', '1'); } catch (e) { /* ignore */ } }
+      location.reload();
+    };
+    whenQuiet();
   });
 }
 
@@ -334,3 +335,18 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   el.addEventListener('click', hide);
   setTimeout(hide, 2200);
 })();
+
+// Back from an update in the middle of a campaign: continue it at once
+(function resumeAfterUpdate() {
+  let resume = false;
+  try { resume = sessionStorage.getItem('turan-resume') === '1'; sessionStorage.removeItem('turan-resume'); } catch (e) { /* ignore */ }
+  if (!resume || !loadGame('auto')) return;
+  if ($('splash')) $('splash').remove();
+  startLoaded().then(() => toast(t('The game was updated'), t('Your campaign continues where you left it.'), 'good'));
+})();
+
+// The version, shown at the foot of the menu (the name of the offline cache)
+function fillVersion(el) {
+  if (!el || !window.caches) return;
+  caches.keys().then(ks => { const k = ks.find(x => x.startsWith('turan-')); if (k) el.textContent = t('Version {v}', { v: k.slice(6, 12) }); }).catch(() => {});
+}
