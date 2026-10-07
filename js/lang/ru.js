@@ -1151,4 +1151,5 @@ Object.assign(I18N.ru, {
   "100,000 gold has been added to your treasury.": "В вашу казну добавлено 100 000 золота.",
   "Nothing happens.": "Ничего не происходит.",
   "Enter": "Ввести",
+  "A new version of the game is ready. Save, then tap here to reload.": "Готова новая версия игры. Сохранитесь и нажмите здесь, чтобы перезагрузить.",
 });

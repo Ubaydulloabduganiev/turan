@@ -1151,4 +1151,5 @@ Object.assign(I18N.tr, {
   "100,000 gold has been added to your treasury.": "Hazinenize 100.000 altın eklendi.",
   "Nothing happens.": "Hiçbir şey olmuyor.",
   "Enter": "Gir",
+  "A new version of the game is ready. Save, then tap here to reload.": "Oyunun yeni sürümü hazır. Kaydedin, sonra yeniden yüklemek için buraya dokunun.",
 });

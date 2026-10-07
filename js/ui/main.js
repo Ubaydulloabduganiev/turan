@@ -246,4 +246,21 @@ applyLang();
 toTitle();
 
 // Installable web app: keep every file for offline play (only when served over http/https)
-if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});
+// Offline cache. When a new version of the game arrives, the title screen reloads at once;
+// during a campaign a bar offers the reload so no progress is lost unasked.
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  const hadSW = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.register('sw.js').then(reg => {
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) reg.update().catch(() => {}); });
+  }).catch(() => {});
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadSW) return;
+    if ($('game').classList.contains('hidden')) { location.reload(); return; }
+    if ($('update-bar')) return;
+    const bar = document.createElement('button');
+    bar.id = 'update-bar'; bar.className = 'big';
+    bar.textContent = t('A new version of the game is ready. Save, then tap here to reload.');
+    bar.onclick = () => location.reload();
+    document.body.appendChild(bar);
+  });
+}

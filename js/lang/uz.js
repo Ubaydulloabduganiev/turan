@@ -1151,4 +1151,5 @@ Object.assign(I18N.uz, {
   "100,000 gold has been added to your treasury.": "Xazinangizga 100 000 oltin qo‘shildi.",
   "Nothing happens.": "Hech narsa bo‘lmadi.",
   "Enter": "Kiritish",
+  "A new version of the game is ready. Save, then tap here to reload.": "O‘yinning yangi versiyasi tayyor. Saqlang, so‘ng qayta yuklash uchun shu yerni bosing.",
 });
