@@ -215,20 +215,21 @@ function dealValue(from, to, type, gold = 0) {
       if (!r.war) return -999;
       let v = r.att * 0.3 + r.warTurns * 2.5 + (pr - 1) * 35 + gold / 40 - 10;
       if (r.warTurns < 2) v -= 40;
-      return v;
+      if (inCoalition(from, to)) v -= 20;
+      return v + trustBonus(from, 'peace');
     }
     case 'alliance':
       if (r.war) return -999;
-      return r.att - 35 + common * 30 + (r.married ? 15 : 0) + Math.min(20, (pr - 0.5) * 20);
+      return r.att - 35 + common * 30 + (r.married ? 15 : 0) + Math.min(20, (pr - 0.5) * 20) + trustBonus(from, 'alliance');
     case 'trade':
       if (r.war || r.trade) return -999;
-      return r.att + 25;
+      return r.att + 25 + trustBonus(from, 'trade');
     case 'tribute':
       if (r.war) return -999;
       return (pr - 1.8) * 40 + r.att * 0.15 - 10;
     case 'marriage':
       if (r.war || r.married) return -999;
-      return r.att + 5;
+      return r.att + 5 + trustBonus(from, 'marriage');
     case 'submit': { // `to` gives up its crown and all its lands to `from`
       if (r.alliance && r.att > 40) return -999;
       const n = provsOf(to).length;
@@ -349,9 +350,12 @@ function declareWar(from, to, quiet) {
   if (r.war) return;
   const perfidy = r.alliance || r.truce > 0;
   r.war = true; r.alliance = false; r.trade = false; r.att = Math.min(r.att, 0) - 40; r.warTurns = 0; r.truce = 0;
-  if (perfidy) for (const g of PLAYABLE) if (g !== from && g !== to && G.factions[g].alive) rel(from, g).att -= 15;
+  if (perfidy) { shiftTrust(from, -25); for (const g of PLAYABLE) if (g !== from && g !== to && G.factions[g].alive) rel(from, g).att -= 15; }
   log(dateText() + ': ' + t('the {nation} declares war on the {nation2}.', { nation: fFull(from), nation2: fFull(to) }), from === G.player || to === G.player ? 'war' : '');
-  if (to === G.player && !quiet) HOOKS.notify({ sound: 'horn', title: t('War!'), text: t('The {nation} has declared war on us.', { nation: fFull(from) }) });
+  if (to === G.player && !quiet) HOOKS.notify(perfidy
+    ? { sound: 'horn', title: t('Betrayed!'), text: t('The {nation} has broken its oath to us and declared war. Every ruler in Turan will hear of this treachery.', { nation: fFull(from) }) }
+    : { sound: 'horn', title: t('War!'), text: t('The {nation} has declared war on us.', { nation: fFull(from) }) });
+  else if (perfidy && from !== G.player) HOOKS.notify({ minor: true, title: t('Betrayal'), text: t('The {nation} has broken its alliance with the {nation2}.', { nation: fName(from), nation2: fName(to) }) });
   // Allies of the victim may come to its aid
   for (const g of PLAYABLE) {
     if (g === from || g === to || !G.factions[g].alive || !rel(g, to).alliance || rel(g, from).war) continue;

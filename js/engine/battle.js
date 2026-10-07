@@ -130,6 +130,7 @@ function succession(f) {
   st.heir = son ? son.name : newGeneralName(f);
   st.orderBonus = -10; st.orderBonusT = 4;
   if (f === G.player) HOOKS.notify({ scene: { kind: 'coronation', f, old } });
+  successionTrouble(f);
   log(t('{name} succeeds {name2} as ruler of the {nation}.', { name: pn(st.leader), name2: pn(old), nation: fFull(f) }), 'big');
 }
 

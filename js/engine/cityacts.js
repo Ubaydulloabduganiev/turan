@@ -100,7 +100,7 @@ const CITY_ACTIONS = [
     act: p => { transferProvince(p, 'rebels', 0); for (const q of provsOf(G.player)) q.unrest -= 5; return t('{city} is free. Its elders thank you and close their gates.', { city: cityOf(p) }); } },
   { id: 'raze', sub: p => t('+{n} gold · the city is ruined', { n: fmt(Math.round(p.pop * 18)) }), group: 'Give away', own: true, danger: true, name: 'Raze the city', desc: 'Strip the city of its wealth and pull down its buildings. Much gold now; the city is ruined and every ruler is horrified.',
     cost: () => 0, check: p => p.pop < 5 ? 'There is little left to raze' : isCapital(p) ? 'You cannot raze your capital' : null,
-    act: p => { const g = Math.round(p.pop * 18); G.factions[G.player].gold += g; p.pop *= 0.45; for (const k of BUILDING_ORDER) p.b[k] = Math.max(0, p.b[k] - 1); p.unrest += 50; p.sacked = 8; for (const f of otherRulers()) rel(G.player, f).att -= 10; return t('{city} burns. Your soldiers carry off {n} gold.', { city: cityOf(p), n: fmt(g) }); } },
+    act: p => { shiftTrust(p.owner, -6); const g = Math.round(p.pop * 18); G.factions[G.player].gold += g; p.pop *= 0.45; for (const k of BUILDING_ORDER) p.b[k] = Math.max(0, p.b[k] - 1); p.unrest += 50; p.sacked = 8; for (const f of otherRulers()) rel(G.player, f).att -= 10; return t('{city} burns. Your soldiers carry off {n} gold.', { city: cityOf(p), n: fmt(g) }); } },
 
   // ---------- Someone else's city: open dealings ----------
   { id: 'buy', group: 'Dealings', own: false, name: 'Offer to buy the city', desc: 'Offer its ruler gold for the city.',

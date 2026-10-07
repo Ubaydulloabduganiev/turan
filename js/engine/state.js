@@ -192,6 +192,7 @@ function provinceOrder(p, dist) {
   if (hasWonder(p.owner, 'bibikhanym')) o += 10;
   if (hasWonder(p.owner, 'yasawi') && (p.terrain === 'steppe' || p.terrain === 'desert')) o += 15;
   o += landmarkOrder(p);
+  o -= overstretch(p.owner);
   return Math.round(clampN(o, 0, 120));
 }
 

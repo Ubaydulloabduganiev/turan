@@ -117,6 +117,7 @@ async function startNew() {
   await showModal(`<h3>${dateText()}</h3><div class="with-portrait">${rulerPortrait(pickSel)}<div><p>${t(F.blurb)}</p><p><b>${t('Your aim:')}</b> ${t('outlast every other nation. Conquer them, or make them kneel and hand you their crowns.')} ${t(F.play)}</p></div></div>
     <p class="note">${t('Click any city to rule it, attack it or talk to its ruler. Your vizier in the corner will suggest what to do. Press End turn when you are done.')}</p>`,
     [{ label: t('How to play'), value: 'help' }, { label: t('To war'), value: true, cls: 'big' }], { cancel: true, cls: 'parch' }).then(v => v === 'help' && openHelp());
+  if (!tutorialSeen()) startTutorial();
   saveGame('auto');
 }
 
@@ -149,7 +150,7 @@ async function doEndTurn() {
   await flushNotices();
   checkMission();
   await flushNotices();
-  const s = pickStory();
+  const s = pickCrisis() || pickStory();
   if (s) await showStory(s);
   else {
     const lm = pickLandmark();

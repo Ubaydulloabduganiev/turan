@@ -39,6 +39,11 @@ function advisorTips() {
     if (r.war && factionPower(f) > factionPower(pl) * 1.5 && dealValue(pl, f, 'peace') > -15)
       tips.push({ score: 70, text: t('The {nation} is stronger than us. Consider offering peace.', { nation: fName(f) }), prov: (provsOf(f)[0] || {}).id });
   }
+  // The troubles of a great realm
+  if (G.coalition && G.coalition.target === pl) tips.push({ score: 92, text: t('A coalition is at war with us. Offer peace to its weakest members to break it apart.'), realm: true });
+  else if (dominance(pl) > 0.24 && !G.coalition) tips.push({ score: 62, text: t('Our power frightens the other rulers. If we grow much more, they may unite against us.'), realm: true });
+  if (overstretch(pl) >= 3) tips.push({ score: 64, text: t('The realm is so large that every city is harder to govern (−{n} order). Appoint governors and build madrasas.', { n: Math.round(overstretch(pl)) }), realm: true });
+  if (trustOf(pl) < 30) tips.push({ score: 66, text: t('Our name is stained by broken oaths. Rulers will not ally or trade with us until we prove ourselves.'), realm: true });
   // Unhappy cities
   for (const p of provsOf(pl)) {
     const o = provinceOrder(p, dist);

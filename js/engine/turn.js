@@ -17,6 +17,7 @@ async function endTurn(onProgress) {
     if (onProgress) onProgress('rebels');
     await rebelTurn();
     upkeepPhase();
+    rivalsTurn();
     G.turn++;
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
     runEvents();

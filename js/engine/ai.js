@@ -47,6 +47,8 @@ function aiDisband(f) {
 
 function aiDiplomacy(f) {
   const st = G.factions[f], my = factionPower(f) + 40;
+  if (aiBetray(f)) return;
+  aiCallAllies(f);
   for (const g of PLAYABLE) {
     if (g === f || g === G.player || !G.factions[g].alive) continue;
     const r = rel(f, g);
@@ -72,7 +74,8 @@ function aiDiplomacy(f) {
     const r = rel(f, g);
     if (r.war || (r.alliance && !few) || r.truce > 0 || (r.married && r.att > -40 && !few)) continue;
     const ratio = my / (factionPower(g) + 40);
-    const s = ratio * AGGRESSION[f] - r.att / (few ? 150 : 50) - (g === G.player ? 0 : 0.1);
+    const busy = PLAYABLE.filter(x => x !== g && G.factions[x].alive && rel(g, x).war).length; // pile on a ruler already at war
+    const s = ratio * AGGRESSION[f] - r.att / (few ? 150 : 50) - (g === G.player ? 0 : 0.1) + busy * 0.25;
     if (ratio > (few ? 0.9 : 1.35) && s > bs) { bs = s; best = g; }
   }
   if (best && bs > (few ? 0.5 : 1.1)) declareWar(f, best);
@@ -85,6 +88,13 @@ async function aiOffers(f) {
   const r = rel(f, pl);
   const chance = rng();
   let type = null, gold = 0, city = null;
+  const special = aiSpecialOffer(f, chance);
+  if (special) {
+    G.offerTurn = G.turn;
+    const yes = await HOOKS.offer({ from: f, type: special.type, gold: 0, city: special.city && special.city.id, enemy: special.enemy });
+    answerSpecialOffer(f, special, yes);
+    return;
+  }
   if (dealValue(pl, f, 'submit') > 12 && chance < 0.4) type = 'yield';
   else if (r.war && r.warTurns > 3 && dealValue(pl, f, 'peace') > 10 && chance < 0.35) type = 'peace';
   else if (!r.war && !r.trade && r.att > -5 && chance < 0.08) type = 'trade';
