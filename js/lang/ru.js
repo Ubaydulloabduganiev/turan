@@ -1312,4 +1312,11 @@ Object.assign(I18N.ru, {
   "A visitor at the gate": "Гость у ворот",
   "He joins your court.": "Он поступает к вашему двору.",
   "He will look for another patron.": "Он поищет другого покровителя.",
+  "A secret army": "Тайное войско",
+  "1,000 soldiers (spearmen, archers, armoured infantry, horse archers, lancers and heavy cavalry) will appear wherever you choose.": "1000 воинов (копейщики, лучники, латная пехота, конные лучники, копейщики-всадники и тяжёлая конница) появятся там, где вы выберете.",
+  "Your cities": "Ваши города",
+  "Other lands": "Другие земли",
+  "Raise the army": "Собрать войско",
+  "1,000 soldiers have gathered at {city}.": "В {city} собралась тысяча воинов.",
+  "1,000 soldiers gather outside {city} and march in.": "Тысяча воинов собирается у {city} и выступает на город.",
 });

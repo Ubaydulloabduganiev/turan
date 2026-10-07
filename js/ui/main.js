@@ -202,7 +202,55 @@ async function openSecretCode() {
     sfx('coins');
     toast(t('The treasury overflows'), t('100,000 gold has been added to your treasury.'), 'good');
     refresh();
-  } else toast(t('Secret code'), t('Nothing happens.'), 'bad');
+  } else if (word === 'lashkar') await secretArmy();
+  else toast(t('Secret code'), t('Nothing happens.'), 'bad');
+}
+
+// "Lashkar" raises an army of 1,000 mixed soldiers in any province
+const SECRET_ARMY = ['spear', 'spear', 'spear', 'archer', 'archer', 'heavyinf', 'heavyinf', 'horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'heavycav'];
+async function secretArmy() {
+  const pl = G.player, here = UI.selProv || G.factions[pl].capital;
+  const opt = p => `<option value="${p.id}" ${p.id === here ? 'selected' : ''}>${cityOf(p)}${p.owner !== pl ? ' · ' + (p.owner === 'rebels' ? t('Independent') : fName(p.owner)) : ''}</option>`;
+  const byName = (a, b) => cityOf(a).localeCompare(cityOf(b));
+  const all = Object.values(G.provinces);
+  const mine = all.filter(p => p.owner === pl).sort(byName), other = all.filter(p => p.owner !== pl).sort(byName);
+  const v = await showModal(`<h3>${t('A secret army')}</h3><p>${t('1,000 soldiers (spearmen, archers, armoured infantry, horse archers, lancers and heavy cavalry) will appear wherever you choose.')}</p>
+    <select id="code-prov" class="code-in"><optgroup label="${t('Your cities')}">${mine.map(opt).join('')}</optgroup><optgroup label="${t('Other lands')}">${other.map(opt).join('')}</optgroup></select>`,
+    [{ label: t('Cancel'), value: null }, { label: t('Raise the army'), value: 'ok', cls: 'big' }], { cancel: null });
+  if (v !== 'ok') return;
+  const p = G.provinces[$('code-prov').value];
+  if (!p) return;
+  const hostile = armiesIn(p.id).some(x => x.owner !== pl && !allied(x.owner, pl)) || (p.owner !== pl && !allied(p.owner, pl));
+  if (!hostile) {
+    const a = addArmy(pl, p.id, SECRET_ARMY, null);
+    a.moves = armyMoves(a);
+    sfx('horn');
+    toast(t('A secret army'), t('1,000 soldiers have gathered at {city}.', { city: cityOf(p) }), 'good');
+    UI.selArmy = a.id; UI.selProv = null;
+    centerOnProv(p.id);
+    refresh();
+    return;
+  }
+  // Enemy land: the army gathers just outside and marches in, to fight, besiege or take the city
+  if (p.owner !== pl && p.owner !== 'rebels' && !atWar(pl, p.owner)) {
+    const o = p.owner;
+    const warn = t('We are at peace with: {nation}. Marching into {city} means war.', { nation: fFull(o), city: cityOf(p) }) +
+      (rel(pl, o).alliance ? ' ' + t('Our alliance will end.') : '') + (rel(pl, o).truce > 0 ? ' ' + t('Breaking a recent peace will anger every ruler.') : '');
+    if (!(await confirmBox(t('Declare war?'), warn, t('Declare war'), t('Stay')))) return;
+    declareWar(pl, o);
+  }
+  const calm = n => !armiesIn(n).some(x => atWar(x.owner, pl));
+  const from = p.adj.find(n => G.provinces[n].owner === pl && calm(n)) || p.adj.find(calm) || p.adj[0];
+  const a = addArmy(pl, from, SECRET_ARMY, null);
+  a.moves = armyMoves(a) + 1;
+  sfx('horn');
+  toast(t('A secret army'), t('1,000 soldiers gather outside {city} and march in.', { city: cityOf(p) }), 'good');
+  centerOnProv(p.id);
+  UI.selArmy = a.id; UI.selProv = null;
+  refresh();
+  UI.reach = reachable(a);
+  await orderMove(a, p.id);
+  refresh();
 }
 
 window.addEventListener('keydown', e => {

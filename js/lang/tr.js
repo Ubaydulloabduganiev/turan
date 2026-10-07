@@ -1312,4 +1312,11 @@ Object.assign(I18N.tr, {
   "A visitor at the gate": "Kapıdaki misafir",
   "He joins your court.": "Sarayınıza katılır.",
   "He will look for another patron.": "Başka bir hami arayacak.",
+  "A secret army": "Gizli ordu",
+  "1,000 soldiers (spearmen, archers, armoured infantry, horse archers, lancers and heavy cavalry) will appear wherever you choose.": "1.000 asker (mızrakçılar, okçular, zırhlı piyade, atlı okçular, mızraklı süvari ve ağır süvari) seçtiğiniz yerde belirecek.",
+  "Your cities": "Şehirleriniz",
+  "Other lands": "Diğer topraklar",
+  "Raise the army": "Orduyu topla",
+  "1,000 soldiers have gathered at {city}.": "{city}’da 1.000 asker toplandı.",
+  "1,000 soldiers gather outside {city} and march in.": "1.000 asker {city} önünde toplanıp içeri yürüyor.",
 });

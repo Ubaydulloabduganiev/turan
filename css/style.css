@@ -715,3 +715,5 @@ body { overscroll-behavior: none; touch-action: manipulation; -webkit-tap-highli
 .dev-sage { display: flex; gap: 8px; align-items: center; min-width: 200px; }
 @media (max-width: 760px), (max-height: 520px) { .dev-grid { grid-template-columns: 1fr; } }
 @media (max-width: 430px) { #topbar #btn-chron { display: none; } }
+select.code-in { appearance: auto; -webkit-appearance: menulist; }
+select.code-in option, select.code-in optgroup { background: #0f1a30; color: var(--ivory); }

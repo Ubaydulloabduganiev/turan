@@ -1312,4 +1312,11 @@ Object.assign(I18N.uz, {
   "A visitor at the gate": "Darvozadagi mehmon",
   "He joins your court.": "U saroyingizga qo‘shiladi.",
   "He will look for another patron.": "U boshqa homiy izlaydi.",
+  "A secret army": "Maxfiy lashkar",
+  "1,000 soldiers (spearmen, archers, armoured infantry, horse archers, lancers and heavy cavalry) will appear wherever you choose.": "1 000 nafar askar (nayzabardorlar, kamonchilar, sovutli piyodalar, otliq kamonchilar, nayzali otliqlar va og‘ir otliqlar) siz tanlagan joyda paydo bo‘ladi.",
+  "Your cities": "Shaharlaringiz",
+  "Other lands": "Boshqa yerlar",
+  "Raise the army": "Lashkar to‘plash",
+  "1,000 soldiers have gathered at {city}.": "{city}da 1 000 nafar askar to‘plandi.",
+  "1,000 soldiers gather outside {city} and march in.": "1 000 nafar askar {city} yonida to‘planib, ichkariga yurish qildi.",
 });
