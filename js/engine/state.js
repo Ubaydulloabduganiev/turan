@@ -295,6 +295,28 @@ function loadGame(slot) {
     return true;
   } catch (e) { return false; }
 }
+// ---------- Save files: a campaign carried to another device ----------
+
+function gameToText() {
+  return JSON.stringify({ app: 'turan', format: 1, saved: Date.now(), player: G.player, date: dateText(), game: G });
+}
+// Reads a save file. Returns null when it worked, otherwise what is wrong with it.
+function gameFromText(text) {
+  let d;
+  try { d = JSON.parse(text); } catch (e) { return 'This is not a Turan save file.'; }
+  const g = d && d.app === 'turan' ? d.game : d; // a bare game object works too
+  if (!g || !g.factions || !g.provinces || !g.player || !g.factions[g.player] || typeof g.turn !== 'number') return 'This is not a Turan save file.';
+  if (Object.keys(g.provinces).some(id => !PROVINCE_DATA.some(p => p[0] === id))) return 'This save file is from a different version of the map.';
+  MAPDATA = MAPDATA || buildMap();
+  G = g;
+  migrateProgress();
+  return null;
+}
+function saveFileName() {
+  const name = (FACTIONS[G.player].short || G.player).toString().replace(/[^A-Za-z0-9]+/g, '-');
+  return `turan-${name}-${GAME.START_YEAR + Math.floor(G.turn / 2)}-${G.turn % 2 ? 'autumn' : 'spring'}.json`;
+}
+
 function saveMeta(slot) {
   try { return JSON.parse(localStorage.getItem('turan-save-' + slot + '-meta')); } catch (e) { return null; }
 }

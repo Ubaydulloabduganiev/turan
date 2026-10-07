@@ -429,14 +429,59 @@ async function openMenu() {
 }
 
 function openSaves(mode) {
-  return showModal(`<h3>${t(mode === 'save' ? 'Save game' : 'Load game')}</h3>${savesHTML(mode)}`, [{ label: t('Close'), value: null }], {
+  const file = mode === 'save'
+    ? `<div class="p-sec"><h4>${t('Save file')}</h4><p class="note">${t('Keep your campaign as a file, to continue it on another phone or computer, or to keep it safe if this browser is cleared.')}</p><button data-file="out" class="big">${t('Download save file')}</button></div>`
+    : `<div class="p-sec"><h4>${t('Save file')}</h4><p class="note">${t('Continue a campaign saved as a file on this or another device.')}</p><button data-file="in" class="big">${t('Open a save file')}</button></div>`;
+  return showModal(`<h3>${t(mode === 'save' ? 'Save game' : 'Load game')}</h3>${savesHTML(mode)}${file}`, [{ label: t('Close'), value: null }], {
     cancel: null,
     onClick: e => {
+      const f = e.target.closest('[data-file]');
+      if (f) { closeModal(null); if (f.dataset.file === 'out') exportSave(); else importSave(); return; }
       const s = e.target.closest('[data-save]'), l = e.target.closest('[data-load]');
       if (s) { const ok = saveGame(s.dataset.save); closeModal(null); toast(t(ok ? 'Saved' : 'Could not save'), ok ? dateText() : t('Browser storage is unavailable.'), ok ? 'good' : 'bad'); }
       if (l) { closeModal(null); if (loadGame(l.dataset.load)) startLoaded(); else toast(t('Could not load'), '', 'bad'); }
     },
   });
+}
+
+// Hands the campaign to the player as a file: the share sheet on phones (save to Files, send to
+// yourself), a download elsewhere
+async function exportSave() {
+  const text = gameToText(), name = saveFileName();
+  const blob = new Blob([text], { type: 'application/json' });
+  try {
+    const file = new File([blob], name, { type: 'application/json' });
+    if (matchMedia('(hover: none)').matches && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: name });
+      toast(t('Save file ready'), name, 'good');
+      return;
+    }
+  } catch (e) { if (e && e.name === 'AbortError') return; /* otherwise fall back to a download */ }
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  toast(t('Save file ready'), t('{name} is in your downloads.', { name }), 'good');
+}
+
+// Asks for a save file and continues that campaign
+function importSave() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json,text/plain';
+  input.onchange = () => {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const why = gameFromText(String(reader.result || ''));
+      if (why) { await infoBox(t('Could not load'), t(why)); return; }
+      saveGame('auto'); // it now lives in this browser too
+      startLoaded();
+    };
+    reader.onerror = () => infoBox(t('Could not load'), t('The file could not be read.'));
+    reader.readAsText(f);
+  };
+  input.click();
 }
 
 const HELP = [

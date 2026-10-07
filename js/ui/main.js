@@ -35,9 +35,8 @@ function toTitle() {
 }
 
 function updateTitleButtons() {
-  const any = ['auto', ...SLOTS].some(s => saveMeta(s));
   $('btn-continue').disabled = !saveMeta('auto');
-  $('btn-load').disabled = !any;
+  $('btn-load').disabled = false; // a save file can always be opened
 }
 
 // ---------- Nation selection ----------
