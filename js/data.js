@@ -232,8 +232,10 @@ const BUILDINGS = {
     desc: 'Population grows faster.' },
   madrasa: { name: 'Mosque', levels: ['None', 'Mosque', 'Madrasa', 'Great madrasa'], cost: [0, 350, 900, 1800], turns: [0, 2, 3, 4],
     desc: '+8 public order per level.' },
+  library: { name: 'Library', levels: ['None', 'Kitabkhana', 'Royal library', 'House of wisdom'], cost: [0, 350, 900, 1800], turns: [0, 2, 3, 4],
+    desc: 'Scribes, calligraphers and scholars: more progress in literature and science every turn.' },
 };
-const BUILDING_ORDER = ['walls', 'barracks', 'stables', 'market', 'farms', 'madrasa'];
+const BUILDING_ORDER = ['walls', 'barracks', 'stables', 'market', 'farms', 'madrasa', 'library'];
 
 const NAMES = {
   turkic: ['Arslan', 'Bahadur', 'Tughluq', 'Qutlugh', 'Ak-Buga', 'Bayan', 'Toghan', 'Kepek', 'Jaku', 'Elchi Bugha', 'Mubarak Shah', 'Shaykh Ali', 'Ilchigidai', 'Khitay Bahadur', 'Burunduq', 'Idiku', 'Tash Temur', 'Sarybuga'],

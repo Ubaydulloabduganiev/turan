@@ -133,6 +133,7 @@ function aiBuild(f) {
     if (order < 45) want.push('madrasa');
     if (frontier(p) && p.b.walls < 2) want.push('walls');
     if (p.pop >= 10) want.push('market');
+    if (p.pop >= 15 && st.gold > 1500) want.push('library');
     want.push('farms');
     if (FACTIONS[f].nomad) want.push('stables', 'barracks'); else want.push('barracks', 'stables');
     if (p.id === G.factions[f].capital) want.unshift('walls');
@@ -140,7 +141,7 @@ function aiBuild(f) {
     want.push('madrasa', 'walls');
     for (const k of want) {
       if (buildCheck(p, k)) continue;
-      const cost = BUILDINGS[k].cost[p.b[k] + 1];
+      const cost = buildCost(p, k, p.b[k] + 1);
       if (cost > budget || (net < 0 && k !== 'market' && k !== 'farms')) continue;
       startBuild(p, k);
       budget -= cost;

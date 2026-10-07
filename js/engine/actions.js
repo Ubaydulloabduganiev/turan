@@ -176,20 +176,21 @@ function buildCheck(p, key) {
   if (lvl > maxBuildLevel(p)) return t('Needs a larger population ({n}k)', { n: lvl === 2 ? 10 : 25 });
   if (p.build) return 'Already building something';
   if (p.siege) return 'Under siege';
-  if (G.factions[p.owner].gold < B.cost[lvl]) return 'Not enough gold';
+  if (G.factions[p.owner].gold < buildCost(p, key, lvl)) return 'Not enough gold';
   return null;
 }
 function startBuild(p, key) {
   const why = buildCheck(p, key);
   if (why) return why;
   const lvl = p.b[key] + 1;
-  G.factions[p.owner].gold -= BUILDINGS[key].cost[lvl];
-  p.build = { key, turns: BUILDINGS[key].turns[lvl] };
+  const paid = buildCost(p, key, lvl);
+  G.factions[p.owner].gold -= paid;
+  p.build = { key, turns: BUILDINGS[key].turns[lvl], paid };
   return null;
 }
 function cancelBuild(p) {
   if (!p.build) return;
-  G.factions[p.owner].gold += p.build.key === 'wonder' ? WONDERS[p.build.id].cost : BUILDINGS[p.build.key].cost[p.b[p.build.key] + 1];
+  G.factions[p.owner].gold += p.build.key === 'wonder' ? WONDERS[p.build.id].cost : (p.build.paid || BUILDINGS[p.build.key].cost[p.b[p.build.key] + 1]);
   p.build = null;
 }
 

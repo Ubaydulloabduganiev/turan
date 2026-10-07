@@ -110,7 +110,7 @@ function provincePanel(p) {
       let right = '';
       if (next <= 3) {
         const why = buildCheck(p, k);
-        right = `<button class="small" data-act="build" data-k="${k}" ${why ? 'disabled' : ''} title="${t(why || B.desc)}">${bLevel(k, next)} · ${t('{n}g', { n: B.cost[next] })} · ${t('{n}t', { n: B.turns[next] })}</button>`;
+        right = `<button class="small" data-act="build" data-k="${k}" ${why ? 'disabled' : ''} title="${t(why || B.desc)}">${bLevel(k, next)} · ${t('{n}g', { n: buildCost(p, k, next) })} · ${t('{n}t', { n: B.turns[next] })}</button>`;
       }
       h += `<div class="bld"><div>${bName(k)} <span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('')}</span><div class="lv">${lvl ? bLevel(k, lvl) : t('Not built')}</div></div>${right}</div>`;
     }

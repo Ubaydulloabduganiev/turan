@@ -174,7 +174,8 @@ function landmarkOrder(p) {
 // Units cost less with the heavenly horses of Fergana
 function unitCost(f, type) {
   const d = UNITS[type];
-  return (d.cls === 'cav' || d.cls === 'ha') && f !== 'rebels' && landmarksOf(f).includes('horses') ? Math.round(d.cost * 0.75) : d.cost;
+  const c = (d.cls === 'cav' || d.cls === 'ha') && f !== 'rebels' && landmarksOf(f).includes('horses') ? d.cost * 0.75 : d.cost;
+  return Math.round(c * (hasAdv(f, 'trade', 3) ? 0.9 : 1));
 }
 
 // The next special place the player has not yet seen, as a story for the scene screen

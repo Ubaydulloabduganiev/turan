@@ -18,6 +18,7 @@ async function endTurn(onProgress) {
     await rebelTurn();
     upkeepPhase();
     rivalsTurn();
+    devTurn();
     G.turn++;
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
     runEvents();
@@ -56,7 +57,7 @@ function upkeepPhase() {
       growProvince(p, order);
       if (p.taxFree > 0) p.taxFree--;
       finishQueues(p);
-      if (order < 25 && !p.siege && rng() < (25 - order) * 0.025) revolt(p);
+      if (order < 25 && !p.siege && rng() < (25 - order) * 0.025 * revoltMult(p.owner)) revolt(p);
     }
     const upkeep = factionUpkeep(f);
     st.gold += income - upkeep - treasuryLoss(f);
@@ -85,6 +86,7 @@ function upkeepPhase() {
       const max = UNITS[u.type].men, d = UNITS[u.type];
       let rate = home ? 0.1 : a.besieging ? 0 : 0.03;
       if (home && ((d.cls === 'cav' || d.cls === 'ha') ? p.b.stables : p.b.barracks)) rate = 0.2;
+      if (home && hasAdv(a.owner, 'science', 2)) rate *= 2;
       u.men = Math.min(max, Math.round(u.men + max * rate));
     }
   }
@@ -124,6 +126,7 @@ function growProvince(p, order) {
   const T = TERRAIN[p.terrain], f = G.factions[p.owner];
   let g = (0.008 + 0.006 * p.b.farms) * T.grow + TAX_GROWTH[taxOf(p)];
   if (order < 40) g -= 0.006;
+  if (g > 0 && hasAdv(p.owner, 'science', 2)) g *= 1.1;
   if (p.siege) g = -0.02;
   const cap = 30 + 40 * p.b.farms + (p.terrain === 'oasis' ? 40 : 0);
   if (p.pop > cap) g = Math.min(g, 0);
@@ -222,5 +225,6 @@ function checkVictory() {
   const pl = G.player;
   if (!G.factions[pl].alive || provsOf(pl).length === 0) { G.over = 'lose'; return; }
   if (nationsLeft().length === 1) G.over = 'win';
+  if (!G.goldenAge && goldenAgeNow()) G.goldenAge = G.turn;
 }
 const nationsLeft = () => PLAYABLE.filter(f => G.factions[f].alive);

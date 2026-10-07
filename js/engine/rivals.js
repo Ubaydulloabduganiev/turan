@@ -20,7 +20,7 @@ function trustWord(f) { const v = trustOf(f); return TRUST_WORDS[v >= 75 ? 4 : v
 // How much a deal offered by `from` is worth more or less because of `from`'s name
 function trustBonus(from, type) {
   const k = { alliance: 0.5, marriage: 0.4, trade: 0.3, peace: 0.2 }[type] || 0;
-  return (trustOf(from) - 50) * k;
+  return (trustOf(from) - 50) * k + (k ? prestigeBonus(from) : 0);
 }
 
 // ---------- The size of a realm ----------
@@ -38,7 +38,7 @@ const STRETCH_FROM = 14;
 function overstretch(f) {
   if (f === 'rebels' || !G.factions[f]) return 0;
   const n = provsOf(f).length;
-  return Math.min(18, Math.max(0, n - STRETCH_FROM) * 0.7);
+  return Math.min(18, Math.max(0, n - stretchFrom(f)) * 0.7);
 }
 
 // ---------- Each turn ----------
@@ -53,7 +53,7 @@ function rivalsTurn() {
   // Fear of the strongest
   const L = leadingNation();
   if (L) {
-    const d = dominance(L);
+    const d = dominance(L) - (hasAdv(L, 'culture', 5) ? 0.08 : 0);
     if (d > 0.25) for (const g of PLAYABLE) {
       if (g === L || !G.factions[g].alive) continue;
       const r = rel(g, L);
@@ -76,7 +76,7 @@ function coalitionTurn(L) {
     }
     return;
   }
-  if (!L || G.turn < 10 || dominance(L) < 0.3) return;
+  if (!L || G.turn < 10 || dominance(L) - (hasAdv(L, 'culture', 5) ? 0.08 : 0) < 0.3) return;
   if (G.lastCoalition !== undefined && G.turn - G.lastCoalition < 16) return;
   if (rng() > 0.35) return;
   // At most four: the strongest of those who fear and dislike the leader

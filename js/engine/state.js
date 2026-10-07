@@ -92,7 +92,7 @@ function newGame(player, seed) {
     const [walls, barracks, stables, market, farms, madrasa] = d[9];
     G.provinces[d[0]] = {
       id: d[0], name: d[1], city: d[2], owner: d[5], pop: d[6], terrain: d[7], silk: !!d[8],
-      b: { walls, barracks, stables, market, farms, madrasa }, build: null, queue: [],
+      b: { walls, barracks, stables, market, farms, madrasa, library: 0 }, build: null, queue: [],
       unrest: 0, x: site.x, y: site.y, idx: i,
       adj: [...MAPDATA.adj[i]].filter(j => MAPDATA.sites[j].kind === 'province').map(j => MAPDATA.sites[j].id),
       siege: null, sacked: 0,
@@ -193,6 +193,7 @@ function provinceOrder(p, dist) {
   if (hasWonder(p.owner, 'yasawi') && (p.terrain === 'steppe' || p.terrain === 'desert')) o += 15;
   o += landmarkOrder(p);
   o -= overstretch(p.owner);
+  o += devOrder(p);
   return Math.round(clampN(o, 0, 120));
 }
 
@@ -202,6 +203,7 @@ function provinceIncome(p, order) {
   let tax = p.taxFree > 0 ? 0 : p.pop * TERRAIN[p.terrain].tax * TAX_INCOME[taxOf(p)] * (1 + 0.2 * p.b.market) * (p.governor ? 1.1 : 1);
   tax *= clampN(order / 70, 0.3, 1.1);
   if (p.terrain === 'oasis' && hasWonder(p.owner, 'musalla')) tax *= 1.15;
+  tax *= devTaxMult(p.owner);
   let trade = p.silk ? 40 + 45 * p.b.market + (hasWonder(p.owner, 'saraibazaar') ? 40 : 0) : 0;
   if (p.siege) { tax *= 0.2; trade = 0; }
   const open = p.terrain === 'steppe' || p.terrain === 'desert';
@@ -218,6 +220,7 @@ function unitUpkeep(type, nomad) {
 // A great hoard (over 5000 gold) in the treasury tempts the officials who guard it: some of it goes missing every turn.
 function treasuryLoss(f) {
   const g = G.factions[f] ? G.factions[f].gold : 0;
+  if (hasAdv(f, 'trade', 4)) return g > 9000 ? Math.round((g - 9000) * 0.05) : 0;
   return g > 5000 ? Math.round((g - 5000) * 0.1) : 0;
 }
 
@@ -225,7 +228,8 @@ function factionUpkeep(f) {
   let s = 0;
   const nomad = FACTIONS[f].nomad;
   for (const a of armiesOf(f)) for (const u of a.units) s += unitUpkeep(u.type, nomad);
-  for (const p of provsOf(f)) if (p.governor) s += GOVERNOR_UPKEEP;
+  for (const p of provsOf(f)) if (p.governor) s += governorUpkeep(f);
+  if (G.factions[f] && G.factions[f].sages) s += G.factions[f].sages.length * SAGE_UPKEEP;
   return s;
 }
 
@@ -236,6 +240,7 @@ function tradeIncome(f) {
     const silk = provsOf(g).filter(p => p.silk).length + provsOf(f).filter(p => p.silk).length;
     s += (30 + silk * 12) * GAME.INCOME;
   }
+  if (hasAdv(f, 'trade', 1)) s *= 1.3;
   return Math.round(s);
 }
 
@@ -286,6 +291,7 @@ function loadGame(slot) {
     if (!data) return false;
     MAPDATA = MAPDATA || buildMap();
     G = JSON.parse(data);
+    migrateProgress();
     return true;
   } catch (e) { return false; }
 }

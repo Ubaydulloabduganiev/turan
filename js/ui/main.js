@@ -150,13 +150,14 @@ async function doEndTurn() {
   await flushNotices();
   checkMission();
   await flushNotices();
-  const s = pickCrisis() || pickStory();
+  const s = pickCrisis() || pickSage() || pickStory();
   if (s) await showStory(s);
   else {
     const lm = pickLandmark();
     if (lm) { centerOnProv(LANDMARKS[lm.id].prov); await playScene({ kind: 'place', ...lm }); await flushNotices(); }
   }
   refresh();
+  await checkGoldenAgeUI();
   checkOverUI();
 }
 
@@ -182,6 +183,7 @@ $('busy').onclick = () => { LIFE.skip = true; };
 $('btn-dip').onclick = () => !uiLocked() && openDiplomacy();
 $('btn-court').onclick = () => !uiLocked() && openCourt();
 $('btn-realm').onclick = () => !uiLocked() && openRealm();
+$('btn-dev').onclick = () => !uiLocked() && openDevelopment();
 $('btn-chron').onclick = () => !uiLocked() && openChronicle();
 $('btn-menu').onclick = () => !uiLocked() && openMenu();
 $('btn-code').onclick = () => !uiLocked() && openSecretCode();
@@ -216,6 +218,7 @@ window.addEventListener('keydown', e => {
   else if (e.key === 'd' || e.key === 'D') openDiplomacy();
   else if (e.key === 'k' || e.key === 'K') openCourt();
   else if (e.key === 'r' || e.key === 'R') openRealm();
+  else if (e.key === 'g' || e.key === 'G') openDevelopment();
   else if (e.key === 'c' || e.key === 'C') openChronicle();
 });
 

@@ -125,6 +125,13 @@ const PEOPLE = {
   "Sa'd al-Din Taftazani": ['Saʼduddin Taftazoniy', 'Саад ад-Дин Тафтазани', 'Sadeddin Teftazani'],
   'Nizam al-Din Shami': ['Nizomiddin Shomiy', 'Низам ад-Дин Шами', 'Nizameddin Şami'],
   'Ibn Khaldun': ['Ibn Xaldun', 'Ибн Хальдун', 'İbn Haldun'],
+  'Mir Sayyid Sharif Jurjani': ['Mir Sayyid Sharif Jurjoniy', 'Мир Сейид Шариф Джурджани', 'Seyyid Şerif Cürcani'],
+  'Qadi-zada al-Rumi': ['Qozizoda Rumiy', 'Кази-заде ар-Руми', 'Bursalı Kadızade-i Rumi'],
+  'Ghiyath al-Din al-Kashi': ['G‘iyosiddin Koshiy', 'Гияс ад-Дин аль-Каши', 'Gıyaseddin el-Kaşi'],
+  'Abd al-Qadir Maraghi': ['Abdulqodir Marog‘iy', 'Абд аль-Кадир Мараги', 'Abdülkadir Meragi'],
+  'Khwaja Abd al-Hayy': ['Xoja Abdulhay', 'Ходжа Абд аль-Хайй', 'Hace Abdülhay'],
+  'Mawlana Lutfi': ['Mavlono Lutfiy', 'Мавлана Лютфи', 'Mevlana Lutfi'],
+  'Sharaf al-Din Ali Yazdi': ['Sharafiddin Ali Yazdiy', 'Шараф ад-Дин Али Язди', 'Şerafeddin Ali Yezdi'],
   'Ruy González de Clavijo': ['Rui Gonsales de Klavixo', 'Руи Гонсалес де Клавихо', 'Ruy González de Clavijo'],
   'Darvish Rukn': ['Darvesh Rukn', 'Дервиш Рукн', 'Derviş Rükn'],
 };

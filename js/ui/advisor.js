@@ -44,6 +44,9 @@ function advisorTips() {
   else if (dominance(pl) > 0.24 && !G.coalition) tips.push({ score: 62, text: t('Our power frightens the other rulers. If we grow much more, they may unite against us.'), realm: true });
   if (overstretch(pl) >= 3) tips.push({ score: 64, text: t('The realm is so large that every city is harder to govern (−{n} order). Appoint governors and build madrasas.', { n: Math.round(overstretch(pl)) }), realm: true });
   if (trustOf(pl) < 30) tips.push({ score: 66, text: t('Our name is stained by broken oaths. Rulers will not ally or trade with us until we prove ourselves.'), realm: true });
+  // Growing the realm in peace
+  if (totalPatronage(pl) === 0 && st.gold > 1800 && factionIncome(pl) - factionUpkeep(pl) > 300) tips.push({ score: 52, text: t('The treasury can support scholars and poets. Open Development and grant royal patronage.'), dev: true });
+  { const cap = G.provinces[st.capital]; if (cap && cap.owner === pl && !cap.b.library && !cap.build && st.gold > 600 && cap.pop >= 10) tips.push({ score: 48, text: t('Build a library in {city}: it brings progress in literature and science.', { city: cityOf(cap) }), prov: cap.id }); }
   // Unhappy cities
   for (const p of provsOf(pl)) {
     const o = provinceOrder(p, dist);
@@ -81,7 +84,7 @@ function renderAdvisor() {
     mission = `<div class="mission ${where ? 'link' : ''}" data-mission="${where || ''}"><div class="m-head">${t('Council request')} · ${left <= 0 ? t('last turn') : t('turns left: {n}', { n: left })}</div>${m.text}<div class="m-reward">${t('Reward: {n} gold', { n: fmt(m.reward) })}</div></div>`;
   }
   box.innerHTML = `<div class="adv-head" data-adv="toggle"><span>${t('Your vizier advises')}</span><span>${advisorOpen ? '–' : '+'}</span></div>` +
-    (advisorOpen ? mission + tips.map((tp, i) => `<div class="tip ${tp.prov || tp.army || tp.realm ? 'link' : ''}" data-adv="${i}">${tp.text}</div>`).join('') : '');
+    (advisorOpen ? mission + tips.map((tp, i) => `<div class="tip ${tp.prov || tp.army || tp.realm || tp.dev ? 'link' : ''}" data-adv="${i}">${tp.text}</div>`).join('') : '');
 }
 
 $('advisor').addEventListener('click', e => {
@@ -93,6 +96,7 @@ $('advisor').addEventListener('click', e => {
   const t = $('advisor')._tips[+el.dataset.adv];
   if (!t) return;
   if (t.realm) return openRealm();
+  if (t.dev) return openDevelopment();
   if (t.army) { UI.selArmy = t.army; UI.selProv = G.armies[t.army].prov; centerOnProv(UI.selProv); }
   else if (t.prov) { UI.selArmy = null; UI.selProv = t.prov; centerOnProv(t.prov); }
   refresh();
