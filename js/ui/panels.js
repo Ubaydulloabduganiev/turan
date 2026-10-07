@@ -273,9 +273,9 @@ $('panel').addEventListener('click', async e => {
   let err = null;
   switch (act) {
     case 'close': UI.selArmy = null; UI.selProv = null; break;
-    case 'build': err = startBuild(p, el.dataset.k); break;
+    case 'build': err = startBuild(p, el.dataset.k); if (!err) sfx('build'); break;
     case 'cancelbuild': cancelBuild(p); break;
-    case 'recruit': if (el.classList.contains('off')) return; err = recruit(p, el.dataset.t); break;
+    case 'recruit': if (el.classList.contains('off')) return; err = recruit(p, el.dataset.t); if (!err) sfx('coins', { vol: 0.7 }); break;
     case 'unqueue': cancelRecruit(p, +el.dataset.i); break;
     case 'selarmy': UI.selArmy = el.dataset.id; UI.selProv = G.armies[el.dataset.id].prov; break;
     case 'selprov': UI.selArmy = null; UI.selProv = el.dataset.id; break;

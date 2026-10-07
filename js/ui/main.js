@@ -5,7 +5,7 @@ let pickSel = 'temur';
 
 function showScreen(id) {
   for (const s of ['title', 'pick', 'game']) $(s).classList.toggle('hidden', s !== id);
-  if (id === 'game') sceneStop(); else sceneStart();
+  if (id === 'game') { sceneStop(); music('map'); } else { sceneStart(); music('title'); }
 }
 
 // Runs slow work (painting the map) behind a loading screen

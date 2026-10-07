@@ -10,6 +10,7 @@ const bc = $('bcanvas');
 const bx = bc.getContext('2d');
 
 function startTactical(b) {
+  music('battle'); sfx('horn', { vol: 0.8 }); setTimeout(() => sfx('army', { vol: 0.7 }), 1800);
   return new Promise(resolve => {
     const pl = G.player;
     const playerSide = b.att.faction === pl ? 'att' : 'def';
@@ -301,9 +302,11 @@ function endTactical(winner, quiet) {
   const left = TB.regs.filter(r => r.side === loserSide).reduce((n, r) => n + r.u.men, 0);
   const res = { winner, rout: left < TB.start[loserSide] * 0.3 };
   const pw = (winner === TB.playerSide);
+  if (!quiet) sfx(pw ? 'cheer' : 'army', { vol: pw ? 0.9 : 0.5 });
   const done = () => {
     if (TB.r3) { dispose3D(TB.r3); TB.r3 = null; }
     $('battle').classList.add('hidden');
+    music('map');
     if (turnBusy) $('busy').classList.remove('hidden');
     const resolve = TB.resolve;
     TB = null;

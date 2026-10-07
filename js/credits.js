@@ -344,5 +344,165 @@ const CREDITS = [
   "date": "2020-06-25",
   "license": "CC0",
   "page": "https://commons.wikimedia.org/wiki/File:Smooth_clean_beach_shore_sand_seamless_ground_texture.jpg"
+ },
+ {
+  "use": "Music: title screen",
+  "title": "Fantasy Music - The Eternal Sands",
+  "author": "Hitctrl",
+  "date": "",
+  "license": "CC-BY 3.0",
+  "page": "https://opengameart.org/content/fantasy-music-the-eternal-sands"
+ },
+ {
+  "use": "Music: campaign map, battle",
+  "title": "Desert calmness and fighting (orchestral)",
+  "author": "Dizzy Crow",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/desert-calmness-and-fighting-orchestral-141"
+ },
+ {
+  "use": "Music: campaign map",
+  "title": "Hyyoshi Arabian Style Background Music",
+  "author": "Tozan",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/hyyoshi-arabian-syle-backgound-music-rpg"
+ },
+ {
+  "use": "Music: campaign map",
+  "title": "Desert theme",
+  "author": "yd",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/desert-theme"
+ },
+ {
+  "use": "Music: campaign map",
+  "title": "Arabesque",
+  "author": "brainiac256",
+  "date": "",
+  "license": "CC-BY 3.0",
+  "page": "https://opengameart.org/content/arabesque"
+ },
+ {
+  "use": "Music: battle",
+  "title": "Massive Battle",
+  "author": "Eldritch Grim",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/massive-battle"
+ },
+ {
+  "use": "Music: battle",
+  "title": "Drums of Dawn",
+  "author": "Magnesus",
+  "date": "",
+  "license": "CC-BY 3.0",
+  "page": "https://opengameart.org/content/drums-of-dawn"
+ },
+ {
+  "use": "Music: weddings and births",
+  "title": "Darbuka Delight",
+  "author": "Adiutorium",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/darbuka-delight"
+ },
+ {
+  "use": "Music: defeat",
+  "title": "Laments of the War",
+  "author": "Cethiel",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/laments-of-the-war"
+ },
+ {
+  "use": "Music: coronation and victory",
+  "title": "For the king",
+  "author": "Alexandr Zhelanov",
+  "date": "",
+  "license": "CC-BY 4.0",
+  "page": "https://opengameart.org/content/for-the-king"
+ },
+ {
+  "use": "Sounds: sword clashes, army shout",
+  "title": "20 Sword Sound Effects; Crowd Shouting Ambience",
+  "author": "StarNinjas",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/20-sword-sound-effects-attacks-and-clashes"
+ },
+ {
+  "use": "Sounds: arrows",
+  "title": "Swishes Sound Pack",
+  "author": "artisticdude",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/swishes-sound-pack"
+ },
+ {
+  "use": "Sounds: coins, building",
+  "title": "80 CC0 RPG SFX",
+  "author": "rubberduck",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/80-cc0-rpg-sfx"
+ },
+ {
+  "use": "Sounds: clicks",
+  "title": "51 UI sound effects",
+  "author": "Kenney",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks"
+ },
+ {
+  "use": "Sounds: galloping horses",
+  "title": "Horse Gallop Loop",
+  "author": "AntumDeluge",
+  "date": "",
+  "license": "CC-BY 3.0",
+  "page": "https://opengameart.org/content/horse-gallop-loop"
+ },
+ {
+  "use": "Sounds: cheering",
+  "title": "Free Crowd Cheering Sounds",
+  "author": "Gregor Quendel",
+  "date": "",
+  "license": "CC-BY 4.0",
+  "page": "https://opengameart.org/content/free-crowd-cheering-sounds"
+ },
+ {
+  "use": "Sounds: war horn",
+  "title": "Their Coming (generic horn sound)",
+  "author": "StumpyStrust",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/their-coming-generic-horn-sound"
+ },
+ {
+  "use": "Sounds: fanfare",
+  "title": "Classic fanfare lick",
+  "author": "fvcalderan",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/classic-fanfare-lick"
+ },
+ {
+  "use": "Sounds: fire",
+  "title": "Fireplace Sound loop",
+  "author": "PagDev",
+  "date": "",
+  "license": "CC0",
+  "page": "https://opengameart.org/content/fireplace-sound-loop"
+ },
+ {
+  "use": "Sounds: wind",
+  "title": "Breeze",
+  "author": "Sharm",
+  "date": "",
+  "license": "CC-BY 4.0",
+  "page": "https://opengameart.org/content/breeze"
  }
 ];

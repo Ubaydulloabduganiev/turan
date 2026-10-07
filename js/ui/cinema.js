@@ -628,6 +628,10 @@ function playScene(sc) {
   const peopleEl = el.querySelector('.cine-people');
   if (src) el.querySelector('.cine-text').prepend(peopleEl); else el.insertBefore(peopleEl, el.querySelector('.cine-text'));
   CINE.imgT = 0;
+  const MOOD = { wedding: 'feast', birth: 'feast', coronation: 'glory', conquest: 'glory' };
+  if (MOOD[sc.kind]) music(MOOD[sc.kind]);
+  if (sc.kind === 'coronation' || sc.kind === 'wedding') sfx('fanfare', { vol: 0.7 });
+  if (sc.kind === 'conquest') { sfx(sc.sack ? 'fire' : 'cheer', { vol: 0.7 }); }
   CINE.spec = sc; CINE.parts = []; CINE.t = 0; CINE.last = performance.now();
   el.querySelector('.cine-kicker').textContent = spec.kicker || '';
   el.querySelector('.cine-title').textContent = spec.title || '';
@@ -659,6 +663,7 @@ function playScene(sc) {
       if (done) return; done = true;
       removeEventListener('resize', resize); removeEventListener('keydown', key, true);
       el.classList.add('out');
+      if (MOOD[sc.kind] && !$('game').classList.contains('hidden')) music('map');
       setTimeout(() => { cancelAnimationFrame(CINE.raf); el.classList.add('hidden'); el.classList.remove('shown', 'out'); CINE.parts = []; resolve(); }, 450);
     };
     const key = e => { if ((e.key === 'Enter' || e.key === 'Escape' || e.key === ' ') && go.offsetParent) { e.preventDefault(); e.stopPropagation(); finish(); } };

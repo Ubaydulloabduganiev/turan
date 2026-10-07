@@ -1005,4 +1005,8 @@ Object.assign(I18N.ru, {
   "The portraits and scenes come from Timurid, Persian and Mughal manuscripts painted in the 15th and 16th centuries, many of them made for Temur’s own grandsons. Photographs show the special places as they are today. All are public domain or shared under free licences.": "Портреты и сцены взяты из тимуридских, персидских и могольских рукописей XV–XVI веков, многие из которых были созданы для внуков самого Тимура. Фотографии показывают особые места такими, какие они сегодня. Все изображения находятся в общественном достоянии или распространяются по свободным лицензиям.",
   "Skimmed by officials": "Расхищено чиновниками",
   "So much gold lies idle that the treasurers skim {n} a turn. Spend it: build, recruit, or raise a wonder.": "В казне без дела лежит столько золота, что казначеи каждый ход прикарманивают {n}. Тратьте его: стройте, набирайте войско или возводите чудо.",
+  "Music": "Музыка",
+  "Sounds": "Звуки",
+  "Sound on": "Включить звук",
+  "Mute": "Без звука",
 });

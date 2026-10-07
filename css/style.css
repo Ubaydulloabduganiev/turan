@@ -458,3 +458,6 @@ table.dip svg { width: 24px; height: 29px; vertical-align: middle; }
 .credits { font-size: 14px; line-height: 1.4; max-height: 56vh; overflow: auto; padding-left: 18px; }
 .credits li { margin-bottom: 6px; }
 .credits a { color: var(--tile); }
+.sound-ctl { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: center; margin: 10px 0 4px; font-size: 14px; }
+.sound-ctl label { display: flex; gap: 8px; align-items: center; }
+.sound-ctl input[type=range] { width: 130px; accent-color: var(--gold); }

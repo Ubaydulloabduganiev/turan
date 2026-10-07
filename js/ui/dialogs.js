@@ -46,6 +46,7 @@ function infoBox(title, text, opts = {}) {
 let quietNotices = false;
 function pushNotice(n) {
   if (quietNotices) return;
+  if (n.sound) sfx(n.sound);
   if (n.minor) { toast(n.title, n.text); return; }
   notices.push(n);
   if (!turnBusy && !modalOpen) flushNotices();
@@ -403,7 +404,7 @@ function savesHTML(mode) {
 }
 
 async function openMenu() {
-  const v = await showModal(`<h3>${dateText()}</h3><p class="note">${fFull(G.player)}</p>${langPicker()}`, [
+  const v = await showModal(`<h3>${dateText()}</h3><p class="note">${fFull(G.player)}</p>${langPicker()}${soundControls()}`, [
     { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' },
     { label: t('How to play'), value: 'help' }, { label: t('Save'), value: 'save' }, { label: t('Load'), value: 'load' },
     { label: t('Main menu'), value: 'title' }, { label: t('Resume'), value: null, cls: 'big' },
@@ -474,7 +475,7 @@ function helpHTML() {
 // Where the paintings and photographs come from
 function openCredits() {
   const list = (typeof CREDITS !== 'undefined' ? CREDITS : []).map(c =>
-    `<li><b>${c.use}</b> — <i>${c.title}</i>${c.author ? ', ' + c.author : ''}${c.date ? ' (' + c.date + ')' : ''}. ${c.license}${c.page ? ` · <a href="${c.page}" target="_blank" rel="noopener">Wikimedia Commons</a>` : ''}</li>`).join('');
+    `<li><b>${c.use}</b> — <i>${c.title}</i>${c.author ? ', ' + c.author : ''}${c.date ? ' (' + c.date + ')' : ''}. ${c.license}${c.page ? ` · <a href="${c.page}" target="_blank" rel="noopener">${c.page.includes('opengameart') ? 'OpenGameArt' : 'Wikimedia Commons'}</a>` : ''}</li>`).join('');
   return showModal(`<h3>${t('Pictures in this game')}</h3><p class="note">${t('The portraits and scenes come from Timurid, Persian and Mughal manuscripts painted in the 15th and 16th centuries, many of them made for Temur’s own grandsons. Photographs show the special places as they are today. All are public domain or shared under free licences.')}</p><ul class="credits">${list}</ul>`,
     [{ label: t('Close'), value: null, cls: 'big' }], { cls: 'wide', cancel: null });
 }
@@ -491,10 +492,12 @@ async function checkOverUI() {
   G.overShown = G.over;
   const pl = G.player;
   if (G.over === 'win') {
+    music('glory'); sfx('cheer');
     const v = await showModal(`<h3>${t('The last nation standing')}</h3><div class="with-portrait">${rulerPortrait(pl)}<p>${t('{date}: every rival crown has fallen or bowed. Your realm ({nation}) alone endures, ruling {n} provinces from the Caspian to the Tian Shan. Poets in Samarkand and Herat will sing of {ruler}.', { date: dateText(), nation: fFull(pl), n: provsOf(pl).length, ruler: pn(G.factions[pl].leader) })}</p></div>`,
       [{ label: t('Main menu'), value: 'title' }, { label: t('Keep ruling'), value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
     if (v === 'title') toTitle();
   } else if (G.over === 'lose') {
+    music('lament');
     await showModal(`<h3>${t('Defeat')}</h3><p>${t('The last lands of your realm ({nation}) have fallen. Your name will live only in the chronicles of your enemies.', { nation: fFull(pl) })}</p>`,
       [{ label: t('Main menu'), value: true, cls: 'big' }], { cancel: true });
     toTitle();

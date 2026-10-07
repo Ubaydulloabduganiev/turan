@@ -351,7 +351,7 @@ function declareWar(from, to, quiet) {
   r.war = true; r.alliance = false; r.trade = false; r.att = Math.min(r.att, 0) - 40; r.warTurns = 0; r.truce = 0;
   if (perfidy) for (const g of PLAYABLE) if (g !== from && g !== to && G.factions[g].alive) rel(from, g).att -= 15;
   log(dateText() + ': ' + t('the {nation} declares war on the {nation2}.', { nation: fFull(from), nation2: fFull(to) }), from === G.player || to === G.player ? 'war' : '');
-  if (to === G.player && !quiet) HOOKS.notify({ title: t('War!'), text: t('The {nation} has declared war on us.', { nation: fFull(from) }) });
+  if (to === G.player && !quiet) HOOKS.notify({ sound: 'horn', title: t('War!'), text: t('The {nation} has declared war on us.', { nation: fFull(from) }) });
   // Allies of the victim may come to its aid
   for (const g of PLAYABLE) {
     if (g === from || g === to || !G.factions[g].alive || !rel(g, to).alliance || rel(g, from).war) continue;

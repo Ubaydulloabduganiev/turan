@@ -1005,4 +1005,8 @@ Object.assign(I18N.uz, {
   "The portraits and scenes come from Timurid, Persian and Mughal manuscripts painted in the 15th and 16th centuries, many of them made for Temur’s own grandsons. Photographs show the special places as they are today. All are public domain or shared under free licences.": "Portretlar va manzaralar XV–XVI asrlarda chizilgan temuriy, fors va boburiy qoʻlyozmalaridan olingan; ularning koʻpi Temurning nabiralari uchun ishlangan. Fotosuratlar mashhur joylarni bugungi holida koʻrsatadi. Barchasi jamoat mulki yoki erkin litsenziyalar asosida tarqatilgan.",
   "Skimmed by officials": "Amaldorlar oʻmarayapti",
   "So much gold lies idle that the treasurers skim {n} a turn. Spend it: build, recruit, or raise a wonder.": "Xazinada shunchalik koʻp oltin bekor yotibdiki, xazinachilar har yurishda {n} oltinni oʻmarishmoqda. Uni sarflang: qurilish qiling, askar yollang yoki moʻjiza bunyod eting.",
+  "Music": "Musiqa",
+  "Sounds": "Ovozlar",
+  "Sound on": "Ovozni yoqish",
+  "Mute": "Ovozsiz",
 });
