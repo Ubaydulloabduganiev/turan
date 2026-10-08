@@ -5,7 +5,8 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const root = path.join(__dirname, '..');
 const files = ['index.html', 'manifest.webmanifest'];
 for (const dir of ['css', 'js', 'img', 'audio', 'fonts', 'icons'])
-  (function walk(d) { for (const f of fs.readdirSync(path.join(root, d))) { const p = d + '/' + f; if (fs.statSync(path.join(root, p)).isDirectory()) walk(p); else files.push(p); } })(dir);
+  (function walk(d) { for (const f of fs.readdirSync(path.join(root, d))) { const p = d + '/' + f; if (p === 'audio/voice') continue; if (fs.statSync(path.join(root, p)).isDirectory()) walk(p); else files.push(p); } })(dir);
+// The recorded voices (audio/voice) are many: they are not downloaded up front, but kept once played
 const hash = crypto.createHash('sha1');
 for (const f of files) hash.update(fs.readFileSync(path.join(root, f)));
 const version = hash.digest('hex').slice(0, 10);

@@ -1761,4 +1761,7 @@ Object.assign(I18N.tr, {
   "This browser cannot speak. Try Google Chrome, Microsoft Edge or Safari.": "Bu tarayıcı konuşamıyor. Google Chrome, Microsoft Edge ya da Safari’yi deneyin.",
   "This device has no voice for this language.": "Bu cihazda bu dil için ses yok.",
   "Voice": "Ses",
+  "Recorded voices": "Kayıtlı sesler",
+  "This device’s voice": "Cihazın sesi",
+  "Recorded voices: a storyteller, Amir Temur, the other rulers and the queens each have their own voice. They need an internet connection the first time each line is played.": "Kayıtlı sesler: anlatıcının, Emir Timur’un, öteki hükümdarların ve kraliçelerin her birinin kendi sesi var. Her satır ilk kez çalındığında internet gerekir.",
 });

@@ -1761,4 +1761,7 @@ Object.assign(I18N.uz, {
   "This browser cannot speak. Try Google Chrome, Microsoft Edge or Safari.": "Bu brauzer gapira olmaydi. Google Chrome, Microsoft Edge yoki Safari’ni sinab ko‘ring.",
   "This device has no voice for this language.": "Bu qurilmada shu til uchun ovoz yo‘q.",
   "Voice": "Ovoz",
+  "Recorded voices": "Yozib olingan ovozlar",
+  "This device’s voice": "Qurilma ovozi",
+  "Recorded voices: a storyteller, Amir Temur, the other rulers and the queens each have their own voice. They need an internet connection the first time each line is played.": "Yozib olingan ovozlar: hikoyachi, Amir Temur, boshqa hukmdorlar va malikalarning har biri o‘z ovoziga ega. Har bir satr birinchi marta yangraganda internet kerak bo‘ladi.",
 });

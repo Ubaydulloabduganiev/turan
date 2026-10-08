@@ -67,7 +67,7 @@ async function flushQueue() {
   while (notices.length) {
     const n = notices.shift();
     if (n.scene) { await playScene(n.scene); if (G) refresh(); continue; }
-    if (n.history) narrate(n.title + '. ' + n.text);
+    if (n.history) narrate([n.title, n.text]);
     if (n.who) await infoBox(n.title, `<div class="with-portrait">${portraitSVG(n.who, { faction: n.whoFaction })}<p>${n.text}</p></div>`, { cls: n.history ? 'parch' : '' });
     else await infoBox(n.title, n.text, { cls: n.history ? 'parch' : '' });
     if (n.history) hush();
@@ -83,7 +83,7 @@ async function showStory({ story, ctx }) {
   const who = story.who ? story.who(ctx) : null;
   const pic = who ? portraitSVG(who, { faction: story.whoFaction ? story.whoFaction(ctx) : ctx.f }) : '';
   const kick = story.kicker ? `<div class="camp-year whatif-kick">✦ ${t(story.kicker)}</div>` : '';
-  if (story.kicker) narrate(title + '. ' + story.text(ctx));
+  if (story.kicker) narrate([title, story.text(ctx)]);
   const i = await showModal(`${kick}<h3>${title}</h3><div class="with-portrait">${pic}<p>${story.text(ctx)}</p></div><div class="choices story">${opts}</div>`, [], { cls: 'parch', cancel: 0, pickIndex: true });
   hush();
   const result = story.options[i || 0].act(ctx);

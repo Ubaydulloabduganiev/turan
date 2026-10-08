@@ -1761,4 +1761,7 @@ Object.assign(I18N.ru, {
   "This browser cannot speak. Try Google Chrome, Microsoft Edge or Safari.": "Этот браузер не умеет говорить. Попробуйте Google Chrome, Microsoft Edge или Safari.",
   "This device has no voice for this language.": "На этом устройстве нет голоса для этого языка.",
   "Voice": "Голос",
+  "Recorded voices": "Записанные голоса",
+  "This device’s voice": "Голос устройства",
+  "Recorded voices: a storyteller, Amir Temur, the other rulers and the queens each have their own voice. They need an internet connection the first time each line is played.": "Записанные голоса: у сказителя, Амира Тимура, других правителей и цариц — у каждого свой голос. При первом воспроизведении каждой фразы нужен интернет.",
 });
