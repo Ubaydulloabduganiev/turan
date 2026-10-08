@@ -445,11 +445,7 @@ async function openMenu() {
     { label: t('Main menu'), value: 'title' }, { label: t('Resume'), value: null, cls: 'big' },
   ], { cancel: null, onOpen: m => fillVersion(m.querySelector('#ver-note')), onClick: e => { const l = e.target.closest('[data-lang]'); if (l) { setLang(l.dataset.lang); applyLang(); closeModal(null); openMenu(); } } });
   if (v === 'rivals') { setRivalMoves(!LIFE.showRivals); toast(t('Rival moves'), t(LIFE.showRivals ? 'You will watch rival armies march across the map.' : 'Rival armies will move instantly.'), ''); return openMenu(); }
-  if (v === 'voice') {
-    if (!canNarrate()) toast(narrationLabel(), t('This device has no voice for this language. Install one in your phone’s or computer’s speech settings (text-to-speech), then open the game again.'), 'bad');
-    else { setNarration(!VOICE.on); toast(narrationLabel(), t(VOICE.on ? 'A storyteller will read the great scenes and the turning points of history aloud.' : 'The storyteller is silent.'), ''); if (VOICE.on) narrate(t('A storyteller will read the great scenes and the turning points of history aloud.')); }
-    return openMenu();
-  }
+  if (v === 'voice') { await openNarration(); return openMenu(); }
   if (v === 'fog') {
     G.fog = !fogOn();
     toast(t(fogOn() ? 'Fog of war: on' : 'Fog of war: off'), t(fogOn() ? 'You see only the lands near your cities, armies, allies and spies.' : 'You see every army on the map.'), '');

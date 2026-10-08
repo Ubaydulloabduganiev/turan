@@ -1753,4 +1753,12 @@ Object.assign(I18N.uz, {
   "{kind}: the {sea}, off {city}.": "{kind}: {sea}, {city} yaqinida.",
   "{nation} won the battle on the {sea}.": "{nation} {sea}dagi jangda g‘alaba qozondi.",
   "{nation}: your turn": "{nation}: sizning navbatingiz",
+  "A storyteller reads the painted scenes, the turning points of history and the great events aloud.": "Hikoyachi tasvirlangan sahnalar, tarixning burilish nuqtalari va buyuk voqealarni ovoz chiqarib o‘qiydi.",
+  "Narration": "Hikoyachi",
+  "On a computer, Microsoft Edge has Uzbek, Russian, Turkish and English voices built in. In other browsers, add a voice in your system’s speech settings (text-to-speech), then open the game again. You can also switch the game to another language.": "Kompyuterda Microsoft Edge brauzerida o‘zbek, rus, turk va ingliz ovozlari tayyor holda bor. Boshqa brauzerlarda tizimingizning nutq sozlamalarida (matnni nutqqa aylantirish) ovoz qo‘shing, so‘ng o‘yinni qayta oching. O‘yin tilini boshqasiga almashtirishingiz ham mumkin.",
+  "Test the voice": "Ovozni sinash",
+  "There is no voice for this language on this device, so a voice of another language reads it. Microsoft Edge has Uzbek voices built in.": "Bu qurilmada shu til uchun ovoz yo‘q, shuning uchun uni boshqa tildagi ovoz o‘qiydi. Microsoft Edge brauzerida o‘zbek ovozlari tayyor holda bor.",
+  "This browser cannot speak. Try Google Chrome, Microsoft Edge or Safari.": "Bu brauzer gapira olmaydi. Google Chrome, Microsoft Edge yoki Safari’ni sinab ko‘ring.",
+  "This device has no voice for this language.": "Bu qurilmada shu til uchun ovoz yo‘q.",
+  "Voice": "Ovoz",
 });

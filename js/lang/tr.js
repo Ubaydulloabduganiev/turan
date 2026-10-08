@@ -1753,4 +1753,12 @@ Object.assign(I18N.tr, {
   "{kind}: the {sea}, off {city}.": "{kind}: {sea}, {city} açıklarında.",
   "{nation} won the battle on the {sea}.": "{nation}, {sea} savaşını kazandı.",
   "{nation}: your turn": "{nation}: sıra sizde",
+  "A storyteller reads the painted scenes, the turning points of history and the great events aloud.": "Bir anlatıcı resimli sahneleri, tarihin dönüm noktalarını ve büyük olayları sesli okur.",
+  "Narration": "Anlatıcı",
+  "On a computer, Microsoft Edge has Uzbek, Russian, Turkish and English voices built in. In other browsers, add a voice in your system’s speech settings (text-to-speech), then open the game again. You can also switch the game to another language.": "Bilgisayarda Microsoft Edge tarayıcısında Özbekçe, Rusça, Türkçe ve İngilizce sesler hazır gelir. Başka tarayıcılarda sisteminizin konuşma ayarlarından (metin okuma) bir ses ekleyin, sonra oyunu yeniden açın. Oyunu başka bir dile de geçirebilirsiniz.",
+  "Test the voice": "Sesi dene",
+  "There is no voice for this language on this device, so a voice of another language reads it. Microsoft Edge has Uzbek voices built in.": "Bu cihazda bu dil için ses yok, bu yüzden metni başka bir dilin sesi okuyor. Microsoft Edge’de Özbekçe sesler hazır gelir.",
+  "This browser cannot speak. Try Google Chrome, Microsoft Edge or Safari.": "Bu tarayıcı konuşamıyor. Google Chrome, Microsoft Edge ya da Safari’yi deneyin.",
+  "This device has no voice for this language.": "Bu cihazda bu dil için ses yok.",
+  "Voice": "Ses",
 });

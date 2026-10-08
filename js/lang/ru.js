@@ -1753,4 +1753,12 @@ Object.assign(I18N.ru, {
   "{kind}: the {sea}, off {city}.": "{kind}: {sea}, у города {city}.",
   "{nation} won the battle on the {sea}.": "{nation} побеждает в битве на воде ({sea}).",
   "{nation}: your turn": "{nation}: ваш ход",
+  "A storyteller reads the painted scenes, the turning points of history and the great events aloud.": "Сказитель читает вслух живописные сцены, поворотные моменты истории и великие события.",
+  "Narration": "Озвучка",
+  "On a computer, Microsoft Edge has Uzbek, Russian, Turkish and English voices built in. In other browsers, add a voice in your system’s speech settings (text-to-speech), then open the game again. You can also switch the game to another language.": "На компьютере в браузере Microsoft Edge уже есть узбекские, русские, турецкие и английские голоса. В других браузерах добавьте голос в настройках речи системы (синтез речи), затем откройте игру снова. Можно также переключить игру на другой язык.",
+  "Test the voice": "Проверить голос",
+  "There is no voice for this language on this device, so a voice of another language reads it. Microsoft Edge has Uzbek voices built in.": "На этом устройстве нет голоса для этого языка, поэтому текст читает голос другого языка. В Microsoft Edge узбекские голоса уже есть.",
+  "This browser cannot speak. Try Google Chrome, Microsoft Edge or Safari.": "Этот браузер не умеет говорить. Попробуйте Google Chrome, Microsoft Edge или Safari.",
+  "This device has no voice for this language.": "На этом устройстве нет голоса для этого языка.",
+  "Voice": "Голос",
 });
