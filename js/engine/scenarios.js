@@ -71,6 +71,92 @@ const SCENARIOS = [
     goalText: 'Win all five advances in Literature and arts and three in Trade before 1395, and keep Herat.',
     setup: () => { G.factions.kart.gold += 1500; G.provinces.herat.b.library = 1; },
   },
+  {
+    id: 'revenge', faction: 'golden', start: turnOf(1387, 1), deadline: turnOf(1391, 0), difficulty: 'Hard',
+    title: 'The Ungrateful Khan',
+    blurb: 'Toqtamish owes his throne to Temur, and he has not forgotten it: he hates him for it. Now he rules the whole Horde of Jochi, from the Volga to the Syr Darya. Temur and his best men are far away in Persia. This winter the Horde rides south.',
+    goal: { type: 'take', provs: ['otrar', 'tashkent', 'bukhara'] },
+    goalText: 'Take Otrar, Tashkent and Bukhara before the spring of 1391. Temur will come back from Persia in the autumn of 1388.',
+    winText: 'Bukhara, Tashkent and Otrar fly the banners of the Horde. In history Toqtamish burned the palaces of Transoxiana and then fled before Temur’s return. In this story, the Chagatai Ulus has lost its heart, and the steppe rules the cities once more.',
+    setup: () => {
+      annex('golden', 'white');
+      setLeader('golden', 'Toqtamish', 45);
+      declareWar('golden', 'temur', true); rel('golden', 'temur').att = -80;
+      // Temur and his veterans are away in Persia
+      for (const a of armiesOf('temur')) { for (const u of a.units) u.men = Math.round(u.men * 0.55); }
+      const base = ['sighnaq', 'saraichik', 'emba'].find(id => G.provinces[id] && G.provinces[id].owner === 'golden') || G.factions.golden.capital;
+      strikeArmy('golden', base, ['horsearch', 'horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'heavycav', 'ordu', 'spear', 'archer', 'siege', 'siege']);
+      strikeArmy('golden', base, ['horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'spear']);
+      // A second column crosses the Kyzylkum for Bukhara, as the Horde did in 1388
+      strikeArmy('golden', ['jend', 'sighnaq'].find(id => G.provinces[id] && G.provinces[id].owner === 'golden') || base, ['horsearch', 'horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'spear', 'archer', 'siege', 'siege']);
+      G.factions.golden.gold += 2500;
+    },
+    // Temur comes back from Persia
+    onTurn: () => {
+      if (G.turn === turnOf(1388, 1) && G.factions.temur.alive) {
+        const at = G.provinces.samarkand.owner === 'temur' ? 'samarkand' : (provsOf('temur')[0] || {}).id;
+        if (at) { addArmy('temur', at, ['heavyinf', 'spear', 'spear', 'archer', 'archer', 'lancer', 'heavycav', 'tovachi'], makeGeneral('temur', G.factions.temur.leader, 6, 52, true)); }
+        HOOKS.notify({ title: t('Temur returns'), text: t('Riders bring the news: Temur has crossed the Amu Darya with the army of Persia, and he is marching north.'), history: true });
+      }
+    },
+  },
+  {
+    id: 'sarai', faction: 'temur', start: turnOf(1395, 0), deadline: turnOf(1397, 1), difficulty: 'Normal',
+    title: 'The Sack of Sarai',
+    blurb: 'On the Terek, in April 1395, Temur has broken the army of Toqtamish. The khan has fled into the steppe. Now the road lies open to Sarai, the richest city of the north, where the Horde keeps the treasure of a hundred and fifty years.',
+    goal: { type: 'take', provs: ['sarai', 'hajjitarkhan'] },
+    goalText: 'Take Sarai and Hajji-Tarkhan before the autumn of 1397.',
+    winText: 'Sarai burns, and Hajji-Tarkhan with it. The Golden Horde never recovers: its trade turns away to new roads, and the steppe empire of Batu fades. Temur rides home to Samarkand with the craftsmen of the north in his train.',
+    setup: () => {
+      annex('golden', 'white');
+      setLeader('golden', 'Toqtamish', 53);
+      declareWar('temur', 'golden', true); rel('temur', 'golden').att = -90;
+      for (const a of armiesOf('golden')) for (const u of a.units) u.men = Math.round(u.men * 0.5); // the Terek
+      transferProvince(G.provinces.saraichik, 'temur', 5);
+      strikeArmy('temur', 'saraichik', ['heavyinf', 'heavyinf', 'spear', 'spear', 'archer', 'archer', 'lancer', 'heavycav', 'heavycav', 'tovachi', 'siege', 'siege']);
+      strikeArmy('temur', 'saraichik', ['horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'tovachi']);
+      G.factions.temur.gold += 2000;
+    },
+  },
+  {
+    id: 'heirs', faction: 'temur', start: turnOf(1405, 1), deadline: turnOf(1409, 1), difficulty: 'Normal',
+    title: 'The Heirs of Temur',
+    blurb: 'In February 1405 Temur died at Otrar, on his way to China. His grandson Khalil Sultan has seized Samarkand and the treasury, and scatters gold to win the amirs. In Herat, Temur’s youngest son, Shah Rukh, gathers the army of Khorasan.',
+    goal: { type: 'take', provs: ['samarkand', 'bukhara'] },
+    goalText: 'Take Samarkand and Bukhara from Khalil Sultan before the autumn of 1409.',
+    winText: 'Shah Rukh enters Samarkand in 1409 and gives it to his son Ulugh Beg. He rules the empire of Temur from Herat for forty years, in peace, among poets, painters and builders. The age of the sword gives way to the age of the book.',
+    setup: () => {
+      setLeader('temur', 'Shah Rukh', 28);
+      // Khorasan is Shah Rukh's own: the old dynasties of Herat and Sabzevar have long been swept away
+      annex('temur', 'kart'); annex('temur', 'sarbadar');
+      G.factions.temur.capital = 'herat';
+      // Khalil Sultan holds Transoxiana with Temur's treasure
+      for (const id of ['samarkand', 'bukhara', 'kesh', 'jizzakh']) if (G.provinces[id]) { for (const a of armiesIn(id)) if (a.owner === 'temur') a.prov = 'herat'; transferProvince(G.provinces[id], 'rebels', 0); }
+      addArmy('rebels', 'samarkand', ['heavyinf', 'heavyinf', 'spear', 'spear', 'archer', 'archer', 'lancer', 'heavycav', 'tovachi'], makeGeneral('rebels', 'Khalil Sultan', 4, 21, false));
+      addArmy('rebels', 'bukhara', ['spear', 'spear', 'archer', 'archer', 'lancer'], null);
+      strikeArmy('temur', 'herat', ['heavyinf', 'heavyinf', 'spear', 'spear', 'archer', 'archer', 'lancer', 'heavycav', 'heavycav', 'siege', 'siege']);
+      G.factions.temur.gold += 2500;
+    },
+  },
+  {
+    id: 'ulughbeg', faction: 'temur', start: turnOf(1409, 1), deadline: turnOf(1420, 0), difficulty: 'Normal',
+    title: 'Ulugh Beg’s Samarkand',
+    blurb: 'Samarkand has a new master: Ulugh Beg, grandson of Temur, fifteen years old, who loves the stars more than the sword. Around him gather mathematicians and astronomers. Make his city the capital of learning of the whole world.',
+    goal: { type: 'develop', provs: ['samarkand'], dev: { science: 5, culture: 3 } },
+    goalText: 'Win all five advances in Science and three in Literature and arts before 1420, and keep Samarkand.',
+    winText: 'On a hill above Samarkand rises the great observatory, with a sextant forty metres high. Ulugh Beg’s star tables, the most exact since Ptolemy, are copied in Istanbul, in Delhi and, centuries later, in Oxford.',
+    setup: () => {
+      setLeader('temur', 'Ulugh Beg', 15);
+      G.factions.temur.gold += 2500;
+      G.provinces.samarkand.b.library = Math.max(1, G.provinces.samarkand.b.library || 0);
+      for (const id of ['qadizada', 'kashi']) if (SAGES[id] && !sagesOf('temur').includes(id)) sagesOf('temur').push(id);
+      // The learning of Temur's age is already his: the paper of Samarkand, the hospitals, the court poets
+      const d = devOf('temur');
+      d.science.lvl = Math.max(d.science.lvl, 2); d.science.pts = Math.max(d.science.pts, ADV_COST[1]);
+      d.culture.lvl = Math.max(d.culture.lvl, 1); d.culture.pts = Math.max(d.culture.pts, ADV_COST[0]);
+      for (const id of ['samarkand', 'bukhara']) if (G.provinces[id]) G.provinces[id].b.madrasa = Math.max(1, G.provinces[id].b.madrasa || 0);
+    },
+  },
 ];
 const scenarioById = id => SCENARIOS.find(s => s.id === id) || (typeof challengeSpec === 'function' ? challengeSpec(id) : null);
 // A campaign's goal in words (a challenge writes its own, with the names of the day)

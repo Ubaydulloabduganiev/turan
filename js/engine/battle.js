@@ -64,7 +64,7 @@ function sidePower(b, side, other, isDef) {
     s += v;
   }
   const g = sideGeneral(side);
-  s *= (1 + 0.07 * (g ? g.cmd : 0)) * traitBattle(g, isDef);
+  s *= (1 + 0.07 * (g ? g.cmd : 0)) * traitBattle(g, isDef) * loyaltyBattle(g, side.faction);
   return { power: s, hasSiege };
 }
 
@@ -172,6 +172,10 @@ function finishBattle(b, res) {
   for (const id of W.armies) { const a = G.armies[id]; if (!a) continue; for (const u of a.units) u.exp = Math.min(3, u.exp + (rng() < 0.6 ? 1 : 0)); }
   const wg = sideGeneral(W);
   if (wg && wg.cmd < 6 && rng() < 0.35) { wg.cmd++; }
+  // Victory binds an amir to his ruler; defeat makes him bitter
+  if (wg && !wg.leader) shiftLoyalty(wg, wf, 6);
+  const lg = sideGeneral(L);
+  if (lg && !lg.leader && lf !== 'rebels') shiftLoyalty(lg, lf, -4);
   G.stats[wf] && G.stats[wf].won++;
   G.stats[lf] && G.stats[lf].lost++;
   for (const id of b.att.armies.concat(b.def.armies)) { const a = G.armies[id]; if (a) cleanArmy(a); }

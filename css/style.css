@@ -914,3 +914,12 @@ body.handing #game { filter: blur(18px) brightness(0.35); }
 .chal-score { font: 400 64px/1 Cinzel, Georgia, serif; color: #8a5a12; text-align: center; margin: 8px 0; }
 .share-text { width: 100%; min-height: 110px; }
 @media (max-width: 760px) { .chal-row { grid-template-columns: 1fr; } }
+/* Court intrigue */
+.epithet { font: italic 400 0.82em Georgia, serif; color: var(--gold-hi); }
+.court-heart { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 6px 0 2px; font-size: 12.5px; align-items: end; }
+.court-heart span { display: block; color: var(--muted); font-size: 11.5px; }
+.court-heart .meter { height: 5px; background: rgba(0, 0, 0, 0.35); border-radius: 3px; overflow: hidden; margin-top: 2px; }
+.court-heart .meter div { height: 100%; }
+.court-heart .meter .good { background: #6cc46c; } .court-heart .meter .warn { background: #e0b04a; } .court-heart .meter .bad { background: #d0503a; }
+.court-heart .meter .amb { background: #b07ad8; }
+.court-heart button { grid-column: 1 / -1; justify-self: start; }

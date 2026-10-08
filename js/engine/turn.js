@@ -26,6 +26,7 @@ async function endTurn(onProgress) {
     upkeepPhase();
     rivalsTurn();
     traitsTurn();
+    intrigueTurn();
     devTurn();
     G.turn++;
     weatherTurn();

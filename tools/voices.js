@@ -60,6 +60,9 @@ for (const lang of ['en', 'uz', 'ru', 'tr']) {
   for (const e of D.EVENTS) { add(t(e.title), 'narrator', true); add(t(e.text)); }
   for (const k in D.TRACKS) for (const a of D.TRACKS[k].advances) { add(t(a.name), 'narrator', true); add(t(a.desc)); }
   for (const id in D.WONDERS) { add(t(D.WONDERS[id].name), 'narrator', true); add(t(D.WONDERS[id].desc)); }
+  // The historical campaigns: how each begins and how it ends
+  for (const S of vm.runInContext('SCENARIOS', ctx)) { add(t(S.title), 'narrator', true); add(t(S.blurb)); if (S.winText) add(t(S.winText)); }
+  add(t('Temur returns'), 'narrator', true); add(t('Riders bring the news: Temur has crossed the Amu Darya with the army of Persia, and he is marching north.'));
 }
 fs.writeFileSync(path.join(__dirname, 'voice-lines.json'), JSON.stringify(lines, null, 0));
 const by = {};

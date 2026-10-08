@@ -169,7 +169,7 @@ async function turnStartUI(newRound) {
   checkMission();
   await flushNotices();
   const calm = G.turn < (G.calm || 0);
-  const s = pickWhatIf() || pickCrisis() || (calm ? null : pickSage() || pickStory());
+  const s = pickWhatIf() || pickCrisis() || (calm ? null : pickIntrigue() || pickSage() || pickStory());
   if (s) await showStory(s);
   else if (!calm) {
     const lm = pickLandmark();

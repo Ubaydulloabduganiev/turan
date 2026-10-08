@@ -345,11 +345,25 @@ function personCard(name, faction, o = {}) {
   const role = o.role ? o.role : o.leader ? fTitle(faction) : o.consort ? t('Consort of the ruler') : o.child ? t('Born {born} · joins the court in {joins}', { born: c.born, joins: c.joins }) : o.cmd !== undefined ? `${t('General')} ${stars(Math.min(5, o.cmd))}` : c ? t({ scholar: 'Scholar', poet: 'Poet', envoy: 'Envoy' }[c.role] || '') : '';
   const where = o.prov ? ` · ${cityOf(G.provinces[o.prov])}` : '';
   return `<div class="person ${o.child ? 'child' : ''} ${dead ? 'dead' : ''}" ${o.army ? `data-army="${o.army}"` : ''}>${portraitSVG(name, { faction, age: age || undefined })}
-    <div class="pc-body"><div class="pc-name">${pn(name)}</div><div class="pc-role">${role}</div>
+    <div class="pc-body"><div class="pc-name">${pn(name)}${!o.child && !(c && ['scholar', 'poet', 'envoy', 'consort'].includes(c.role)) && epithetOf(name) ? ` <span class="epithet">${t(epithetOf(name))}</span>` : ''}</div><div class="pc-role">${role}</div>
     <div class="pc-meta">${age !== null && !o.child ? t('Age {n}', { n: age }) : ''}${dead ? ' · ' + t('died {y}', { y: c.died }) : ''}${where}</div>
     ${!o.child && !(c && ['scholar', 'poet', 'envoy', 'consort'].includes(c.role)) ? traitChips(name) : ''}
+    ${o.army && faction === G.player && G.armies[o.army] && G.armies[o.army].general && !G.armies[o.army].general.leader ? courtStatus(G.armies[o.army].general, faction) : ''}
     ${c ? `<div class="pc-bio">${t(c.bio)}</div>` : ''}</div></div>`;
 }
+
+// An amir's heart: how loyal, how ambitious, and a way to honour him
+function courtStatus(g, f) {
+  courtier(g, f);
+  const lc = g.loyal >= 70 ? 'good' : g.loyal >= 40 ? 'warn' : 'bad';
+  const lw = t(g.loyal >= 85 ? 'devoted' : g.loyal >= 70 ? 'loyal' : g.loyal >= 40 ? 'wavering' : g.loyal >= 20 ? 'resentful' : 'treacherous');
+  const aw = t(g.amb >= 70 ? 'burning' : g.amb >= 45 ? 'great' : g.amb >= 25 ? 'modest' : 'none');
+  const why = honourCheck(f, g);
+  return `<div class="court-heart"><div><span>❤ ${t('Loyalty')}</span><b class="${lc}">${lw}</b><div class="meter"><div class="${lc}" style="width:${Math.round(g.loyal)}%"></div></div></div>
+    <div><span>♛ ${t('Ambition')}</span><b>${aw}</b><div class="meter"><div class="amb" style="width:${Math.round(g.amb)}%"></div></div></div>
+    <button class="small" data-honour="${g.name.replace(/"/g, '&quot;')}" ${why ? `disabled title="${t(why)}"` : ''}>${t('Honour him · {n}g', { n: HONOUR_COST })}</button></div>`;
+}
+const honourCheck = (f, g) => G.factions[f].gold < HONOUR_COST ? 'Not enough gold' : g.honoured && G.turn - g.honoured < 3 ? 'He was honoured recently' : null;
 
 function openCourt(tab = 'mine') {
   const pl = G.player;
@@ -382,6 +396,12 @@ function openCourt(tab = 'mine') {
       if (e.target.closest('[data-close]')) return closeModal(null);
       const tb = e.target.closest('[data-tab]');
       if (tb) { tab = tb.dataset.tab; $('modal').innerHTML = render(); return; }
+      const hb = e.target.closest('[data-honour]');
+      if (hb) {
+        const a = armiesOf(pl).find(x => x.general && x.general.name === hb.dataset.honour);
+        if (a) { const why = honourGeneral(pl, a.general); if (why) toast(t('Cannot do that'), t(why), 'bad'); else { sfx('coins'); toast(t('A robe of honour'), t('{name} is honoured before the whole court.', { name: pn(a.general.name) }), 'good'); } }
+        $('modal').innerHTML = render(); refresh(); return;
+      }
       const pa = e.target.closest('[data-army]');
       if (pa && G.armies[pa.dataset.army]) { closeModal(null); UI.selArmy = pa.dataset.army; UI.selProv = G.armies[pa.dataset.army].prov; centerOnProv(UI.selProv); refresh(); }
     },

@@ -62,6 +62,11 @@ for (const A of vm.runInContext('CITY_ACTIONS', ctx)) { add(A.name); add(A.desc)
   for (const e of Object.values(W.ALT_EVENTS)) { add(e.title); add(e.text); }
   const src = fs.readFileSync(path.join(root, 'js/engine/whatif.js'), 'utf8'); const re = /(?:out\.text = |out\.title = |title: |text: )'([^'\\]+)'/g; let m; while ((m = re.exec(src))) add(m[1]); }
 for (const l of Object.values(D.LANDMARKS)) { add(l.name); add(l.desc); add(l.text); l.options.forEach(o => add(o.hint)); }
+// Campaigns, and the stories of the court
+for (const [f, re] of [['js/engine/scenarios.js', /(?:title|blurb|goalText|winText): '((?:\\.|[^'\\])*)'/g], ['js/engine/intrigue.js', /(?:title|hint): '((?:\\.|[^'\\])*)'/g]]) {
+  const src = fs.readFileSync(path.join(root, f), 'utf8'); let m; while ((m = re.exec(src))) add(m[1].replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16))).replace(/\\(.)/g, '$1'));
+}
+{ const src = fs.readFileSync(path.join(root, 'js/engine/intrigue.js'), 'utf8'); const e = src.slice(src.indexOf('const EPITHET'), src.indexOf('};', src.indexOf('const EPITHET'))); const re = /: '([^']+)'/g; let m; while ((m = re.exec(e))) add(m[1]); }
 // The help text
 const dlg = fs.readFileSync(path.join(root, 'js/ui/dialogs.js'), 'utf8');
 const help = dlg.slice(dlg.indexOf('const HELP = ['), dlg.indexOf('function helpHTML'));

@@ -67,9 +67,11 @@ async function startScenario(id) {
   await withLoading(enterGame);
   await new Promise(r => setTimeout(r, 900));
   const intro = S.challenge ? t(S.kind === 'daily' ? 'Every player in the world plays this same challenge today: the same nation, the same map, the same luck. Win as fast as you can: every turn to spare is worth 150 points.' : 'Every player plays this same challenge all week. Win as fast as you can: every turn to spare is worth 150 points.') : t(S.blurb);
+  if (!S.challenge) setTimeout(() => narrate([t(S.title), t(S.blurb)]), 400);
   await showModal(`<div class="camp-year">${S.challenge ? t(S.kind === 'daily' ? 'Daily challenge' : 'Weekly challenge') : ''}</div><h3>${t(S.title)}</h3><div class="with-portrait">${rulerPortrait(S.faction)}<div><p>${intro}</p>
     <p class="camp-goal"><b>${t('Goal')}:</b> ${goalTextOf(S)}</p><p class="note">${t('You have {n} turns. Your goal is shown at the top of the vizier’s box.', { n: S.deadline - G.turn })}</p></div></div>`,
     [{ label: t('Begin'), value: true, cls: 'big' }], { cancel: true, cls: 'parch' });
+  hush();
   if (!tutorialSeen()) startTutorial();
   saveGame('auto');
   refresh();
@@ -98,9 +100,11 @@ async function checkScenarioUI() {
   if (S.challenge) return challengeEndUI(S, s);
   if (s.result === 'win') {
     music('glory'); sfx('cheer');
+    if (S.winText) setTimeout(() => narrate(t(S.winText)), 600);
     const v = await showModal(`<h3>${t('Campaign won')}</h3><div class="with-portrait">${rulerPortrait(G.player)}<div><p><b>${t(S.title)}</b></p>
-      <p>${t('{date}: the goal is achieved. {ruler} has done what history asked of him.', { date: dateText(), ruler: pn(G.factions[G.player].leader) })}</p></div></div>`,
+      <p>${S.winText ? t(S.winText) : t('{date}: the goal is achieved. {ruler} has done what history asked of him.', { date: dateText(), ruler: pn(G.factions[G.player].leader) })}</p></div></div>`,
       [{ label: t('Campaigns'), value: 'camps' }, { label: t('The chronicle of the reign'), value: 'reign' }, { label: t('Keep ruling'), value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
+    hush();
     if (v === 'reign') await openReign(true);
     if (v === 'camps') { toTitle(); showScreen('camps'); renderCampaigns(); }
   } else {
