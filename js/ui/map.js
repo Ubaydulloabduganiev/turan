@@ -180,6 +180,18 @@ function renderCities() {
     const k = cityKind(p);
     const isCap = p.owner !== 'rebels' && G.factions[p.owner].capital === p.id;
     svgEl('use', { href: '#' + k.id }, g);
+    // What the city has built shows on its skyline
+    if (k.id !== 'c-camp' && k.id !== 'c-village') {
+      if (p.b.madrasa >= 2) { // a turquoise dome on a drum
+        svgEl('rect', { x: 9, y: -9, width: 6, height: 5, fill: '#e9dcc0', stroke: '#6b5a3c', 'stroke-width': 0.4 }, g);
+        svgEl('path', { d: 'M8.6 -9a3.4 3.6 0 0 1 6.8 0z', fill: p.b.madrasa >= 3 ? '#2fb3a9' : '#5aa9c4', stroke: '#1d5f5a', 'stroke-width': 0.4 }, g);
+      }
+      if (p.b.market >= 2) { // the striped awnings of a great bazaar
+        for (let i = 0; i < 3; i++) svgEl('path', { d: `M${-15 + i * 4.5} 7l2.2 -2.6 2.2 2.6z`, fill: i % 2 ? '#d8b45a' : '#a8402c', stroke: '#3a2a16', 'stroke-width': 0.3 }, g);
+      }
+      if (p.b.library >= 1) svgEl('rect', { x: -3, y: 6, width: 6, height: 3, rx: 0.6, fill: '#f1e6c9', stroke: '#6b4a1e', 'stroke-width': 0.5 }, g);
+    }
+    if (p.pop >= 60) g.setAttribute('transform', g.getAttribute('transform').replace(/scale\(([0-9.]+)\)/, (m, k2) => `scale(${(k2 * 1.18).toFixed(3)})`)); // a metropolis stands taller
     // The owner's pennant flies over the city
     const F = FACTIONS[p.owner];
     svgEl('path', { d: `M2 ${k.top}v-9`, stroke: '#3a2a16', 'stroke-width': 0.8 }, g);

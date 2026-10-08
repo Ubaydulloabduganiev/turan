@@ -534,6 +534,48 @@ const SCENE_SPEC = {
       people: [{ who: st.leader, faction: G.player, label: fTitle(G.player) }],
     };
   },
+  siege(sc) {
+    const p = G.provinces[sc.prov];
+    return {
+      layout: 'left', kicker: dateText() + ' · ' + t('A siege'),
+      title: t('The siege of {city}', { city: cityOf(p) }),
+      text: t('Your army rings the walls of {city}. Engineers raise the catapults, and the defenders shout down from the battlements. Starve them out, or storm the walls when you are ready.', { city: cityOf(p) }),
+      people: [{ who: G.factions[G.player].leader, faction: G.player, label: fTitle(G.player) }],
+    };
+  },
+  treaty(sc) {
+    return {
+      layout: 'pair', kicker: dateText() + ' · ' + t('A peace treaty'),
+      title: t('Peace with {nation}', { nation: fFull(sc.f) }),
+      text: t('The envoys exchange sealed letters and robes of honour. The war between {nation} and {nation2} is over, and the caravans can travel again.', { nation: fName(G.player), nation2: fName(sc.f) }),
+      people: [{ who: G.factions[G.player].leader, faction: G.player, label: fName(G.player) }, { who: G.factions[sc.f].leader, faction: sc.f, label: fName(sc.f) }],
+    };
+  },
+  funeral(sc) {
+    return {
+      layout: 'left', kicker: dateText() + ' · ' + t('A royal funeral'),
+      title: t('{name} is dead', { name: pn(sc.old) }),
+      text: t('The court weeps around the bier of {name}. The drums are silent, the amirs tear their robes, and the whole realm mourns. Tomorrow a new ruler will be raised.', { name: pn(sc.old) }),
+      people: [{ who: sc.old, faction: G.player, label: t('The late ruler') }],
+    };
+  },
+  feast(sc) {
+    const p = G.provinces[sc.prov];
+    return {
+      layout: 'none', kicker: dateText() + ' · ' + t('A feast'),
+      title: t('A feast in {city}', { city: cityOf(p) }),
+      text: t('Carpets are spread in the gardens of {city}. Musicians play, cooks carry out cauldrons of pilaf, and the whole city eats at the ruler’s expense. For a while, no one has a bad word to say about you.', { city: cityOf(p) }),
+    };
+  },
+  scholar(sc) {
+    const c = CHAR_BY_ID[sc.id];
+    return {
+      layout: 'left', kicker: dateText() + ' · ' + t('Scholars at court'),
+      title: t('{name} joins your court', { name: pn(c.name) }),
+      text: t(c.bio) + ' ' + t('Instruments, books and pupils follow him. Your court is becoming a place of learning.'),
+      people: [{ who: sc.id, faction: null, label: t(TRACKS[SAGES[sc.id].track].name) }],
+    };
+  },
   place(sc) {
     const L = LANDMARKS[sc.id], c = sc.ctx;
     return {
@@ -543,6 +585,12 @@ const SCENE_SPEC = {
     };
   },
 };
+
+// The new paintings borrow the moving effects of the old ones (set once both tables exist)
+function borrowSceneFx() {
+  SCENE_FX.siege = SCENE_FX.conquest; SCENE_FX.treaty = SCENE_FX.coronation; SCENE_FX.feast = SCENE_FX.wedding;
+  SCENE_FX.scholar = SCENE_FX.coronation; SCENE_FX.funeral = SCENE_FX.birth;
+}
 
 // ---------- Scenes over real paintings and photographs ----------
 
@@ -620,6 +668,7 @@ function layoutPeople(spec) {
 }
 
 function playScene(sc) {
+  if (!SCENE_FX.siege) borrowSceneFx();
   const spec = SCENE_SPEC[sc.kind](sc);
   const el = cineEl(), cv = el.querySelector('canvas'), x = cv.getContext('2d');
   // A real painting or photograph when the gallery has one; the people then stand in the caption
@@ -628,10 +677,12 @@ function playScene(sc) {
   const peopleEl = el.querySelector('.cine-people');
   if (src) el.querySelector('.cine-text').prepend(peopleEl); else el.insertBefore(peopleEl, el.querySelector('.cine-text'));
   CINE.imgT = 0;
-  const MOOD = { wedding: 'feast', birth: 'feast', coronation: 'glory', conquest: 'glory' };
+  const MOOD = { wedding: 'feast', birth: 'feast', coronation: 'glory', conquest: 'glory', siege: 'battle', treaty: 'glory', funeral: 'lament', feast: 'feast', scholar: 'feast' };
   if (MOOD[sc.kind]) music(MOOD[sc.kind]);
   if (sc.kind === 'coronation' || sc.kind === 'wedding') sfx('fanfare', { vol: 0.7 });
   if (sc.kind === 'conquest') { sfx(sc.sack ? 'fire' : 'cheer', { vol: 0.7 }); }
+  if (sc.kind === 'siege') sfx('horn', { vol: 0.7 });
+  if (sc.kind === 'treaty' || sc.kind === 'feast') sfx('fanfare', { vol: 0.5 });
   CINE.spec = sc; CINE.parts = []; CINE.t = 0; CINE.last = performance.now();
   el.querySelector('.cine-kicker').textContent = spec.kicker || '';
   el.querySelector('.cine-title').textContent = spec.title || '';
@@ -653,7 +704,7 @@ function playScene(sc) {
   requestAnimationFrame(() => el.classList.add('shown'));
   const frame = now => {
     const dt = Math.min(0.05, (now - CINE.last) / 1000); CINE.last = now; CINE.t += dt;
-    try { if (src && !imgFailed(src)) drawImageScene(x, innerWidth, innerHeight, CINE.t, dt, sc, src); else SCENE_DRAW[sc.kind](x, innerWidth, innerHeight, CINE.t, dt, sc); } catch (e) { console.error(e); }
+    try { if (src && !imgFailed(src)) drawImageScene(x, innerWidth, innerHeight, CINE.t, dt, sc, src); else (SCENE_DRAW[sc.kind] || SCENE_DRAW.coronation)(x, innerWidth, innerHeight, CINE.t, dt, sc); } catch (e) { console.error(e); }
     CINE.raf = requestAnimationFrame(frame);
   };
   CINE.raf = requestAnimationFrame(frame);

@@ -148,6 +148,28 @@ function lifeFrame(now) {
       }
     }
   }
+  // Weather: water over flooded fields, dust over a sandstorm
+  if (G.weather && G.weather.flood && G.provinces[G.weather.flood]) {
+    const path = new Path2D(provPath(G.weather.flood));
+    x.save(); x.clip(path);
+    x.fillStyle = `rgba(70, 140, 170, ${0.28 + 0.06 * Math.sin(t * 1.6)})`; x.fill(path);
+    if (!GFX.low) { const p = G.provinces[G.weather.flood]; x.strokeStyle = 'rgba(220, 245, 255, 0.35)'; x.lineWidth = 1;
+      for (let i = 0; i < 9; i++) { const yy = p.y - 30 + i * 8 + Math.sin(t + i) * 2; x.beginPath(); x.moveTo(p.x - 40 + ((t * 9 + i * 13) % 20), yy); x.lineTo(p.x - 22 + ((t * 9 + i * 13) % 20), yy); x.stroke(); } }
+    x.restore();
+  }
+  if (G.weather && G.weather.storm && G.provinces[G.weather.storm]) {
+    const p = G.provinces[G.weather.storm], path = new Path2D(provPath(p.id));
+    x.save(); x.clip(path);
+    x.fillStyle = `rgba(110, 72, 34, ${0.38 + 0.06 * Math.sin(t * 0.9)})`; x.fill(path);
+    const n = GFX.low ? 8 : 26;
+    for (let i = 0; i < n; i++) {
+      const a = t * 0.5 + i * 2.4, r = 10 + (i * 17) % 60;
+      const px = p.x + Math.cos(a) * r + ((t * 25 + i * 31) % 120) - 60, py = p.y + Math.sin(a * 1.3) * r * 0.5;
+      x.fillStyle = `rgba(246, 222, 172, ${0.32 + 0.14 * Math.sin(t * 2 + i)})`;
+      x.beginPath(); x.ellipse(px, py, 22 + (i % 5) * 5, 7 + (i % 3) * 3, 0.2, 0, Math.PI * 2); x.fill();
+    }
+    x.restore();
+  }
   // Caravans
   for (const cv of LIFE.caravans) drawCaravan(x, cv, dt, t);
   // Smoke and fire over besieged cities, cooking fires in siege camps, hearth smoke over great cities

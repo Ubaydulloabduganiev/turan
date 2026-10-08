@@ -181,6 +181,9 @@ async function orderMove(a, pid) {
     if (!res.ok) { toast(t('Cannot move'), t(res.why), 'bad'); break; }
     if (res.kind === 'siege') {
       const p = G.provinces[step];
+      // The first siege of a great walled city is worth a picture
+      G.sieged = G.sieged || [];
+      if (p.pop >= 20 && p.b.walls >= 2 && !G.sieged.includes(p.id)) { G.sieged.push(p.id); await playScene({ kind: 'siege', prov: p.id }); }
       toast(t('Siege'), t('Our army surrounds {city}. Without a fight it will fall in about {n} turns. You can also storm the walls.', { city: cityOf(p), n: siegeTurns(p) }), '');
       break;
     }

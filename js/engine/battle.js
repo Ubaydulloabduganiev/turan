@@ -133,6 +133,7 @@ function succession(f) {
     G.rulers = G.rulers || [{ name: old, from: 0 }];
     G.rulers[G.rulers.length - 1].to = G.turn;
     G.rulers.push({ name: st.leader, from: G.turn });
+    HOOKS.notify({ scene: { kind: 'funeral', old } });
     HOOKS.notify({ scene: { kind: 'coronation', f, old } });
   }
   successionTrouble(f);

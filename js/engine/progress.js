@@ -231,7 +231,7 @@ function sageStory(id) {
       t('At your court he would advance {field} (+{k} a turn), for a stipend of {n} gold a turn.', { field: t(TRACKS[S.track].name), n: SAGE_UPKEEP, k: SAGE_PTS }),
     options: [
       { label: ctx => t('Welcome him with a robe of honour (−{n} gold)', { n: 150 }), hint: 'He joins your court.',
-        act: ctx => { ctx.st.gold -= 150; sagesOf(ctx.f).push(id); log(dateText() + ': ' + t('{name} joins your court.', { name: pn(c.name) }), 'history'); return t('{name} bows and kisses the carpet before your throne.', { name: pn(c.name) }); } },
+        act: ctx => { ctx.st.gold -= 150; sagesOf(ctx.f).push(id); HOOKS.notify({ scene: { kind: 'scholar', id } }); log(dateText() + ': ' + t('{name} joins your court.', { name: pn(c.name) }), 'history'); return t('{name} bows and kisses the carpet before your throne.', { name: pn(c.name) }); } },
       { label: () => t('Send him on his way'), hint: 'He will look for another patron.',
         act: () => { const rivals = PLAYABLE.filter(f => f !== G.player && G.factions[f].alive); if (rivals.length) sagesOf(pick(rivals)).push(id); return t('{name} takes the road to another court.', { name: pn(c.name) }); } },
     ],

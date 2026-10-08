@@ -30,6 +30,8 @@ const ART = {
   scenes: {
     wedding: 'img/scenes/wedding.jpg', coronation: 'img/scenes/coronation.jpg',
     conquest: 'img/scenes/conquest.jpg', birth: 'img/scenes/birth.jpg',
+    siege: 'img/scenes/siege.jpg', treaty: 'img/scenes/treaty.jpg', funeral: 'img/scenes/funeral.jpg',
+    feast: 'img/scenes/feast.jpg', scholar: 'img/scenes/scholars.jpg',
   },
   places: {},
   title: 'img/title.jpg',

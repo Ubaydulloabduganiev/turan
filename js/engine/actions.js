@@ -265,6 +265,7 @@ function applyDeal(from, to, type, gold = 0) {
       }
       for (const p of Object.values(G.provinces)) if (p.siege && ((p.siege.by === from && p.owner === to) || (p.siege.by === to && p.owner === from))) p.siege = null;
       log(dateText() + ': ' + t('the {nation} and the {nation2} make peace.', { nation: fFull(from), nation2: fFull(to) }), from === G.player || to === G.player ? 'dip' : '');
+      if (from === G.player || to === G.player) HOOKS.notify({ scene: { kind: 'treaty', f: from === G.player ? to : from } });
       break;
     case 'alliance': r.alliance = true; r.att += 15; log(t('{nation} and {nation2} form an alliance.', { nation: fName(from), nation2: fName(to) }), 'dip'); break;
     case 'trade': r.trade = true; r.att += 8; log(t('{nation} and {nation2} sign a trade agreement.', { nation: fName(from), nation2: fName(to) }), from === G.player || to === G.player ? 'dip' : ''); break;
@@ -326,7 +327,10 @@ function issueDecree(p, key) {
   if (why) return why;
   const st = G.factions[p.owner];
   p.decree = G.turn;
-  if (key === 'feast') { st.gold -= DECREES.feast.cost(p); p.unrest = Math.max(-30, p.unrest - 30); }
+  if (key === 'feast') {
+    st.gold -= DECREES.feast.cost(p); p.unrest = Math.max(-30, p.unrest - 30);
+    if (p.owner === G.player && p.pop >= 15 && !(G.lastFeastScene > G.turn - 6)) { G.lastFeastScene = G.turn; HOOKS.notify({ scene: { kind: 'feast', prov: p.id } }); }
+  }
   if (key === 'levy') {
     p.pop -= 1; p.unrest = Math.max(0, p.unrest) + 10;
     let army = armiesIn(p.id).find(a => a.owner === p.owner && a.units.length <= GAME.MAX_ARMY - 2);

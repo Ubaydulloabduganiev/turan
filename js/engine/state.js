@@ -212,6 +212,7 @@ function provinceIncome(p, order) {
   tax *= clampN(order / 70, 0.3, 1.1);
   if (p.terrain === 'oasis' && hasWonder(p.owner, 'musalla')) tax *= 1.15;
   tax *= devTaxMult(p.owner) * traitTax(p.owner);
+  if (isFlooded(p)) tax *= 0.6; // the fields are under water this season
   let trade = p.silk ? 40 + 45 * p.b.market + (hasWonder(p.owner, 'saraibazaar') ? 40 : 0) : 0;
   if (p.siege) { tax *= 0.2; trade = 0; }
   const open = p.terrain === 'steppe' || p.terrain === 'desert';

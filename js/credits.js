@@ -346,6 +346,46 @@ const CREDITS = [
   "page": "https://commons.wikimedia.org/wiki/File:Smooth_clean_beach_shore_sand_seamless_ground_texture.jpg"
  },
  {
+  "use": "Siege scene",
+  "title": "Siege of Kalat vs. Amir Vali in 1382. Zafarnama, 1528 (Golestan, MS 708)",
+  "author": "1528 artist",
+  "date": "1528",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Siege_of_Kalat_vs._Amir_Vali_in_1382._Zafarnama,_1528_(Golestan,_MS_708).jpg"
+ },
+ {
+  "use": "Peace treaty scene",
+  "title": "Timur's army attacks the fortress of Herat and Ghiyath al-Din, the Kartid ruler, sues for peace, signed Dharm Das, Mughal India, circa 1595-1600",
+  "author": "Christies.com",
+  "date": "between circa 1595 and circa 1600date QS",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Timur%27s_army_attacks_the_fortress_of_Herat_and_Ghiyath_al-Din,_the_Kartid_ruler,_sues_for_peace,_signed_Dharm_Das,_Mughal_India,_circa_1595-1600.jpg"
+ },
+ {
+  "use": "Funeral scene",
+  "title": "Demotte Shahname 003",
+  "author": "anonymous",
+  "date": "1328 اواسط سدهٔ هشتم قمری",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Demotte_Shahname_003.jpg"
+ },
+ {
+  "use": "Feast scene",
+  "title": "Folio 86. Timur's marriage feast in 1370. Zafarnama, 1533 (British Library, I.O. Islamic 137)",
+  "author": "1533, Baghdad",
+  "date": "1533",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Folio_86._Timur%27s_marriage_feast_in_1370._Zafarnama,_1533_(British_Library,_I.O._Islamic_137).jpg"
+ },
+ {
+  "use": "Scholars scene",
+  "title": "Istambul observatory in 1577",
+  "author": "Anonymous Ottoman artist 1577",
+  "date": "1577",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Istambul_observatory_in_1577.jpg"
+ },
+ {
   "use": "Music: title screen",
   "title": "Fantasy Music - The Eternal Sands",
   "author": "Hitctrl",

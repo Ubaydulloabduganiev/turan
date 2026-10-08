@@ -9,6 +9,12 @@ let lastArmyShown = null;
 // Achievements and campaign goals are looked at after the player's own deeds too, at most once a second
 let lastAchCheck = 0;
 function refresh() {
+  if (G) {
+    $('game').dataset.season = G.turn % 2 ? 'autumn' : 'spring';
+    // The interface wears the player's colours
+    const F = FACTIONS[G.player], rs = document.documentElement.style;
+    if (rs.getPropertyValue('--nation') !== F.color) { rs.setProperty('--nation', F.color); rs.setProperty('--nation-dark', F.dark); }
+  }
   if (G && performance.now() - lastAchCheck > 1000) { lastAchCheck = performance.now(); setTimeout(checkAchievements, 0); }
   // A campaign goal reached by the player's own hand ends the campaign at once
   if (G && G.scenario && !G.scenario.result) {
