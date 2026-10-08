@@ -70,11 +70,12 @@ async function flushQueue() {
 // ---------- A choice for the ruler ----------
 
 async function showStory({ story, ctx }) {
-  const opts = story.options.map((o, i) => `<button class="choice" data-mi="${i}"><b>${o.label(ctx)}</b><small>${t(o.hint)}</small></button>`).join('');
+  const opts = story.options.map((o, i) => `<button class="choice${story.kicker && i === 0 ? ' hist' : ''}" data-mi="${i}"><b>${o.label(ctx)}</b><small>${t(o.hint)}</small></button>`).join('');
   const title = t(story.title);
   const who = story.who ? story.who(ctx) : null;
   const pic = who ? portraitSVG(who, { faction: story.whoFaction ? story.whoFaction(ctx) : ctx.f }) : '';
-  const i = await showModal(`<h3>${title}</h3><div class="with-portrait">${pic}<p>${story.text(ctx)}</p></div><div class="choices story">${opts}</div>`, [], { cls: 'parch', cancel: 0, pickIndex: true });
+  const kick = story.kicker ? `<div class="camp-year whatif-kick">✦ ${t(story.kicker)}</div>` : '';
+  const i = await showModal(`${kick}<h3>${title}</h3><div class="with-portrait">${pic}<p>${story.text(ctx)}</p></div><div class="choices story">${opts}</div>`, [], { cls: 'parch', cancel: 0, pickIndex: true });
   const result = story.options[i || 0].act(ctx);
   log(`${dateText()}: ${title}. ${result}`, 'event');
   refresh();

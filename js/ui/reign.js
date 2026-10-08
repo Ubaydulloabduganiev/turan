@@ -52,6 +52,7 @@ function openReign(final) {
   const wonders = Object.keys(WONDERS).filter(id => hasWonder(pl, id)).map(id => wName(id));
   const sages = sagesOf(pl).map(id => pn(CHAR_BY_ID[id].name));
   const marriages = (G.marriages || []).filter(m => m.gF === pl || m.bF === pl).map(m => `${pn(m.groom)} ❦ ${pn(m.bride)}`);
+  const turns = (G.altLog || []).map(x => `${t(x.title)}: <i>${x.label}</i>${x.i > 0 ? ' ✦' : ''}`);
   const map = reignMapCanvas(Math.min(900, Math.round(innerWidth * 0.8)));
   const verdict = G.over === 'win' ? t('The last nation standing') : G.over === 'lose' ? t('The realm has fallen') : G.goldenAge ? t('A golden age') : G.scenario && G.scenario.result === 'win' ? t('Campaign won') : t('The reign goes on');
   const list = (title, items) => items.length ? `<div class="reign-list"><h4>${title}</h4><p>${items.join(' · ')}</p></div>` : '';
@@ -61,7 +62,7 @@ function openReign(final) {
     ${reignGraph(600, 70)}
     <div class="reign-rulers">${rulers.map(r => `<div class="reign-ruler">${portraitSVG(r.name, { faction: pl, cls: 'mini-portrait' })}<div><b>${pn(r.name)}</b><span>${dateText(r.from)}${r.to !== undefined ? ' – ' + dateText(r.to) : ''}</span>${traitChips(r.name)}</div></div>`).join('')}</div>
     <div class="kv reign-kv">${reignStats().map(([k, v]) => `<div><span>${t(k)}</span>${v}</div>`).join('')}</div>
-    ${list(t('Wonders of the age'), wonders)}${list(t('Scholars and poets'), sages)}${list(t('Royal marriages'), marriages)}
+    ${list(t('Wonders of the age'), wonders)}${list(t('Scholars and poets'), sages)}${list(t('Royal marriages'), marriages)}${list(t('Turning points'), turns)}
     <div class="reign-actions"><button data-pic="1">${t('Save as picture')}</button></div>`;
   return showModal(html, [{ label: t('Close'), value: null, cls: 'big' }], {
     cls: 'wide parch reign', cancel: null,

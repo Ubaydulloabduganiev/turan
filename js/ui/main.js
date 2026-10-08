@@ -149,7 +149,7 @@ async function doEndTurn() {
   await flushNotices();
   checkMission();
   await flushNotices();
-  const s = pickCrisis() || pickSage() || pickStory();
+  const s = pickWhatIf() || pickCrisis() || pickSage() || pickStory();
   if (s) await showStory(s);
   else {
     const lm = pickLandmark();

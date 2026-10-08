@@ -26,6 +26,7 @@ async function endTurn(onProgress) {
     fogTurn();
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
     runEvents();
+    whatifTurn();
     comingOfAge();
     peopleComeOfAge();
     familyTurn();
@@ -206,15 +207,20 @@ function randomEvent() {
 
 function runEvents() {
   for (let i = 0; i < EVENTS.length; i++) {
-    const e = EVENTS[i];
+    let e = EVENTS[i];
     if (G.fired.includes(i)) continue;
     const due = (e.when[0] - GAME.START_YEAR) * 2 + e.when[1];
     if (G.turn < due) continue;
     G.fired.push(i);
+    // A choice made at a turning point may change what happens
+    const v = eventVariant(e);
+    if (v.skip) { log(dateText() + ': ' + t(v.title) + '. ' + t(v.text), 'history'); HOOKS.notify({ title: t(v.title), text: t(v.text), history: true }); continue; }
+    e = { ...e, effect: v.effect, title: v.title, text: v.text };
     const x = e.effect;
     if (x.faction && !G.factions[x.faction].alive) continue;
     if (x.relation && (!G.factions[x.relation[0]].alive || !G.factions[x.relation[1]].alive)) continue;
     if (x.faction && x.order) { G.factions[x.faction].orderBonus = x.order; G.factions[x.faction].orderBonusT = 4; }
+    if (x.faction && x.gold && !x.holder) G.factions[x.faction].gold += x.gold;
     if (x.relation) { const r = rel(x.relation[0], x.relation[1]); r.att = clampN(r.att + x.relation[2], -100, 100); }
     if (x.leader && x.faction !== G.player) {
       const st = G.factions[x.faction];

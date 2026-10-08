@@ -874,3 +874,6 @@ select.code-in option, select.code-in optgroup { background: #0f1a30; color: var
 }
 .abils small { font: 600 11px var(--ui); color: var(--muted); align-self: center; margin-right: 2px; }
 .trait.abil-chip { background: rgba(216, 180, 90, 0.18); border-color: rgba(216, 180, 90, 0.55); color: #f6e2a8; }
+/* Turning points of history */
+.whatif-kick { color: #8a2a12; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px; margin-bottom: 2px; }
+.choices.story .choice.hist small::before { content: '⌛ '; }

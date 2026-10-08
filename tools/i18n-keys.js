@@ -39,7 +39,7 @@ for (const f of files) {
 // Game data
 const ctx = { console, localStorage: { getItem: () => null, setItem() {} }, document: { documentElement: {} } };
 vm.createContext(ctx);
-for (const f of ['js/i18n.js', 'js/data.js', 'js/characters.js', 'js/engine/state.js', 'js/engine/battle.js', 'js/engine/actions.js', 'js/engine/turn.js', 'js/engine/ai.js', 'js/engine/stories.js', 'js/engine/places.js', 'js/engine/family.js', 'js/engine/cityacts.js'])
+for (const f of ['js/i18n.js', 'js/data.js', 'js/characters.js', 'js/engine/state.js', 'js/engine/battle.js', 'js/engine/actions.js', 'js/engine/turn.js', 'js/engine/ai.js', 'js/engine/stories.js', 'js/engine/places.js', 'js/engine/family.js', 'js/engine/cityacts.js', 'js/engine/whatif.js'])
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 const D = vm.runInContext('({ GAME, FACTIONS, UNITS, BUILDINGS, TERRAIN, EVENTS, RANDOM_EVENTS, WONDERS, STORIES, CHARACTERS, DECREES, LANDMARKS })', ctx);
 const add = v => { if (typeof v === 'string' && v) keys.add(v); };
@@ -56,6 +56,11 @@ for (const d of Object.values(D.DECREES)) { add(d.name); add(d.desc); }
 for (const k of vm.runInContext('TAX_LEVELS', ctx)) add(k);
 for (const A of vm.runInContext('CITY_ACTIONS', ctx)) { add(A.name); add(A.desc); add(A.group); }
 { const ca = fs.readFileSync(path.join(root, 'js/engine/cityacts.js'), 'utf8'); const re = /'([A-Z][^'\\]*\s[^'\\]*)'/g; let m; while ((m = re.exec(ca))) if (!/[{}]/.test(m[1]) || / /.test(m[1])) keys.add(m[1]); }
+{ const W = vm.runInContext('({ WHATIFS, BIBI, ALT_EVENTS })', ctx);
+  for (const w of [...W.WHATIFS, W.BIBI]) { add(w.title); add(w.kicker); w.options.forEach(o => add(o.hint)); (w.aiText || []).forEach(add); }
+  add('A turning point of history');
+  for (const e of Object.values(W.ALT_EVENTS)) { add(e.title); add(e.text); }
+  const src = fs.readFileSync(path.join(root, 'js/engine/whatif.js'), 'utf8'); const re = /(?:out\.text = |out\.title = |title: |text: )'([^'\\]+)'/g; let m; while ((m = re.exec(src))) add(m[1]); }
 for (const l of Object.values(D.LANDMARKS)) { add(l.name); add(l.desc); add(l.text); l.options.forEach(o => add(o.hint)); }
 // The help text
 const dlg = fs.readFileSync(path.join(root, 'js/ui/dialogs.js'), 'utf8');

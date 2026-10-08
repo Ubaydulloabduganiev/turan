@@ -168,6 +168,8 @@ function answerSpecialOffer(f, o, yes) {
 
 // When the ruler of a great realm dies, the amirs of the far provinces test the new one
 function successionTrouble(f) {
+  // The amirs swore to the heir while the old ruler lived
+  if (G.factions[f].sworn) { G.factions[f].sworn = 0; return; }
   // A brother with an army of his own may claim the throne, in a realm of any size
   if (f === G.player && rivalPrinces(f).length) { G.crisis = { kind: 'quarrel', turn: G.turn }; return; }
   if (provsOf(f).length < 8) return;
