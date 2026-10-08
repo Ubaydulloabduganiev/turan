@@ -163,7 +163,7 @@ function devTurn() {
     }
     // The ruler of a cultured realm is admired abroad
     if (hasAdv(f, 'culture', 2)) for (const g of PLAYABLE) if (g !== f && G.factions[g].alive) { const r = rel(f, g); r.att = Math.min(100, r.att + 0.5); }
-    if (f !== G.player) aiPatronage(f);
+    if (!isHuman(f)) aiPatronage(f);
   }
   sagesTurn();
 }
@@ -173,8 +173,8 @@ function advance(f, k) {
   d.lvl++;
   const A = TRACKS[k].advances[d.lvl - 1];
   log(dateText() + ': ' + t('{nation}: a new advance in {field}: {name}.', { nation: fName(f), field: t(TRACKS[k].name), name: t(A.name) }), f === G.player ? 'history' : '');
-  if (f === G.player) {
-    HOOKS.notify({ sound: 'fanfare', title: t(A.name), text: t('A new advance in {field}.', { field: t(TRACKS[k].name) }) + ' ' + t(A.desc), history: true });
+  if (isHuman(f)) {
+    tell(f, { sound: 'fanfare', title: t(A.name), text: t('A new advance in {field}.', { field: t(TRACKS[k].name) }) + ' ' + t(A.desc), history: true });
     if (TRACK_ORDER.every(x => devOf(f)[x].lvl >= 5)) G.goldenAge = G.goldenAge || G.turn;
   }
 }
@@ -208,12 +208,12 @@ function sagesTurn() {
       if (year() < c.died && G.factions[f].alive) continue;
       list.splice(list.indexOf(id), 1);
       (G.sagesGone = G.sagesGone || []).push(id);
-      if (f === G.player && year() >= c.died) HOOKS.notify({ title: t('{name} has died', { name: pn(c.name) }), text: t('Your court mourns {name}. His work will be read for centuries.', { name: pn(c.name) }), who: id });
+      if (isHuman(f) && year() >= c.died) tell(f, { title: t('{name} has died', { name: pn(c.name) }), text: t('Your court mourns {name}. His work will be read for centuries.', { name: pn(c.name) }), who: id });
     }
   }
   // Rich rival courts attract the free ones
   for (const f of PLAYABLE) {
-    if (f === G.player || !G.factions[f].alive || G.factions[f].gold < 1500 || rng() > 0.05) continue;
+    if (isHuman(f) || !G.factions[f].alive || G.factions[f].gold < 1500 || rng() > 0.05) continue;
     const free = Object.keys(SAGES).filter(sageFree);
     if (!free.length) continue;
     const id = pick(free);
@@ -233,7 +233,7 @@ function sageStory(id) {
       { label: ctx => t('Welcome him with a robe of honour (−{n} gold)', { n: 150 }), hint: 'He joins your court.',
         act: ctx => { ctx.st.gold -= 150; sagesOf(ctx.f).push(id); HOOKS.notify({ scene: { kind: 'scholar', id } }); log(dateText() + ': ' + t('{name} joins your court.', { name: pn(c.name) }), 'history'); return t('{name} bows and kisses the carpet before your throne.', { name: pn(c.name) }); } },
       { label: () => t('Send him on his way'), hint: 'He will look for another patron.',
-        act: () => { const rivals = PLAYABLE.filter(f => f !== G.player && G.factions[f].alive); if (rivals.length) sagesOf(pick(rivals)).push(id); return t('{name} takes the road to another court.', { name: pn(c.name) }); } },
+        act: () => { const rivals = PLAYABLE.filter(f => !isHuman(f) && G.factions[f].alive); if (rivals.length) sagesOf(pick(rivals)).push(id); return t('{name} takes the road to another court.', { name: pn(c.name) }); } },
     ],
   };
 }
@@ -249,4 +249,4 @@ function pickSage() {
 
 // ---------- The golden age ----------
 
-function goldenAgeNow() { return TRACK_ORDER.every(k => devOf(G.player)[k].lvl >= 5); }
+function goldenAgeNow(f = G.player) { return TRACK_ORDER.every(k => devOf(f)[k].lvl >= 5); }

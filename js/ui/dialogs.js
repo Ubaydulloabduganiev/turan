@@ -3,8 +3,12 @@
 
 let modalResolve = null, modalOpen = false;
 const notices = [];
+// Hot seat: who holds the device, messages waiting for each ruler, and the end of a person's part of the round
+const HOT = { holder: null, pending: {}, waiting: null };
+// The computer is moving (a person playing their part of the round in a hot-seat game is not)
+const engineBusy = () => turnBusy && !HOT.waiting;
 
-function uiLocked() { return modalOpen || turnBusy || !$('battle').classList.contains('hidden') || (CINE.el && !CINE.el.classList.contains('hidden')); }
+function uiLocked() { return modalOpen || engineBusy() || !$('battle').classList.contains('hidden') || (CINE.el && !CINE.el.classList.contains('hidden')); }
 
 // buttons: [{ label, value, cls }]. Resolves with the clicked value (or `cancel` on Escape).
 function showModal(html, buttons, opts = {}) {
@@ -22,7 +26,7 @@ function showModal(html, buttons, opts = {}) {
       $('modal-wrap').classList.add('hidden');
       resolve(v);
       // Scenes and notices that arrived while this window was open
-      setTimeout(() => { if (!turnBusy && !modalOpen && !flushing && notices.length) flushNotices(); }, 0);
+      setTimeout(() => { if (!engineBusy() && !modalOpen && !flushing && notices.length) flushNotices(); }, 0);
     };
     m.onclick = e => {
       const b = e.target.closest('[data-mi]');
@@ -47,10 +51,12 @@ function infoBox(title, text, opts = {}) {
 let quietNotices = false;
 function pushNotice(n) {
   if (quietNotices) return;
+  // In a hot-seat game a message for another ruler waits until they hold the device
+  if (G && G.humans && n.for && n.for !== G.player) { (HOT.pending[n.for] = HOT.pending[n.for] || []).push(n); return; }
   if (n.sound) sfx(n.sound);
   if (n.minor) { toast(n.title, n.text); return; }
   notices.push(n);
-  if (!turnBusy && !modalOpen) flushNotices();
+  if (!engineBusy() && !modalOpen) flushNotices();
 }
 let flushing = null;
 function flushNotices() {
@@ -61,8 +67,10 @@ async function flushQueue() {
   while (notices.length) {
     const n = notices.shift();
     if (n.scene) { await playScene(n.scene); if (G) refresh(); continue; }
+    if (n.history) narrate(n.title + '. ' + n.text);
     if (n.who) await infoBox(n.title, `<div class="with-portrait">${portraitSVG(n.who, { faction: n.whoFaction })}<p>${n.text}</p></div>`, { cls: n.history ? 'parch' : '' });
     else await infoBox(n.title, n.text, { cls: n.history ? 'parch' : '' });
+    if (n.history) hush();
     if (n.prov && G) { UI.selProv = n.prov; UI.selArmy = null; centerOnProv(n.prov); refresh(); }
   }
 }
@@ -75,11 +83,15 @@ async function showStory({ story, ctx }) {
   const who = story.who ? story.who(ctx) : null;
   const pic = who ? portraitSVG(who, { faction: story.whoFaction ? story.whoFaction(ctx) : ctx.f }) : '';
   const kick = story.kicker ? `<div class="camp-year whatif-kick">✦ ${t(story.kicker)}</div>` : '';
+  if (story.kicker) narrate(title + '. ' + story.text(ctx));
   const i = await showModal(`${kick}<h3>${title}</h3><div class="with-portrait">${pic}<p>${story.text(ctx)}</p></div><div class="choices story">${opts}</div>`, [], { cls: 'parch', cancel: 0, pickIndex: true });
+  hush();
   const result = story.options[i || 0].act(ctx);
+  if (story.kicker) narrate(result);
   log(`${dateText()}: ${title}. ${result}`, 'event');
   refresh();
   await showModal(`<h3>${title}</h3><div class="with-portrait">${pic}<p>${result}</p></div>`, [{ label: t('Continue'), value: true, cls: 'big' }], { cls: 'parch', cancel: true });
+  hush();
   checkMission();
   await flushNotices();
 }
@@ -101,10 +113,10 @@ function battleHTML(b, title, intro) {
   const mine = pAtt ? odds : 1 - odds;
   const p = G.provinces[b.prov];
   const g1 = sideGeneral(b.att), g2 = sideGeneral(b.def);
-  const kindText = { field: t('Open battle'), assault: t('Storming the walls ({walls})', { walls: bLevel('walls', p.b.walls) }), sally: t('The garrison sallies out') }[b.kind];
+  const kindText = { naval: t('A battle on the water'), field: b.river ? t('Open battle across the {river}', { river: geoName(b.river) }) : t('Open battle'), assault: t('Storming the walls ({walls})', { walls: bLevel('walls', p.b.walls) }), sally: t('The garrison sallies out') }[b.kind];
   const word = t(mine > 0.8 ? 'Decisive advantage' : mine > 0.6 ? 'Favourable' : mine > 0.4 ? 'Even' : mine > 0.2 ? 'Unfavourable' : 'Hopeless');
   const side = (s, g) => `<div class="side"><h4>${flagSVG(s.faction, 'flag')}${fName(s.faction)}</h4><div class="p-sub">${g ? pn(g.name) + ' ' + stars(Math.min(5, g.cmd)) : t('No general')}</div><ul>${sideList(s)}</ul><div class="p-sub">${t('{n} men', { n: menOf(s) })}</div></div>`;
-  return `<h3>${title}</h3><p>${intro || ''} ${t('{kind} at {city}, {terrain}.', { kind: kindText, city: cityOf(p), terrain: terrName(p.terrain).toLowerCase() })}</p>
+  return `<h3>${title}</h3><p>${intro || ''} ${b.kind === 'naval' ? t('{kind}: the {sea}, off {city}.', { kind: kindText, sea: geoName(b.sea), city: cityOf(p) }) : t('{kind} at {city}, {terrain}.', { kind: kindText, city: cityOf(p), terrain: terrName(p.terrain).toLowerCase() })}</p>
     <div class="vs">${side(b.att, g1)}<div class="mid">⚔</div>${side(b.def, g2)}</div>
     <div class="odds"><div style="width:${odds * 100}%;background:${FACTIONS[b.att.faction].color}"></div><div style="flex:1;background:${FACTIONS[b.def.faction].color}"></div></div>
     <p class="note">${t('Your chances: {word}.', { word: `<b>${word}</b>` })}${b.walls ? ' ' + t('Defenders on the walls fight much harder; siege engineers help.') : ''}</p>`;
@@ -127,7 +139,8 @@ async function showBattleResult(out, b, before) {
   const p = G.provinces[b.prov];
   const lossA = before.att - after.att, lossD = before.def - after.def;
   const lost = (n, of) => t('Lost {n} of {of} men', { n: fmt(Math.max(0, n)), of: fmt(of) });
-  await showModal(`<h3>${t(won ? 'Victory at {city}' : 'Defeat at {city}', { city: cityOf(p) })}</h3>
+  const head = b.kind === 'naval' ? t(won ? 'Victory on the {sea}' : 'Defeat on the {sea}', { sea: geoName(b.sea) }) : t(won ? 'Victory at {city}' : 'Defeat at {city}', { city: cityOf(p) });
+  await showModal(`<h3>${head}</h3>
     <p>${out.text}</p>
     <div class="vs"><div class="side"><h4>${flagSVG(b.att.faction, 'flag')}${fName(b.att.faction)}</h4><p>${lost(lossA, before.att)}</p></div>
     <div class="mid">⚔</div><div class="side"><h4>${flagSVG(b.def.faction, 'flag')}${fName(b.def.faction)}</h4><p>${lost(lossD, before.def)}</p></div></div>`,
@@ -231,7 +244,7 @@ HOOKS.defend = async b => {
   renderMap();
   const v = await showModal(battleHTML(b, t('We are attacked!'), t('Attackers: {nation}.', { nation: fFull(b.att.faction) })),
     [{ label: t('Auto-resolve'), value: 'auto' }, { label: t('Fight the battle'), value: 'fight', cls: 'big' }], { cancel: 'auto', cls: 'wide' });
-  if (v !== 'fight' && turnBusy) $('busy').classList.remove('hidden');
+  if (v !== 'fight' && engineBusy()) $('busy').classList.remove('hidden');
   return v;
 };
 HOOKS.offer = async o => {
@@ -427,11 +440,16 @@ function savesHTML(mode) {
 
 async function openMenu() {
   const v = await showModal(`<h3>${dateText()}</h3><p class="note">${fFull(G.player)}</p>${langPicker()}${soundControls()}<p class="note ver-note" id="ver-note"></p>`, [
-    { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' }, { label: gfxLabel(), value: 'gfx' }, { label: t(fogOn() ? 'Fog of war: on' : 'Fog of war: off'), value: 'fog' },
+    { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' }, { label: gfxLabel(), value: 'gfx' }, { label: t(fogOn() ? 'Fog of war: on' : 'Fog of war: off'), value: 'fog' }, { label: narrationLabel(), value: 'voice' },
     { label: t('Chronicle'), value: 'chron' }, { label: t('Your reign'), value: 'reign' }, { label: t('Achievements'), value: 'ach' }, { label: t('How to play'), value: 'help' }, { label: t('Guide'), value: 'guide' }, { label: t('Save'), value: 'save' }, { label: t('Load'), value: 'load' },
     { label: t('Main menu'), value: 'title' }, { label: t('Resume'), value: null, cls: 'big' },
   ], { cancel: null, onOpen: m => fillVersion(m.querySelector('#ver-note')), onClick: e => { const l = e.target.closest('[data-lang]'); if (l) { setLang(l.dataset.lang); applyLang(); closeModal(null); openMenu(); } } });
   if (v === 'rivals') { setRivalMoves(!LIFE.showRivals); toast(t('Rival moves'), t(LIFE.showRivals ? 'You will watch rival armies march across the map.' : 'Rival armies will move instantly.'), ''); return openMenu(); }
+  if (v === 'voice') {
+    if (!canNarrate()) toast(narrationLabel(), t('This device has no voice for this language. Install one in your phone’s or computer’s speech settings (text-to-speech), then open the game again.'), 'bad');
+    else { setNarration(!VOICE.on); toast(narrationLabel(), t(VOICE.on ? 'A storyteller will read the great scenes and the turning points of history aloud.' : 'The storyteller is silent.'), ''); if (VOICE.on) narrate(t('A storyteller will read the great scenes and the turning points of history aloud.')); }
+    return openMenu();
+  }
   if (v === 'fog') {
     G.fog = !fogOn();
     toast(t(fogOn() ? 'Fog of war: on' : 'Fog of war: off'), t(fogOn() ? 'You see only the lands near your cities, armies, allies and spies.' : 'You see every army on the map.'), '');
@@ -573,7 +591,7 @@ async function checkOverUI() {
   if (G && !G.over) checkVictory();
   if (!G || !G.over || G.overShown === G.over) return;
   G.overShown = G.over;
-  const pl = G.player;
+  const pl = (G.humans && G.winner) || G.player;
   if (G.over === 'win') {
     music('glory'); sfx('cheer');
     const v = await showModal(`<h3>${t('The last nation standing')}</h3><div class="with-portrait">${rulerPortrait(pl)}<p>${t('{date}: every rival crown has fallen or bowed. Your realm ({nation}) alone endures, ruling {n} provinces from the Caspian to the Tian Shan. Poets in Samarkand and Herat will sing of {ruler}.', { date: dateText(), nation: fFull(pl), n: provsOf(pl).length, ruler: pn(G.factions[pl].leader) })}</p></div>`,
@@ -582,7 +600,7 @@ async function checkOverUI() {
     if (v === 'title') toTitle();
   } else if (G.over === 'lose') {
     music('lament');
-    const v = await showModal(`<h3>${t('Defeat')}</h3><p>${t('The last lands of your realm ({nation}) have fallen. Your name will live only in the chronicles of your enemies.', { nation: fFull(pl) })}</p>`,
+    const v = await showModal(`<h3>${t('Defeat')}</h3><p>${G.humans ? t('Every realm ruled by a player has fallen. The computer’s rulers divide Turan between them.') : t('The last lands of your realm ({nation}) have fallen. Your name will live only in the chronicles of your enemies.', { nation: fFull(pl) })}</p>`,
       [{ label: t('The chronicle of the reign'), value: 'reign' }, { label: t('Main menu'), value: true, cls: 'big' }], { cancel: true });
     if (v === 'reign') await openReign(true);
     toTitle();

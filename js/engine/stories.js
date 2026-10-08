@@ -68,7 +68,7 @@ function raid(a) {
   a.moves = 0;
   if (p.owner !== 'rebels') rel(a.owner, p.owner).att -= 5;
   log(dateText() + ': ' + t('{nation} plundered the countryside of {city}.', { nation: fName(a.owner), city: cityOf(p) }), a.owner === G.player || p.owner === G.player ? 'war' : '');
-  if (p.owner === G.player) HOOKS.notify({ title: t('Our villages burn'), text: t('{nation} raiders are plundering the countryside around {city}.', { nation: fAdj(a.owner), city: cityOf(p) }), prov: p.id, minor: true });
+  if (isHuman(p.owner)) tell(p.owner, { title: t('Our villages burn'), text: t('{nation} raiders are plundering the countryside around {city}.', { nation: fAdj(a.owner), city: cityOf(p) }), prov: p.id, minor: true });
   return { gold };
 }
 
@@ -84,7 +84,7 @@ function payPending(f) {
   if (!st.pending) return;
   for (const x of st.pending.filter(x => x.t <= G.turn)) {
     st.gold += x.gold;
-    if (f === G.player && x.text) HOOKS.notify({ title: x.gold >= 0 ? 'Gold arrives' : 'A debt is paid', text: x.text, minor: true });
+    if (isHuman(f) && x.text) tell(f, { title: x.gold >= 0 ? 'Gold arrives' : 'A debt is paid', text: x.text, minor: true });
   }
   st.pending = st.pending.filter(x => x.t > G.turn);
 }

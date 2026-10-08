@@ -877,3 +877,16 @@ select.code-in option, select.code-in optgroup { background: #0f1a30; color: var
 /* Turning points of history */
 .whatif-kick { color: #8a2a12; letter-spacing: 0.12em; text-transform: uppercase; font-size: 12px; margin-bottom: 2px; }
 .choices.story .choice.hist small::before { content: '⌛ '; }
+/* Hot seat */
+body.handing #game { filter: blur(18px) brightness(0.35); }
+#modal.handover { max-width: 520px; text-align: center; }
+#modal.handover .with-portrait { text-align: left; }
+.hand-flag svg { width: 54px; height: 66px; }
+.hot-note { background: rgba(216, 180, 90, 0.12); border: 1px solid rgba(216, 180, 90, 0.45); border-radius: 6px; padding: 10px 12px; margin-bottom: 12px; }
+.hot-chosen { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; margin-top: 6px; }
+.hot-chosen svg { width: 18px; height: 22px; vertical-align: middle; }
+.hot-chosen.hot-list { margin: 10px 0; } .hot-chosen.hot-list svg { width: 24px; height: 29px; }
+.nation { position: relative; }
+.nation .n-check { position: absolute; top: 4px; right: 6px; color: #2a1806; background: #f6dc94; border-radius: 50%; width: 20px; height: 20px; font: 700 13px/20px var(--ui); text-align: center; }
+.camp.hot { border-color: rgba(47, 179, 169, 0.6); }
+.camp.hot .camp-flags { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; align-content: start; }

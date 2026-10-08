@@ -12,8 +12,11 @@ function cityWatch(p) {
 // kind: 'field' (open battle), 'assault' (attackers storm the walls), 'sally' (besieged garrison attacks)
 function makeBattle(attArmies, defArmies, prov, kind) {
   const p = G.provinces[prov];
+  const A = attArmies[0];
   const b = {
-    prov, kind, walls: kind === 'assault' ? p.b.walls : 0, terrain: p.terrain,
+    prov, kind, walls: kind === 'assault' ? p.b.walls : 0, terrain: kind === 'naval' ? 'water' : p.terrain,
+    // Attacking across one of the great rivers
+    river: kind === 'field' && A ? riverBetween(A.prov !== prov ? A.prov : A.from, prov) : null,
     att: { faction: attArmies[0].owner, armies: attArmies.map(a => a.id), extra: [] },
     def: { faction: defArmies.length ? defArmies[0].owner : p.owner, armies: defArmies.map(a => a.id), extra: [] },
   };
@@ -56,6 +59,8 @@ function sidePower(b, side, other, isDef) {
     if (d.cls === 'missile' && isDef && b.walls) v *= 1.25;
     if (d.cls === 'siege') { hasSiege = true; v *= 0.5; }
     if (b.walls && !isDef && (d.cls === 'cav' || d.cls === 'ha')) v *= 0.7; // horses do not climb walls
+    if (b.kind === 'naval') v *= { cav: 0.6, ha: 0.85, missile: 1.15, siege: 0.3 }[d.cls] || 1; // in boats, archers rule
+    if (b.river && !isDef && (d.cls === 'cav' || d.cls === 'spear' || d.cls === 'inf')) v *= 0.88; // wading under arrows
     s += v;
   }
   const g = sideGeneral(side);
@@ -115,7 +120,14 @@ function generalDied(a, how) {
   const text = how === 'age' ? t('{name} died of old age at {n}.', { name: pn(g.name), n: g.age }) : t('{name} fell in battle.', { name: pn(g.name) });
   log(text, 'big');
   if (g.leader) succession(a.owner);
-  if (a.owner === G.player) HOOKS.notify({ title: t(g.leader ? 'Our ruler is dead' : 'A general has died'), text });
+  if (isHuman(a.owner)) tell(a.owner, { title: t(g.leader ? 'Our ruler is dead' : 'A general has died'), text });
+}
+
+// The line of rulers of a nation played by a person, for the chronicle of the reign
+function rulersOf(f, first) {
+  if (!G.humans) return (G.rulers = G.rulers || [{ name: first || G.factions[f].leader, from: 0 }]);
+  G.rulersOf = G.rulersOf || {};
+  return (G.rulersOf[f] = G.rulersOf[f] || [{ name: first || G.factions[f].leader, from: 0 }]);
 }
 
 function succession(f) {
@@ -129,12 +141,12 @@ function succession(f) {
   const son = Object.values(G.people || {}).filter(x => x.faction === f && !x.female && x.father === st.leader && x.name !== st.leader).sort((x, y) => x.born - y.born)[0];
   st.heir = son ? son.name : newGeneralName(f);
   st.orderBonus = -10; st.orderBonusT = 4;
-  if (f === G.player) {
-    G.rulers = G.rulers || [{ name: old, from: 0 }];
-    G.rulers[G.rulers.length - 1].to = G.turn;
-    G.rulers.push({ name: st.leader, from: G.turn });
-    HOOKS.notify({ scene: { kind: 'funeral', old } });
-    HOOKS.notify({ scene: { kind: 'coronation', f, old } });
+  if (isHuman(f)) {
+    const R = rulersOf(f, old);
+    R[R.length - 1].to = G.turn;
+    R.push({ name: st.leader, from: G.turn });
+    tell(f, { scene: { kind: 'funeral', old } });
+    tell(f, { scene: { kind: 'coronation', f, old } });
   }
   successionTrouble(f);
   log(t('{name} succeeds {name2} as ruler of the {nation}.', { name: pn(st.leader), name2: pn(old), nation: fFull(f) }), 'big');
@@ -152,6 +164,7 @@ function retreatTarget(a, avoid) {
 
 // Applies the consequences of a battle whose casualties are already done. Returns a short text.
 function finishBattle(b, res) {
+  if (b.kind === 'naval') return finishNaval(b, res);
   const p = G.provinces[b.prov];
   const W = res.winner === 'att' ? b.att : b.def, L = res.winner === 'att' ? b.def : b.att;
   const wf = W.faction, lf = L.faction;
@@ -196,7 +209,7 @@ function startSiege(p, by) {
   p.siege = { by, turns: 0 };
   for (const a of armiesIn(p.id)) if (a.owner === by) a.besieging = true;
   log(t('{nation} lays siege to {city}.', { nation: fName(by), city: cityOf(p) }), by === G.player || p.owner === G.player ? 'battle' : '');
-  if (p.owner === G.player) HOOKS.notify({ title: t('{city} besieged', { city: cityOf(p) }), text: t('The {nation} army has surrounded {city}. It will hold out for about {n} more turns.', { nation: fAdj(by), city: cityOf(p), n: siegeTurns(p) }), prov: p.id });
+  if (isHuman(p.owner)) tell(p.owner, { title: t('{city} besieged', { city: cityOf(p) }), text: t('The {nation} army has surrounded {city}. It will hold out for about {n} more turns.', { nation: fAdj(by), city: cityOf(p), n: siegeTurns(p) }), prov: p.id });
 }
 function siegeTurns(p) {
   let t = 1 + p.b.walls * 2;
@@ -220,13 +233,13 @@ function captureProvince(p, by, army, mode) {
   if (by !== 'rebels') G.factions[by].gold += loot;
   G.stats[by] && G.stats[by].taken++;
   const wasCap = old !== 'rebels' && G.factions[old].capital === p.id;
-  if (by === G.player && (wasCap || p.pop >= 25 || wonderHere(p) || landmarkIn(p.id))) HOOKS.notify({ scene: { kind: 'conquest', prov: p.id, from: old, sack: mode === 'sack', capital: wasCap } });
+  if (isHuman(by) && (wasCap || p.pop >= 25 || wonderHere(p) || landmarkIn(p.id))) tell(by, { scene: { kind: 'conquest', prov: p.id, from: old, sack: mode === 'sack', capital: wasCap } });
   if (wasCap) {
     const rest = provsOf(old).sort((x, y) => y.pop - x.pop);
     G.factions[old].capital = rest.length ? rest[0].id : null;
   }
   log(dateText() + ': ' + t(mode === 'sack' ? '{nation} sacked {city} from {nation2}.' : '{nation} captured {city} from {nation2}.', { nation: fName(by), city: cityOf(p), nation2: fName(old) }), by === G.player || old === G.player ? 'big' : '');
-  if (old === G.player) HOOKS.notify({ title: t('{city} has fallen', { city: cityOf(p) }), text: t('{city} has been taken by the {nation}.', { city: cityOf(p), nation: fFull(by) }), prov: p.id });
+  if (isHuman(old)) tell(old, { title: t('{city} has fallen', { city: cityOf(p) }), text: t('{city} has been taken by the {nation}.', { city: cityOf(p), nation: fFull(by) }), prov: p.id });
   if (old !== 'rebels') checkFactionAlive(old);
   if (by !== 'rebels') {
     const r = old !== 'rebels' ? rel(by, old) : null;

@@ -8,8 +8,14 @@ async function endTurn(onProgress) {
   if (turnBusy || G.over) return;
   turnBusy = true;
   try {
+    // Hot seat: whoever opened the round has played; the other people play at their place in the order
+    const opener = G.player;
     for (const f of PLAYABLE) {
-      if (f === G.player || !G.factions[f].alive) continue;
+      if (!G.factions[f].alive) continue;
+      if (isHuman(f)) {
+        if (G.humans && f !== opener) { await HOOKS.humanTurn(f); if (G.over) return; }
+        continue;
+      }
       if (onProgress) onProgress(f);
       await aiTurn(f);
       if (G.over) return;
@@ -40,10 +46,16 @@ async function endTurn(onProgress) {
 
 // A line in the chronicle of the reign: the realm's size and wealth each season
 function recordHistory() {
-  const pl = G.player, st = G.factions[pl];
-  G.hist = G.hist || [];
-  G.hist.push({ t: G.turn, p: provsOf(pl).length, g: Math.round(st.gold), pw: Math.round(factionPower(pl)) });
-  if (!G.rulers) G.rulers = [{ name: st.leader, from: 0 }];
+  for (const pl of G.humans || [G.player]) {
+    const st = G.factions[pl], h = histOf(pl);
+    h.push({ t: G.turn, p: provsOf(pl).length, g: Math.round(st.gold), pw: Math.round(factionPower(pl)) });
+    rulersOf(pl);
+  }
+}
+function histOf(f) {
+  if (!G.humans) return (G.hist = G.hist || []);
+  G.histOf = G.histOf || {};
+  return (G.histOf[f] = G.histOf[f] || []);
 }
 
 function upkeepPhase() {
@@ -86,7 +98,7 @@ function upkeepPhase() {
         const x = pick(all);
         x.a.units.splice(x.a.units.indexOf(x.u), 1);
         if (!x.a.units.length) delete G.armies[x.a.id];
-        if (f === G.player) HOOKS.notify({ title: t('Troops desert'), text: t('Our treasury is empty. Unpaid {unit} have deserted.', { unit: uName(x.u.type) }) });
+        if (isHuman(f)) tell(f, { title: t('Troops desert'), text: t('Our treasury is empty. Unpaid {unit} have deserted.', { unit: uName(x.u.type) }) });
       }
       if (st.gold < -2000) st.gold = -2000;
     }
@@ -159,7 +171,7 @@ function finishQueues(p) {
       p.build = null;
     } else if (p.build.turns <= 0) {
       p.b[p.build.key]++;
-      if (p.owner === G.player) { log(t('{city}: {building} completed.', { city: cityOf(p), building: bLevel(p.build.key, p.b[p.build.key]) }), 'good'); feat('built'); }
+      if (isHuman(p.owner)) { log(t('{city}: {building} completed.', { city: cityOf(p), building: bLevel(p.build.key, p.b[p.build.key]) }), 'good'); feat('built'); }
       p.build = null;
     }
   }
@@ -168,7 +180,7 @@ function finishQueues(p) {
     let army = armiesIn(p.id).find(a => a.owner === p.owner && a.units.length + done.length <= GAME.MAX_ARMY);
     if (!army) army = addArmy(p.owner, p.id, [], null);
     for (const t of done) army.units.push(makeUnit(t));
-    if (p.owner === G.player) feat('recruited', done.length);
+    if (isHuman(p.owner)) feat('recruited', done.length);
   }
 }
 
@@ -181,7 +193,7 @@ function revolt(p) {
   p.owner = 'rebels'; p.unrest = 0; p.queue = []; p.build = null; p.siege = null;
   addArmy('rebels', p.id, units, null);
   log(dateText() + ': ' + t('{city} rises in revolt against the {nation}!', { city: cityOf(p), nation: fFull(old) }), old === G.player ? 'big' : '');
-  if (old === G.player) HOOKS.notify({ title: t('Revolt in {city}', { city: cityOf(p) }), text: t('The people of {city} have risen against us and declared their independence. Keep public order high with low taxes, mosques and garrisons.', { city: cityOf(p) }), prov: p.id });
+  if (isHuman(old)) tell(old, { title: t('Revolt in {city}', { city: cityOf(p) }), text: t('The people of {city} have risen against us and declared their independence. Keep public order high with low taxes, mosques and garrisons.', { city: cityOf(p) }), prov: p.id });
   if (G.factions[old].capital === p.id) {
     const rest = provsOf(old).sort((x, y) => y.pop - x.pop);
     G.factions[old].capital = rest.length ? rest[0].id : null;
@@ -198,10 +210,10 @@ function randomEvent() {
   const p = pick(cands);
   ev.apply(p, G, G.factions[p.owner]);
   p.unrest = Math.max(-30, p.unrest);
-  if (p.owner === G.player) {
+  if (isHuman(p.owner)) {
     const text = t(ev.text).replace('{p}', cityOf(p));
     log(dateText() + ': ' + text, 'event');
-    HOOKS.notify({ title: t(ev.title), text, prov: p.id, minor: true });
+    tell(p.owner, { title: t(ev.title), text, prov: p.id, minor: true });
   }
 }
 
@@ -222,7 +234,7 @@ function runEvents() {
     if (x.faction && x.order) { G.factions[x.faction].orderBonus = x.order; G.factions[x.faction].orderBonusT = 4; }
     if (x.faction && x.gold && !x.holder) G.factions[x.faction].gold += x.gold;
     if (x.relation) { const r = rel(x.relation[0], x.relation[1]); r.att = clampN(r.att + x.relation[2], -100, 100); }
-    if (x.leader && x.faction !== G.player) {
+    if (x.leader && !isHuman(x.faction)) {
       const st = G.factions[x.faction];
       const la = armiesOf(x.faction).find(a => a.general && a.general.leader);
       if (la) { la.general.name = x.leader; la.general.age = charByName(x.leader) ? year() - charByName(x.leader).born : 35; la.general.cmd = Math.max(la.general.cmd, 3); }
@@ -243,6 +255,15 @@ function runEvents() {
 // The last nation standing wins.
 function checkVictory() {
   if (G.over) return;
+  if (G.humans) {
+    // Hot seat: a fallen ruler drops out; the game ends when no person is left, or one nation stands
+    for (const f of G.humans) if (G.factions[f].alive && provsOf(f).length === 0) G.factions[f].alive = false;
+    const left = humansAlive();
+    if (!left.length) { G.over = 'lose'; return; }
+    if (nationsLeft().length === 1) { G.over = 'win'; G.winner = nationsLeft()[0]; }
+    for (const f of left) if (!G.goldenAge && goldenAgeNow(f)) { G.goldenAge = G.turn; G.goldenBy = f; }
+    return;
+  }
   const pl = G.player;
   if (!G.factions[pl].alive || provsOf(pl).length === 0) { G.over = 'lose'; return; }
   if (nationsLeft().length === 1) G.over = 'win';

@@ -13,13 +13,17 @@ function renderCampaigns() {
       <div class="camp-year">${dateText(s.start)} · ${fName(s.faction)} · ${t(s.difficulty)}${done ? ` · <b class="good">✓ ${t('Completed')}</b>` : ''}</div>
       <h3>${t(s.title)}</h3><p>${t(s.blurb)}</p><p class="camp-goal"><b>${t('Goal')}:</b> ${t(s.goalText)}</p></div></div>`;
   }).join('');
-  $('camp-list').innerHTML = grand + cards;
+  const hot = `<div class="camp hot" data-camp="hotseat"><div class="camp-flags">${PLAYABLE.slice(0, 4).map(f => flagSVG(f)).join('')}</div>
+    <div class="camp-body"><div class="camp-year">1370 · ${t('2 to 7 players')}</div><h3>${t('Hot seat: rulers on one device')}</h3>
+    <p>${t('Play the grand campaign with friends, each ruling a nation and passing the device between turns.')}</p></div></div>`;
+  $('camp-list').innerHTML = grand + hot + cards;
 }
 
 $('camp-list').addEventListener('click', e => {
   const c = e.target.closest('[data-camp]');
   if (!c) return;
-  if (c.dataset.camp === 'grand') withLoading(() => { showScreen('pick'); renderPick(); });
+  if (c.dataset.camp === 'grand') { pickMulti = null; withLoading(() => { showScreen('pick'); renderPick(); }); }
+  else if (c.dataset.camp === 'hotseat') withLoading(startHotseatPick);
   else startScenario(c.dataset.camp);
 });
 

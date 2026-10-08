@@ -73,13 +73,15 @@ function drawPickMap(f) {
 function renderPick() {
   $('pick-list').innerHTML = PLAYABLE.map(f => {
     const F = FACTIONS[f];
-    return `<div class="nation ${f === pickSel ? 'active' : ''}" data-f="${f}">${flagSVG(f)}<div class="n-name">${fName(f)}</div><div class="n-diff">${t(F.difficulty)}</div></div>`;
+    const on = pickMulti ? pickMulti.has(f) : f === pickSel;
+    return `<div class="nation ${on ? 'active' : ''}" data-f="${f}">${pickMulti && on ? '<span class="n-check">✓</span>' : ''}${flagSVG(f)}<div class="n-name">${fName(f)}</div><div class="n-diff">${t(F.difficulty)}</div></div>`;
   }).join('');
   const F = FACTIONS[pickSel];
   const provs = PROVINCE_DATA.filter(d => d[5] === pickSel);
   const cap = PROVINCE_DATA.find(d => d[0] === F.capital);
   const unique = UNITS[F.unique];
-  $('pick-detail').innerHTML = `<div><div class="pick-ruler">${rulerPortrait(pickSel, 'big')}<div><h3>${fFull(pickSel)}</h3><div class="sub">${t('Ruler')}: ${pn(F.leader)} · ${t('Capital')}: ${cityById(cap[0])} · ${t('Difficulty')}: ${t(F.difficulty)}</div></div></div>
+  syncPickGo();
+  $('pick-detail').innerHTML = `<div>${hotseatNote()}<div class="pick-ruler">${rulerPortrait(pickSel, 'big')}<div><h3>${fFull(pickSel)}</h3><div class="sub">${t('Ruler')}: ${pn(F.leader)} · ${t('Capital')}: ${cityById(cap[0])} · ${t('Difficulty')}: ${t(F.difficulty)}</div></div></div>
     <p>${t(F.blurb)}</p><p><b>${t('How to play')}:</b> ${t(F.play)}</p>
     <p class="facts">${t('{n} provinces', { n: '<b>' + provs.length + '</b>' })} · ${t('{n}k people', { n: '<b>' + provs.reduce((n, d) => n + d[6], 0) + '</b>' })} · ${t(F.nomad ? 'Steppe nation: horsemen need no stables and cost less to keep' : 'Settled nation: strong cities and infantry')} · ${t('Special unit')}: <b>${uName(F.unique)}</b> — ${t(unique.desc)}</p></div>
     <div><canvas id="pick-mini"></canvas></div>`;
@@ -88,7 +90,10 @@ function renderPick() {
 
 $('pick-list').addEventListener('click', e => {
   const n = e.target.closest('[data-f]');
-  if (n) { pickSel = n.dataset.f; renderPick(); }
+  if (!n) return;
+  pickSel = n.dataset.f;
+  if (pickMulti) { if (pickMulti.has(pickSel)) pickMulti.delete(pickSel); else pickMulti.add(pickSel); }
+  renderPick();
 });
 
 // ---------- Starting and loading ----------
@@ -121,13 +126,17 @@ async function startNew() {
 }
 
 async function startLoaded() {
+  HOT.holder = null; HOT.pending = {}; HOT.waiting = null;
   await withLoading(enterGame);
+  if (G.humans) { const f = G.player; G.player = null; await handOver(f); }
   toast(t('Game loaded'), `${fFull(G.player)}, ${dateText()}`, 'good');
 }
 
 // ---------- End of turn ----------
 
 async function doEndTurn() {
+  // Hot seat: a person's part of the round is over; the computer's rulers move on
+  if (G && HOT.waiting) { if (uiLocked()) return; hideTip(); HOT.waiting(); return; }
   if (!G || uiLocked() || G.over) return;
   hideTip();
   $('busy').classList.remove('hidden');
@@ -142,7 +151,15 @@ async function doEndTurn() {
   $('busy').classList.add('hidden');
   $('btn-end').disabled = false;
   if (!G) return;
+  // Hot seat: the first ruler of the next round takes the device
+  if (G.humans && !G.over && humansAlive().length) await handOver(humansAlive()[0]);
   saveGame('auto');
+  await turnStartUI(true);
+}
+
+// What a ruler sees at the start of their turn: news, the council, a choice to make
+async function turnStartUI(newRound) {
+  if (!G) return;
   refresh();
   const st = G.factions[G.player];
   turnBanner(t('Treasury {gold} gold · {n} nations remain', { gold: fmt(st.gold), n: nationsLeft().length }));
@@ -156,7 +173,7 @@ async function doEndTurn() {
     if (lm) { centerOnProv(LANDMARKS[lm.id].prov); await playScene({ kind: 'place', ...lm }); await flushNotices(); }
   }
   refresh();
-  achTurn();
+  if (newRound) achTurn(); else checkAchievements();
   await checkGoldenAgeUI();
   await checkScenarioUI();
   checkOverUI();
@@ -176,7 +193,7 @@ $('btn-new').onclick = () => { showScreen('camps'); renderCampaigns(); };
 $('pick-back').onclick = () => { showScreen('camps'); renderCampaigns(); };
 $('camp-back').onclick = () => showScreen('title');
 $('btn-ach').onclick = () => openAchievements();
-$('pick-go').onclick = startNew;
+$('pick-go').onclick = () => pickMulti ? startHotseat() : startNew();
 $('btn-continue').onclick = () => { if (loadGame('auto')) startLoaded(); };
 $('btn-load').onclick = () => openSaves('load');
 $('btn-help').onclick = openHelp;

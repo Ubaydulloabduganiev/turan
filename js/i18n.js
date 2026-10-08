@@ -85,6 +85,9 @@ const GEO = {
   'Hindu Kush': ['Hindukush', 'Гиндукуш', 'Hindukuş'], Pamir: ['Pomir', 'Памир', 'Pamir'], Karakoram: ['Qoraqurum', 'Каракорум', 'Karakurum'], Kunlun: ['Kunlun', 'Куньлунь', 'Kunlun'],
   Taklamakan: ['Taklamakon', 'Такла-Макан', 'Taklamakan'], 'Tian Shan': ['Tyanshan', 'Тянь-Шань', 'Tanrı Dağları'], Altai: ['Oltoy', 'Алтай', 'Altay'],
   'Dzungarian Gate': ['Jungʻoriya darvozasi', 'Джунгарские ворота', 'Cungarya Kapısı'],
+  'Amu Darya': ['Amudaryo', 'Амударья', 'Amuderya'], 'Syr Darya': ['Sirdaryo', 'Сырдарья', 'Siriderya'], Ili: ['Ili', 'Или', 'İli'],
+  Volga: ['Volga', 'Волга', 'İdil'], Yaik: ['Yoyiq', 'Яик', 'Yayık'], Helmand: ['Hilmand', 'Гильменд', 'Hilmend'],
+  Irtysh: ['Irtish', 'Иртыш', 'İrtiş'], Tarim: ['Tarim', 'Тарим', 'Tarım'],
 };
 const cityOf = p => (LANG !== 'en' && PLACES[LANG][p.id]) ? PLACES[LANG][p.id][0] : p.city;
 const regionOf = p => (LANG !== 'en' && PLACES[LANG][p.id]) ? PLACES[LANG][p.id][1] : p.name;

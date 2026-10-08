@@ -54,6 +54,7 @@ function make3D() {
   // ---------- Ground ----------
   const wallZ = TB.wallY;
   const hgt = (x, z) => {
+    if (TB.naval) return 0; // open water
     let h = 7 * Math.sin(x * 0.0065 + 1.3) * Math.cos(z * 0.0058) + 4 * Math.sin((x + z) * 0.012) + 2.5 * Math.cos(x * 0.021 - z * 0.017);
     if (wallZ !== null) h *= clampN(Math.abs(z - wallZ) / 140, 0.15, 1);
     return h + featHeight(x, z);
@@ -83,15 +84,23 @@ function make3D() {
   for (let i = 0; i < op.count; i++) {
     const x = op.getX(i), z = op.getZ(i);
     const dx = Math.max(0, Math.abs(x - BF.W / 2) - BF.W / 2), dz = Math.max(0, Math.abs(z - BF.H / 2) - BF.H / 2), d = Math.hypot(dx, dz);
-    op.setY(i, hgt(x, z) - (d > 0 ? 0.8 : 6) + Math.pow(d / 400, 1.6) * 18 * (0.6 + 0.4 * Math.sin(x * 0.004) * Math.cos(z * 0.005)));
     const v = 0.88 + 0.12 * Math.sin(x * 0.013) * Math.cos(z * 0.011);
+    if (TB.naval) {
+      // the open sea, and far away a low shore
+      const shore = Math.max(0, d - 1500);
+      op.setY(i, shore ? Math.pow(shore / 300, 1.5) * 16 : -0.6);
+      const c = shore ? [0.48, 0.44, 0.3] : [0.18 * v, 0.36 * v, 0.46 * v];
+      ocol.push(...c);
+      continue;
+    }
+    op.setY(i, hgt(x, z) - (d > 0 ? 0.8 : 6) + Math.pow(d / 400, 1.6) * 18 * (0.6 + 0.4 * Math.sin(x * 0.004) * Math.cos(z * 0.005)));
     ocol.push(base.r * v * 0.85, base.g * v * 0.82, base.b * v * 0.74);
   }
   outerGeo.setAttribute('color', new T.Float32BufferAttribute(ocol, 3));
   outerGeo.computeVertexNormals();
   const gp = typeof ART !== 'undefined' && ART.ground ? img(TB.terrain === 'desert' ? ART.ground.sand : ART.ground.grass) : null;
   let omap = null;
-  if (gp) { omap = new T.Texture(gp); omap.wrapS = omap.wrapT = T.RepeatWrapping; omap.repeat.set(36, 36); omap.anisotropy = renderer.capabilities.getMaxAnisotropy(); omap.needsUpdate = true; }
+  if (gp && !TB.naval) { omap = new T.Texture(gp); omap.wrapS = omap.wrapT = T.RepeatWrapping; omap.repeat.set(36, 36); omap.anisotropy = renderer.capabilities.getMaxAnisotropy(); omap.needsUpdate = true; }
   const outer = new T.Mesh(outerGeo, new T.MeshLambertMaterial({ vertexColors: true, map: omap }));
   outer.receiveShadow = true;
   scene.add(outer);
@@ -123,7 +132,7 @@ function make3D() {
       return [x, z];
     }
   };
-  if (TB.terrain !== 'desert') {
+  if (TB.terrain !== 'desert' && !TB.naval) {
     const n = TB.terrain === 'mountain' ? 40 : 140;
     const trunk = new T.InstancedMesh(new T.CylinderGeometry(0.6, 0.9, 8, 5).translate(0, 4, 0), new T.MeshLambertMaterial({ color: '#4a3826' }), n);
     const crown = new T.InstancedMesh(new T.ConeGeometry(4.2, 24, 7).translate(0, 18, 0), new T.MeshLambertMaterial({ color: '#ffffff' }), n);
@@ -137,7 +146,7 @@ function make3D() {
     trunk.castShadow = crown.castShadow = true;
     scene.add(trunk, crown);
   }
-  {
+  if (!TB.naval) {
     const n = TB.terrain === 'mountain' || TB.terrain === 'desert' ? 90 : 30;
     const rocks = new T.InstancedMesh(new T.DodecahedronGeometry(5, 0), new T.MeshLambertMaterial({ color: '#8b8170', flatShading: true }), n);
     const d = new T.Object3D();
@@ -281,7 +290,8 @@ function soldierGeos(kind) {
 
 function buildArmies3D(R) {
   const T = THREE;
-  const kindOf = r => r.u.type === 'general' ? 'general' : r.d.cls;
+  // At sea everyone stands in the boats: horsemen leave their horses ashore
+  const kindOf = r => TB.naval ? (r.d.cls === 'ha' ? 'missile' : r.d.cls === 'cav' ? 'inf' : r.d.cls) : r.u.type === 'general' ? 'general' : r.d.cls;
   const need = {};
   for (const r of TB.regs) {
     r.per = (r.d.cls === 'cav' || r.d.cls === 'ha') ? 3 : 4;
@@ -337,6 +347,7 @@ function buildArmies3D(R) {
         for (let k = 0; k < 4; k++) pool.legs.setColorAt(f.slot * 4 + k, c);
       }
     }
+    if (TB.naval) r.boat = boat3D(R, r, n);
     // Banner on a pole, carried at the back of the regiment
     const flag = bannerTexture(r.faction);
     const grp = new T.Group();
@@ -375,8 +386,8 @@ function bannerTexture(f) {
 
 // Where figure i of n stands, relative to the regiment's centre and facing
 function slotOf(r, i, n) {
-  const mounted = r.d.cls === 'cav' || r.d.cls === 'ha';
-  const cols = mounted ? 6 : 10, sp = mounted ? 11 : 6.6;
+  const mounted = (r.d.cls === 'cav' || r.d.cls === 'ha') && !TB.naval;
+  const cols = TB.naval ? 3 : mounted ? 6 : 10, sp = TB.naval ? 5.5 : mounted ? 11 : 6.6;
   const rows = Math.ceil(n / cols);
   const col = i % cols, row = Math.floor(i / cols);
   const lx = (col - (Math.min(cols, n) - 1) / 2) * sp, ly = (rows - 1) / 2 * sp - row * sp; // row 0 is the front
@@ -444,6 +455,41 @@ function buildWalls3D(R, wz) {
     rubble.castShadow = true;
     R.scene.add(rubble);
   }
+}
+
+// A war boat for one regiment: hull, deck, oars, and a mast with a sail in the nation's colour
+function boat3D(R, r, n) {
+  const T = THREE, rows = Math.ceil(n / 3), L = Math.max(30, rows * 5.5 + 14), W = 23;
+  const sh = new T.Shape();
+  sh.moveTo(L / 2 + 8, 0); sh.quadraticCurveTo(L / 2, W / 2, 0, W / 2); sh.lineTo(-L / 2, W / 2.3); sh.lineTo(-L / 2, -W / 2.3); sh.lineTo(0, -W / 2); sh.quadraticCurveTo(L / 2, -W / 2, L / 2 + 8, 0);
+  const hull = new T.Mesh(new T.ExtrudeGeometry(sh, { depth: 4.2, bevelEnabled: false }).rotateX(-Math.PI / 2).translate(0, -1.6, 0), new T.MeshLambertMaterial({ color: '#5e3c1e' }));
+  const deck = new T.Mesh(new T.ShapeGeometry(sh).rotateX(-Math.PI / 2).scale(0.9, 1, 0.82).translate(0, 2.65, 0), new T.MeshLambertMaterial({ color: '#9a7446', side: T.DoubleSide }));
+  const stern = new T.Mesh(new T.BoxGeometry(3, 5, W / 1.3), new T.MeshLambertMaterial({ color: FACTIONS[r.faction].color }));
+  stern.position.set(-L / 2 + 1, 3.5, 0);
+  const g = new T.Group();
+  g.add(hull, deck, stern);
+  // mast and sail
+  const mast = new T.Mesh(new T.CylinderGeometry(0.5, 0.6, 34, 5), new T.MeshLambertMaterial({ color: '#4a3016' }));
+  mast.position.set(L * 0.12, 18, 0);
+  const sail = new T.Mesh(new T.PlaneGeometry(W * 0.95, 16), new T.MeshLambertMaterial({ color: FACTIONS[r.faction].color, side: T.DoubleSide }));
+  sail.rotation.y = Math.PI / 2; sail.position.set(L * 0.12 + 0.8, 24, 0);
+  g.add(mast, sail);
+  // oars, swept back and forth while the boat moves
+  const oars = [];
+  const oarGeo = { 1: new T.BoxGeometry(0.5, 0.5, 14).translate(0, 0, 7), '-1': new T.BoxGeometry(0.5, 0.5, 14).translate(0, 0, -7) };
+  const oarMat = new T.MeshLambertMaterial({ color: '#3a2610' });
+  for (let k = -L / 2 + 8; k < L / 2 - 6; k += 7) for (const side of [1, -1]) {
+    const holder = new T.Group();
+    holder.position.set(k, 1.6, side * W / 2.1);
+    const o = new T.Mesh(oarGeo[side], oarMat);
+    o.rotation.x = side * 0.35;
+    holder.add(o); holder.userData.side = side;
+    oars.push(holder); g.add(holder);
+  }
+  g.userData.oars = oars;
+  hull.castShadow = sail.castShadow = mast.castShadow = true;
+  R.scene.add(g);
+  return g;
 }
 
 // ---------- Per frame ----------
@@ -522,7 +568,7 @@ function render3D(R, dt) {
       if (walking) bob = Math.abs(Math.sin(R.t * (mounted ? 11 : 8) + f.ph)) * (mounted ? 1.1 : 0.55);
       if (walking && mounted) tilt = Math.sin(R.t * 11 + f.ph) * 0.06;
       if (fight && s.row < 2) { const l = Math.sin(R.t * 7 + f.ph) * 1.3; ox = Math.cos(f.face) * l; oz = Math.sin(f.face) * l; tilt = Math.sin(R.t * 7 + f.ph) * 0.08; }
-      d.position.set(f.x + ox, R.hgt(f.x, f.z) + bob, f.z + oz);
+      d.position.set(f.x + ox, R.hgt(f.x, f.z) + bob + (TB.naval ? 2.6 + Math.sin(R.t * 1.6 + r.id) * 0.8 : 0), f.z + oz);
       d.rotation.set(0, -f.face, tilt);
       d.scale.set(1, 1, 1);
       d.updateMatrix();
@@ -545,6 +591,14 @@ function render3D(R, dt) {
     }
     // Banner follows the regiment; hidden once it has fled or died
     const show = !r.gone && alive.length > 0;
+    if (r.boat) {
+      r.boat.visible = !r.gone || r.men > 0;
+      r.boat.position.set(r.x, Math.sin(R.t * 1.6 + r.id) * 0.8, r.y);
+      r.boat.rotation.set(Math.sin(R.t * 1.3 + r.id) * 0.04, -r.face, Math.sin(R.t * 1.1 + r.id * 2) * 0.03);
+      if (r.gone && r.men <= 0) r.boat.position.y = -6; // sunk
+      const sw = r.moving ? Math.sin(R.t * 5 + r.id) * 0.5 : 0;
+      for (const o of r.boat.userData.oars) o.rotation.y = o.userData.side * (0.2 + sw);
+    }
     r.banner.visible = show;
     if (show) {
       const bxp = r.x - Math.cos(r.face) * 8, bzp = r.y - Math.sin(r.face) * 8;

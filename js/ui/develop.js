@@ -51,7 +51,7 @@ async function checkGoldenAgeUI() {
   if (!G || !G.goldenAge || G.goldenShown) return;
   G.goldenShown = true;
   music('glory'); sfx('cheer');
-  const pl = G.player;
+  const pl = G.goldenBy || G.player;
   const v = await showModal(`<h3>${t('A golden age')}</h3><div class="with-portrait">${rulerPortrait(pl)}<p>${t('{date}: in the realm of {ruler}, astronomers chart the heavens, poets write in two languages, caravans fill the bazaars and the law reaches every village. Your realm ({nation}) has won all twenty advances. Whatever happens on the battlefield, the age will bear your name.', { date: dateText(), ruler: pn(G.factions[pl].leader), nation: fFull(pl) })}</p></div>`,
     [{ label: t('Main menu'), value: 'title' }, { label: t('The chronicle of the reign'), value: 'reign' }, { label: t('Keep ruling'), value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
   if (v === 'reign') await openReign(true);

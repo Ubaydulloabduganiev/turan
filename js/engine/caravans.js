@@ -67,17 +67,19 @@ function caravansTurn() {
     const loot = hit.by === 'rebels' ? 0 : value;
     if (loot) G.factions[hit.by].gold += loot;
     G.raids.push({ a: r.a, b: r.b, by: hit.by, prov: hit.prov, value, loot });
-    const pl = G.player, city = cityOf(G.provinces[hit.prov]);
-    if (r.a === pl || r.b === pl) {
+    const city = cityOf(G.provinces[hit.prov]);
+    for (const pl of [r.a, r.b]) {
+      if (!isHuman(pl)) continue;
       const partner = r.a === pl ? r.b : r.a;
       log(dateText() + ': ' + t('Our caravans to {nation} were robbed near {city}.', { nation: fName(partner), city }), 'war');
-      HOOKS.notify({ minor: true, title: t('Caravans robbed'), text: hit.by === 'rebels'
+      tell(pl, { minor: true, title: t('Caravans robbed'), text: hit.by === 'rebels'
         ? t('Bandits from {city} robbed our caravans to {nation}. We lose {n} gold of trade this season. Take the city to make the road safe.', { city, nation: fName(partner), n: value })
         : t('An army of the {raider} plundered our caravans to {nation} near {city}. We lose {n} gold of trade this season. Drive it off the road.', { raider: fFull(hit.by), city, nation: fName(partner), n: value }) });
-    } else if (hit.by === pl) {
+    }
+    if (isHuman(hit.by)) {
       feat('caravan');
       log(dateText() + ': ' + t('Our army plundered a caravan of {nation} and {nation2} near {city}.', { nation: fName(r.a), nation2: fName(r.b), city }), 'big');
-      HOOKS.notify({ minor: true, sound: 'coins', title: t('A caravan plundered'), text: t('Our army near {city} fell on a caravan of {nation} and {nation2} and carried off {n} gold.', { city, nation: fName(r.a), nation2: fName(r.b), n: loot }) });
+      tell(hit.by, { minor: true, sound: 'coins', title: t('A caravan plundered'), text: t('Our army near {city} fell on a caravan of {nation} and {nation2} and carried off {n} gold.', { city, nation: fName(r.a), nation2: fName(r.b), n: loot }) });
     }
   }
 }

@@ -17,7 +17,7 @@ function startTactical(b) {
     const p = G.provinces[b.prov];
     TB = {
       b, resolve, playerSide, regs: [], arrows: [], fx: [], t: 0, paused: false, speed: 1, sel: new Set(), drag: null, over: null,
-      terrain: p.terrain, walls: b.kind === 'assault' ? p.b.walls : 0, seed: 1, start: { att: 0, def: 0 },
+      terrain: b.terrain || p.terrain, walls: b.kind === 'assault' ? p.b.walls : 0, seed: 1, start: { att: 0, def: 0 },
     };
     // Player always deploys at the bottom
     deploy('att', playerSide === 'att' ? 'bottom' : 'top');
@@ -115,7 +115,7 @@ function behindWall(r) {
 }
 
 function speedOf(r) {
-  let s = SPEED[r.d.cls] * (r.run ? 1.45 : 1);
+  let s = TB.naval ? 40 * (r.run ? 1.35 : 1) : SPEED[r.d.cls] * (r.run ? 1.45 : 1); // boats all row alike
   if (TB.terrain === 'mountain' && (r.d.cls === 'cav' || r.d.cls === 'ha')) s *= 0.75;
   s *= wallSpeed(r) * groundSpeed(r);
   if (r.wall > TB.t) s = 0;
@@ -265,7 +265,7 @@ function moveReg(r, dt) {
   if (d <= step) { r.x = r.tx; r.y = r.ty; } else { r.x += dx / d * step; r.y += dy / d * step; }
   r.x = clampN(r.x, 10, BF.W - 10);
   if (!r.rout) r.y = clampN(r.y, 10, BF.H - 10);
-  if (r.d.cls === 'cav' && d > 60) r.charge = 2.2; // momentum for a charge
+  if (r.d.cls === 'cav' && d > 60 && !TB.naval) r.charge = 2.2; // momentum for a charge
 }
 
 function meleeHit(a, c, dt) {
@@ -273,7 +273,8 @@ function meleeHit(a, c, dt) {
   const d = a.d, e = c.d;
   let atk = d.atk;
   if (d.cls === 'spear' && (e.cls === 'cav' || e.cls === 'ha')) atk *= 1.8;
-  if ((d.cls === 'cav') && a.charge > 0) { if (a.charge > 1.9) chargeMoment(a); atk *= 2.2; a.charge -= dt * 1.5; }
+  if (TB.naval && (d.cls === 'cav' || d.cls === 'ha')) atk *= 0.75; // horsemen fight on foot in the boats
+  if ((d.cls === 'cav') && a.charge > 0 && !TB.naval) { if (a.charge > 1.9) chargeMoment(a); atk *= 2.2; a.charge -= dt * 1.5; }
   atk *= groundMelee(a, c) * (a.boost > TB.t ? 1.1 : 1);
   if (d.cls === 'missile' || d.cls === 'ha') atk *= 0.7;
   let def = e.def + (behindWall(c) ? 4 : 0) + (inWall(c.y) && !wallOpen(c) && c.side === 'def' ? 3 : 0);
@@ -327,7 +328,7 @@ function endTactical(winner, quiet) {
     if (TB.r3) { dispose3D(TB.r3); TB.r3 = null; }
     $('battle').classList.add('hidden');
     music('map');
-    if (turnBusy) $('busy').classList.remove('hidden');
+    if (engineBusy()) $('busy').classList.remove('hidden');
     const resolve = TB.resolve;
     TB = null;
     resolve(res);
@@ -395,7 +396,7 @@ function drawOverlay3D() {
 }
 const bToWorld = (x, y) => ({ x: (x - TB.view.ox) / TB.view.s, y: (y - TB.view.oy) / TB.view.s });
 
-const GROUND = { steppe: ['#8b9a52', '#7a8a46'], oasis: ['#7f9a4e', '#6e8a40'], river: ['#6f9450', '#5f8444'], desert: ['#c9ad74', '#b99c63'], mountain: ['#8a8564', '#77725a'] };
+const GROUND = { water: ['#2f5f78', '#28526a'], steppe: ['#8b9a52', '#7a8a46'], oasis: ['#7f9a4e', '#6e8a40'], river: ['#6f9450', '#5f8444'], desert: ['#c9ad74', '#b99c63'], mountain: ['#8a8564', '#77725a'] };
 
 // The battlefield floor, painted once: ground colour, texture, scrub, rocks or dunes, light and walls
 function paintBattleGround(for3d) {
@@ -404,6 +405,7 @@ function paintBattleGround(for3d) {
   const x = c.getContext('2d'), rnd = mulberry32(TB.b.prov.length * 977 + G.turn);
   const g = GROUND[TB.terrain] || GROUND.steppe;
   x.fillStyle = g[0]; x.fillRect(0, 0, BF.W, BF.H);
+  if (TB.terrain === 'water') return paintSea(x, c, rnd, for3d);
   // A photographed ground texture, tinted to the terrain, when it has loaded
   const photo = typeof ART !== 'undefined' && ART.ground ? img(TB.terrain === 'desert' ? ART.ground.sand : ART.ground.grass) : null;
   if (photo) {
@@ -459,6 +461,25 @@ function paintBattleGround(for3d) {
   const v = x.createRadialGradient(BF.W / 2, BF.H / 2, BF.H * 0.35, BF.W / 2, BF.H / 2, BF.W * 0.7);
   v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(10,6,2,0.5)');
   x.fillStyle = v; x.fillRect(0, 0, BF.W, BF.H);
+  return c;
+}
+
+// Open water: deep blue with the light on the waves
+function paintSea(x, c, rnd, for3d) {
+  const gr = x.createLinearGradient(0, 0, 0, BF.H); gr.addColorStop(0, '#2b5a73'); gr.addColorStop(0.5, '#336a84'); gr.addColorStop(1, '#2a566e');
+  x.fillStyle = gr; x.fillRect(0, 0, BF.W, BF.H);
+  x.globalCompositeOperation = 'overlay'; x.globalAlpha = 0.45; x.drawImage(noiseCanvas(128, 11, [4, 8, 16, 32]), 0, 0, BF.W, BF.H);
+  x.globalCompositeOperation = 'source-over'; x.globalAlpha = 1;
+  for (let i = 0; i < 420; i++) {
+    const px = rnd() * BF.W, py = rnd() * BF.H, w = 6 + rnd() * 16;
+    x.strokeStyle = rnd() < 0.6 ? 'rgba(220,240,255,0.32)' : 'rgba(15,40,60,0.35)'; x.lineWidth = 1.3;
+    x.beginPath(); x.moveTo(px - w, py); x.quadraticCurveTo(px, py - w * 0.35, px + w, py); x.stroke();
+  }
+  if (!for3d) {
+    const v = x.createRadialGradient(BF.W / 2, BF.H / 2, BF.H * 0.35, BF.W / 2, BF.H / 2, BF.W * 0.7);
+    v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(5,15,25,0.5)');
+    x.fillStyle = v; x.fillRect(0, 0, BF.W, BF.H);
+  }
   return c;
 }
 
@@ -542,8 +563,9 @@ function drawBattle() {
 function drawRegiment(c, r) {
   const F = FACTIONS[r.faction];
   const n = Math.max(1, Math.ceil(r.men / (r.d.cls === 'cav' || r.d.cls === 'ha' ? 3 : 4)));
-  const mounted = r.d.cls === 'cav' || r.d.cls === 'ha';
-  const cols = mounted ? 6 : 10, sp = mounted ? 13 : 8.5;
+  const mounted = (r.d.cls === 'cav' || r.d.cls === 'ha') && !TB.naval;
+  const cols = TB.naval ? 3 : mounted ? 6 : 10, sp = TB.naval ? 7.5 : mounted ? 13 : 8.5;
+  if (TB.naval && !r.gone) drawBoat2D(c, r, F, Math.ceil(n / cols) * sp);
   const rows = Math.ceil(n / cols);
   const cos = Math.cos(r.face + Math.PI / 2), sin = Math.sin(r.face + Math.PI / 2);
   const sel = TB.sel.has(r.id);
@@ -597,13 +619,35 @@ function drawRegiment(c, r) {
   c.fillRect(r.x - 16, r.y + r.r + 4, 32 * r.men / r.max, 4);
 }
 
+// A war boat under a regiment: a long hull pointing the way it faces, oars along both sides
+function drawBoat2D(c, r, F, len) {
+  const L = Math.max(46, len + 22), W = 26, roll = Math.sin(TB.t * 2 + r.id) * 0.03;
+  c.save(); c.translate(r.x, r.y); c.rotate(r.face + roll);
+  c.fillStyle = 'rgba(0,10,20,0.35)'; c.beginPath(); c.ellipse(3, 4, L / 2 + 4, W / 2 + 2, 0, 0, Math.PI * 2); c.fill();
+  // wake
+  if (r.moving) { c.strokeStyle = 'rgba(230,245,255,0.5)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(-L / 2, -W / 2.4); c.lineTo(-L / 2 - 26, -W); c.moveTo(-L / 2, W / 2.4); c.lineTo(-L / 2 - 26, W); c.stroke(); }
+  c.strokeStyle = '#3a2610'; c.lineWidth = 1.4;
+  for (let k = -L / 2 + 10; k < L / 2 - 8; k += 9) { const sw = Math.sin(TB.t * 4 + k) * 3; c.beginPath(); c.moveTo(k, -W / 2); c.lineTo(k + sw, -W / 2 - 9); c.moveTo(k, W / 2); c.lineTo(k + sw, W / 2 + 9); c.stroke(); }
+  c.fillStyle = '#6e4a26'; c.beginPath(); c.moveTo(L / 2 + 10, 0); c.quadraticCurveTo(L / 2, -W / 2, 0, -W / 2); c.lineTo(-L / 2, -W / 2.4); c.lineTo(-L / 2, W / 2.4); c.lineTo(0, W / 2); c.quadraticCurveTo(L / 2, W / 2, L / 2 + 10, 0); c.fill();
+  c.fillStyle = '#8a6236'; c.beginPath(); c.ellipse(0, 0, L / 2 - 4, W / 2 - 4, 0, 0, Math.PI * 2); c.fill();
+  c.fillStyle = F.color; c.fillRect(-L / 2 - 2, -W / 2.4, 5, W / 1.2); // the stern in the nation's colour
+  c.restore();
+}
+
+// "Battle of Merv", "Battle on the Caspian Sea", or a battle at a river crossing
+function battleName(b) {
+  if (b.kind === 'naval') return t('Battle on the {sea}', { sea: geoName(b.sea) });
+  const base = t('Battle of {city}', { city: cityOf(G.provinces[b.prov]) });
+  return b.river ? base + ' · ' + t('crossing the {river}', { river: geoName(b.river) }) : base;
+}
+
 function renderBattleTop() {
   const b = TB.b, p = G.provinces[b.prov];
   const side = s => {
     const f = b[s].faction, total = TB.start[s], now = sideMen(s);
     return `<div class="bside">${flagSVG(f)}<div><div>${fName(f)}${s === TB.playerSide ? ' ' + t('(you)') : ''}</div><div class="meter"><div style="width:${Math.round(now / total * 100)}%;background:${FACTIONS[f].color}"></div></div></div><div>${fmt(now)}</div></div>`;
   };
-  $('b-top').innerHTML = side('att') + `<div class="b-title">${t('Battle of {city}', { city: cityOf(p) })}${TB.walls ? ' · ' + t(TB.breach ? 'storming the walls (breach made)' : 'storming the walls') : ''}</div>` + side('def');
+  $('b-top').innerHTML = side('att') + `<div class="b-title">${battleName(b)}${TB.walls ? ' · ' + t(TB.breach ? 'storming the walls (breach made)' : 'storming the walls') : ''}</div>` + side('def');
 }
 
 function renderBattleCards() {

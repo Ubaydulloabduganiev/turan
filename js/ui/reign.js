@@ -24,7 +24,7 @@ function reignMapCanvas(w) {
 
 // The rise and fall of the realm, as a line
 function reignGraph(w, h) {
-  const hs = G.hist || [];
+  const hs = histOf(G.player);
   if (hs.length < 2) return '';
   const max = Math.max(...hs.map(e => e.p), 1);
   const pts = hs.map((e, i) => `${(i / (hs.length - 1) * w).toFixed(1)},${(h - e.p / max * (h - 6) - 3).toFixed(1)}`).join(' ');
@@ -33,7 +33,7 @@ function reignGraph(w, h) {
 }
 
 function reignStats() {
-  const pl = G.player, st = G.factions[pl], s = G.stats[pl] || {}, hs = G.hist || [];
+  const pl = G.player, st = G.factions[pl], s = G.stats[pl] || {}, hs = histOf(pl);
   const peak = Math.max(provsOf(pl).length, ...hs.map(e => e.p));
   const startYear = GAME.START_YEAR + Math.floor(((G.scenario && scenarioById(G.scenario.id) && scenarioById(G.scenario.id).start) || 0) / 2);
   return [
@@ -48,7 +48,7 @@ function reignStats() {
 
 function openReign(final) {
   const pl = G.player, st = G.factions[pl];
-  const rulers = (G.rulers && G.rulers.length ? G.rulers : [{ name: st.leader, from: 0 }]);
+  const rulers = rulersOf(pl);
   const wonders = Object.keys(WONDERS).filter(id => hasWonder(pl, id)).map(id => wName(id));
   const sages = sagesOf(pl).map(id => pn(CHAR_BY_ID[id].name));
   const marriages = (G.marriages || []).filter(m => m.gF === pl || m.bF === pl).map(m => `${pn(m.groom)} ❦ ${pn(m.bride)}`);

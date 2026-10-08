@@ -195,7 +195,7 @@ const ALT_EVENTS = {
     title: 'The ungrateful khan', text: 'Toqtamish, whom Temur raised to the throne of the steppe, has turned against his patron. His horsemen cross the Syr Darya to plunder Transoxiana.',
     apply: () => { declareWar('white', 'temur', true); G.factions.white.gold += 1500; } },
   toqtamish_raid: {
-    ok: () => alive('white') && alive('temur') && G.player === 'white',
+    ok: () => alive('white') && alive('temur') && isHuman('white') && !isHuman('temur'),
     title: 'Toqtamish attacks', text: 'With Temur’s horsemen behind him, Toqtamish crosses into the White Horde to claim the throne.',
     apply: () => { if (!rel('temur', 'white').war) declareWar('temur', 'white', true); const p = ['otrar', 'sighnaq'].find(id => ownerOf(id) === 'temur') || (provsOf('temur')[0] || {}).id; if (p) addArmy('temur', p, ['horsearch', 'horsearch', 'lancer', 'horsearch'], makeGeneral('temur', 'Toqtamish', 4, 33, false)); } },
   bibi_fall: {
@@ -237,9 +237,9 @@ function whatifTurn() {
   G.altDone = G.altDone || {};
   for (const w of WHATIFS) {
     if (G.altDone[w.id] !== undefined || G.turn < w.from) continue;
-    if (w.by === G.player) { if (G.turn > w.to) G.altDone[w.id] = 0; continue; } // the moment passed
+    if (isHuman(w.by)) { if (G.turn > w.to) G.altDone[w.id] = 0; continue; } // the moment passed
     if (!alive(w.by) || G.turn > w.to) { G.altDone[w.id] = 0; continue; }
-    if (w.vs === G.player) continue; // the player answers this one from the other side
+    if (isHuman(w.vs)) continue; // a person answers this one from the other side
     if (!w.when()) continue;
     // A rival decides: usually as history did
     let r = rng(), i = 0;
@@ -257,7 +257,7 @@ function whatifTurn() {
   if (G.wonders && G.wonders.bibikhanym && !alt('bibi')) {
     const o = ownerOf('samarkand');
     G.bibiAt = G.bibiAt || G.turn + 3;
-    if (o !== G.player && o !== 'rebels' && G.turn >= G.bibiAt) BIBI.options[0].act(storyContext(o));
+    if (!isHuman(o) && o !== 'rebels' && G.turn >= G.bibiAt) BIBI.options[0].act(storyContext(o));
   }
   for (const q of (G.altQ || []).filter(q => q.turn <= G.turn)) {
     const e = ALT_EVENTS[q.id];
@@ -284,7 +284,7 @@ function eventVariant(e) {
     const k = alt('kulikovo');
     if (k === 'peace') return { skip: true, title: 'No battle at Kulikovo', text: 'The Horde did not march this year. Moscow keeps its silver, and its army waits.' };
     if (k === 'lithuania') { out.effect = { faction: 'golden', armyLoss: 0.1 }; out.title = 'Kulikovo: no victor'; out.text = 'With the Lithuanians at his side, Mamai fights Prince Dmitry on the Don. Both armies bleed, and neither can claim the field.'; }
-    else if (k === 'march' && G.player === 'golden' && rng() < 0.4) {
+    else if (k === 'march' && isHuman('golden') && rng() < 0.4) {
       out.effect = { faction: 'golden', order: 12, gold: 1500 };
       out.title = 'Mamai wins at Kulikovo'; out.text = 'Against what history remembers, Mamai’s horsemen break the Russian line on the field of Kulikovo. Moscow pays double tribute.';
     }

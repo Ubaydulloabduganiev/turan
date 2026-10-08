@@ -50,7 +50,7 @@ function aiDiplomacy(f) {
   if (aiBetray(f)) return;
   aiCallAllies(f);
   for (const g of PLAYABLE) {
-    if (g === f || g === G.player || !G.factions[g].alive) continue;
+    if (g === f || isHuman(g) || !G.factions[g].alive) continue;
     const r = rel(f, g);
     if (r.war) {
       // Tired or beaten: sue for peace
@@ -60,7 +60,7 @@ function aiDiplomacy(f) {
   }
   // Swallow a broken neighbour whole if it will kneel
   for (const g of neighbourFactions(f)) {
-    if (g === 'rebels' || g === G.player || !G.factions[g].alive) continue;
+    if (g === 'rebels' || isHuman(g) || !G.factions[g].alive) continue;
     if (dealValue(f, g, 'submit') > 0 && rng() < 0.3) { applyDeal(f, g, 'submit'); return; }
   }
   // War on a weaker neighbour
@@ -75,7 +75,7 @@ function aiDiplomacy(f) {
     if (r.war || (r.alliance && !few) || r.truce > 0 || (r.married && r.att > -40 && !few)) continue;
     const ratio = my / (factionPower(g) + 40);
     const busy = PLAYABLE.filter(x => x !== g && G.factions[x].alive && rel(g, x).war).length; // pile on a ruler already at war
-    const s = ratio * AGGRESSION[f] - r.att / (few ? 150 : 50) - (g === G.player ? 0 : 0.1) + busy * 0.25;
+    const s = ratio * AGGRESSION[f] - r.att / (few ? 150 : 50) - (isHuman(g) ? 0 : 0.1) + busy * 0.25;
     if (ratio > (few ? 0.9 : 1.35) && s > bs) { bs = s; best = g; }
   }
   if (best && bs > (few ? 0.5 : 1.1)) declareWar(f, best);
@@ -83,16 +83,18 @@ function aiDiplomacy(f) {
 
 // Proposals the AI makes to the player (at most one per turn across all rivals).
 async function aiOffers(f) {
-  const pl = G.player;
-  if (!G.factions[pl].alive || G.offerTurn === G.turn) return;
+  // In a hot-seat game the offer goes to one of the human rulers
+  const pl = G.humans ? pick(humansAlive()) : G.player;
+  if (!pl || !G.factions[pl].alive || G.offerTurn === G.turn) return;
   const r = rel(f, pl);
   const chance = rng();
   let type = null, gold = 0, city = null;
-  const special = aiSpecialOffer(f, chance);
+  const special = aiSpecialOffer(f, chance, pl);
   if (special) {
     G.offerTurn = G.turn;
+    await HOOKS.focus(pl);
     const yes = await HOOKS.offer({ from: f, type: special.type, gold: 0, city: special.city && special.city.id, enemy: special.enemy });
-    answerSpecialOffer(f, special, yes);
+    answerSpecialOffer(f, special, yes, pl);
     return;
   }
   if (dealValue(pl, f, 'submit') > 12 && chance < 0.4) type = 'yield';
@@ -106,6 +108,7 @@ async function aiOffers(f) {
   G.offerTurn = G.turn;
   if (type === 'tribute') gold = tributeAmount(pl);
   if (type === 'buycity') gold = Math.round(cityPrice(city) * 1.15 / 50) * 50;
+  await HOOKS.focus(pl);
   const yes = await HOOKS.offer({ from: f, type, gold, city: city && city.id });
   if (yes) {
     if (type === 'buycity') { G.factions[f].gold -= gold; G.factions[pl].gold += gold; r.att += 8; transferProvince(city, f, 15); }

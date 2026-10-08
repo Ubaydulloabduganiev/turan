@@ -9,7 +9,13 @@ function makeFeatures() {
   const rnd = mulberry32(TB.b.prov.length * 7919 + G.turn * 13 + 5);
   const terr = TB.terrain, F = [];
   TB.feats = F;
-  if (TB.wallY !== null) return; // the ground before a city's walls is cleared
+  TB.naval = TB.b.kind === 'naval';
+  if (TB.wallY !== null || TB.naval) return; // the ground before a city's walls is cleared; at sea there is only water
+  // Attacking across a great river: deep water, one bridge and one ford
+  if (TB.b.river) {
+    const bx = BF.W * (0.38 + rnd() * 0.24), fx = bx < BF.W / 2 ? BF.W * (0.72 + rnd() * 0.12) : BF.W * (0.16 + rnd() * 0.12);
+    F.push({ type: 'stream', river: TB.b.river, deep: true, w: 38, y: BF.H / 2 + (rnd() - 0.5) * 30, ph: rnd() * 6, fords: [fx], bridge: bx });
+  }
   const nh = terr === 'mountain' ? 3 : terr === 'river' || terr === 'oasis' ? 1 : 2;
   for (let i = 0; i < nh; i++) {
     const side = (i + Math.floor(rnd() * 2)) % 2 ? 1 : -1;
@@ -22,19 +28,21 @@ function makeFeatures() {
     for (let i = F.length - 1; i >= 0; i--) if (Math.hypot(F[i].x - w.x, F[i].y - w.y) < (F[i].r + w.r) * 0.9) F.splice(i, 1);
     F.push(w);
   }
-  if (terr === 'river' || (terr === 'oasis' && rnd() < 0.6) || (terr === 'steppe' && rnd() < 0.25)) {
-    F.push({ type: 'stream', y: BF.H / 2 + (rnd() - 0.5) * 50, ph: rnd() * 6, fords: [BF.W * (0.2 + rnd() * 0.15), BF.W * (0.65 + rnd() * 0.15)] });
+  if (!TB.b.river && (terr === 'river' || (terr === 'oasis' && rnd() < 0.6) || (terr === 'steppe' && rnd() < 0.25))) {
+    F.push({ type: 'stream', w: 20, y: BF.H / 2 + (rnd() - 0.5) * 50, ph: rnd() * 6, fords: [BF.W * (0.2 + rnd() * 0.15), BF.W * (0.65 + rnd() * 0.15)] });
   }
 }
 const featOf = type => (TB && TB.feats || []).find(f => f.type === type);
 const streamY = (f, x) => f.y + Math.sin(x * 0.011 + f.ph) * 16;
 function hillAt(x, y) { for (const f of TB.feats || []) if (f.type === 'hill' && Math.hypot(x - f.x, y - f.y) < f.r * 0.8) return f; return null; }
 function woodAt(x, y) { const f = featOf('wood'); return !!f && Math.hypot(x - f.x, y - f.y) < f.r; }
-// 'water', 'ford' or null
+// 'water', 'deep', 'ford', 'bridge' or null
 function streamAt(x, y) {
   const f = featOf('stream');
-  if (!f || Math.abs(y - streamY(f, x)) > 20) return null;
-  return f.fords.some(fx => Math.abs(x - fx) < 45) ? 'ford' : 'water';
+  if (!f || Math.abs(y - streamY(f, x)) > (f.w || 20)) return null;
+  if (f.bridge && Math.abs(x - f.bridge) < 26) return 'bridge';
+  if (f.fords.some(fx => Math.abs(x - fx) < 45)) return 'ford';
+  return f.deep ? 'deep' : 'water';
 }
 // Extra height of the ground in 3D
 function featHeight(x, z) {
@@ -42,9 +50,10 @@ function featHeight(x, z) {
   for (const f of TB.feats || []) {
     if (f.type === 'hill') { const d = Math.hypot(x - f.x, z - f.y) / f.r; h += f.h * Math.exp(-d * d * 1.8); }
     if (f.type === 'stream') {
-      const k = Math.max(0, 1 - Math.abs(z - streamY(f, x)) / 28);
+      if (f.bridge && Math.abs(x - f.bridge) < 22 && Math.abs(z - streamY(f, x)) < f.w + 14) { h += 2.4; continue; } // the bridge deck
+      const k = Math.max(0, 1 - Math.abs(z - streamY(f, x)) / ((f.w || 20) + 8));
       const ford = f.fords.some(fx => Math.abs(x - fx) < 45);
-      h -= (ford ? 2.8 : 8) * Math.min(1, k * 1.6);
+      h -= (ford ? 2.8 : f.deep ? 12 : 8) * Math.min(1, k * 1.6);
     }
   }
   return h;
@@ -57,7 +66,7 @@ function groundSpeed(r) {
   if (hillAt(r.x, r.y)) s *= 0.88;
   if (woodAt(r.x, r.y)) s *= mounted ? 0.55 : 0.8;
   const w = streamAt(r.x, r.y);
-  if (w === 'water') s *= 0.35; else if (w === 'ford') s *= 0.8;
+  if (w === 'water') s *= 0.35; else if (w === 'deep') s *= 0.15; else if (w === 'ford') s *= 0.8;
   return s;
 }
 function groundMelee(a, c) {
@@ -66,7 +75,9 @@ function groundMelee(a, c) {
   if (ha && !hc) k *= 1.2;
   if (hc && !ha) k *= 0.8;
   if ((a.d.cls === 'cav' || a.d.cls === 'ha') && woodAt(a.x, a.y)) k *= 0.7;
-  if (streamAt(c.x, c.y) === 'water') k *= 1.3; // men in the water defend badly
+  const wc = streamAt(c.x, c.y);
+  if (wc === 'water') k *= 1.3; else if (wc === 'deep') k *= 1.6; // men in the water defend badly
+  else if (wc === 'bridge' && !streamAt(a.x, a.y)) k *= 0.8; // a few men hold a bridge against many
   return k;
 }
 const groundRange = r => hillAt(r.x, r.y) ? 40 : 0;
@@ -76,7 +87,10 @@ function featureNote() {
   const out = [];
   if (featOf('hill')) out.push(t('Hills: those who hold them fight and shoot better.'));
   if (featOf('wood')) out.push(t('A wood: it slows horsemen and shelters men from arrows.'));
-  if (featOf('stream')) out.push(t('A stream: cross it at the fords, or wade slowly through the water.'));
+  const st = featOf('stream');
+  if (st && st.river) out.push(t('The {river}: the water is deep. Cross by the bridge or the ford, or swim slowly under the enemy’s arrows.', { river: geoName(st.river) }));
+  else if (st) out.push(t('A stream: cross it at the fords, or wade slowly through the water.'));
+  if (TB.naval) out.push(t('A battle on the water: archers rule, and horsemen fight on foot. Ram and board the enemy boats.'));
   if (TB.gate) out.push(t('Batter down the gate with your foot soldiers, or bring siege engines to knock down the towers.'));
   else if (TB.towers && TB.towers.length) out.push(t('The towers shoot at anyone near the walls. Siege engines can knock them down.'));
   return out.join(' ');
@@ -110,13 +124,23 @@ function paintFeatures(x, for3d) {
     }
     if (f.type === 'stream') {
       const band = (w, col) => { x.strokeStyle = col; x.lineWidth = w; x.beginPath(); for (let px = -10; px <= BF.W + 10; px += 10) { const py = streamY(f, px); if (px < 0) x.moveTo(px, py); else x.lineTo(px, py); } x.stroke(); };
-      band(46, 'rgba(110,90,50,0.45)'); // muddy banks
-      band(32, '#4f7f8f'); band(18, '#6a9fae');
+      const ww = (f.w || 20) / 20;
+      band(46 * ww, 'rgba(110,90,50,0.45)'); // muddy banks
+      band(32 * ww, f.deep ? '#3f6f80' : '#4f7f8f'); band(18 * ww, f.deep ? '#5a8fa0' : '#6a9fae');
       for (const fx of f.fords) {
         x.fillStyle = 'rgba(200,185,140,0.75)';
         x.beginPath(); x.ellipse(fx, streamY(f, fx), 40, 16, Math.atan(Math.cos(fx * 0.011 + f.ph) * 0.17), 0, Math.PI * 2); x.fill();
         x.fillStyle = 'rgba(120,170,185,0.5)';
         for (let i = 0; i < 9; i++) { x.beginPath(); x.arc(fx - 30 + i * 7.5, streamY(f, fx) + Math.sin(i * 2.1) * 6, 2.4, 0, Math.PI * 2); x.fill(); }
+      }
+      if (f.bridge) { // a timber bridge on piers
+        const by = streamY(f, f.bridge), L = f.w * 2 + 26;
+        x.save(); x.translate(f.bridge, by); x.rotate(Math.atan(Math.cos(f.bridge * 0.011 + f.ph) * 0.17));
+        x.fillStyle = 'rgba(0,0,0,0.3)'; x.fillRect(-20, -L / 2 + 6, 44, L);
+        x.fillStyle = '#7a5a36'; x.fillRect(-22, -L / 2, 44, L);
+        x.strokeStyle = '#4a3218'; x.lineWidth = 1.2; for (let k = -L / 2 + 4; k < L / 2; k += 6) { x.beginPath(); x.moveTo(-22, k); x.lineTo(22, k); x.stroke(); }
+        x.fillStyle = '#5a3e22'; x.fillRect(-24, -L / 2, 4, L); x.fillRect(20, -L / 2, 4, L);
+        x.restore();
       }
       x.strokeStyle = 'rgba(230,245,255,0.35)'; x.lineWidth = 1;
       for (let px = 0; px < BF.W; px += 34) { const py = streamY(f, px) + Math.sin(px) * 5; x.beginPath(); x.moveTo(px, py); x.lineTo(px + 12, py + 1); x.stroke(); }
@@ -147,7 +171,8 @@ function features3D(R) {
     const seg = 90, pos = [], idx = [];
     for (let i = 0; i <= seg; i++) {
       const x = -400 + (BF.W + 800) * i / seg, y = streamY(s, x);
-      pos.push(x, -2.2, y - 24, x, -2.2, y + 24);
+      const hw = (s.w || 20) + 4;
+      pos.push(x, -2.2, y - hw, x, -2.2, y + hw);
       if (i) { const k = i * 2; idx.push(k - 2, k - 1, k, k - 1, k + 1, k); }
     }
     const g = new T.BufferGeometry();
@@ -155,6 +180,18 @@ function features3D(R) {
     const water = new T.Mesh(g, new T.MeshPhongMaterial({ color: '#4f8396', specular: '#cfe8ff', shininess: 60, transparent: true, opacity: 0.85 }));
     water.receiveShadow = true;
     R.scene.add(water);
+    if (s.bridge) {
+      const ang = Math.atan(Math.cos(s.bridge * 0.011 + s.ph) * 0.17), L = s.w * 2 + 34, by = streamY(s, s.bridge);
+      const wood = new T.MeshLambertMaterial({ color: '#7a5a36' });
+      const deck = new T.Mesh(new T.BoxGeometry(44, 2.2, L), wood);
+      deck.position.set(s.bridge, 1.2, by); deck.rotation.y = -ang; deck.castShadow = deck.receiveShadow = true;
+      R.scene.add(deck);
+      for (const side of [-1, 1]) for (let k = -1; k <= 1; k++) {
+        const pier = new T.Mesh(new T.CylinderGeometry(1.6, 1.8, 14, 6), new T.MeshLambertMaterial({ color: '#4a3218' }));
+        pier.position.set(s.bridge + side * 18, -5, by + k * L / 3); R.scene.add(pier);
+      }
+      for (const side of [-1, 1]) { const rail = new T.Mesh(new T.BoxGeometry(1.2, 3, L), wood); rail.position.set(s.bridge + side * 21, 3.4, by); rail.rotation.y = -ang; R.scene.add(rail); }
+    }
   }
 }
 
@@ -321,7 +358,7 @@ function drawIntro(c) {
   c.save(); c.globalAlpha = a; c.textAlign = 'center';
   const big = Math.min(64, w / 12);
   c.font = `${big}px Cinzel, Georgia, serif`; c.lineWidth = 6; c.strokeStyle = 'rgba(0,0,0,0.75)'; c.fillStyle = '#ffe9a8';
-  const title = t('Battle of {city}', { city: cityOf(p) });
+  const title = TB.b.kind === 'naval' ? t('Battle on the {sea}', { sea: geoName(TB.b.sea) }) : t('Battle of {city}', { city: cityOf(p) });
   c.strokeText(title, w / 2, h * 0.42); c.fillText(title, w / 2, h * 0.42);
   c.font = `${Math.round(big * 0.36)}px Cinzel, Georgia, serif`; c.lineWidth = 4; c.fillStyle = '#f0e2c0';
   const sub = `${fName(TB.b.att.faction)} · ${fName(TB.b.def.faction)} · ${dateText()}`;
@@ -358,6 +395,7 @@ function makeAbilities() {
 function abilBlock(side, id) {
   const A = TB.abil[side];
   if (!genReg(side)) return t('Your general has left the field.');
+  if (TB.naval && (id === 'feint' || id === 'charge')) return t('Not on the water.');
   if ((A.cd[id] || 0) > TB.t) return t('Ready in {n} s', { n: Math.ceil(A.cd[id] - TB.t) });
   const need = { feint: mountedR, charge: r => r.d.cls === 'cav' || r.u.type === 'general', shieldwall: footR, volley: shootR }[id];
   if (need && !ownRegs(side, need).length) return t('You have no men for this.');

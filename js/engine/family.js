@@ -56,7 +56,7 @@ function arrangeMarriage(a, b) {
   const bF = gF === a ? b : a;
   const m = { groom: princeOf(gF), bride: princessOf(bF), gF, bF, turn: G.turn, kids: [] };
   G.marriages.push(m);
-  if (a === G.player || b === G.player) HOOKS.notify({ scene: { kind: 'wedding', m } });
+  for (const h of [a, b]) if (isHuman(h)) tell(h, { scene: { kind: 'wedding', m } });
   return m;
 }
 
@@ -70,10 +70,8 @@ function familyTurn() {
     addPerson({ name, faction: m.gF, female: !boy, born: year(), father: m.groom, mother: m.bride, joins: boy ? year() + 15 : undefined });
     m.kids.push(name);
     if (m.bF !== 'rebels' && G.factions[m.bF] && G.factions[m.bF].alive) rel(m.gF, m.bF).att = Math.min(100, rel(m.gF, m.bF).att + 10);
-    if (m.gF === G.player || m.bF === G.player) {
-      if (m.gF === G.player) { const st = G.factions[G.player]; st.orderBonus = Math.max(st.orderBonus, 6); st.orderBonusT = Math.max(st.orderBonusT, 3); }
-      HOOKS.notify({ scene: { kind: 'birth', m, child: name, boy } });
-    }
+    if (isHuman(m.gF)) { const st = G.factions[m.gF]; st.orderBonus = Math.max(st.orderBonus, 6); st.orderBonusT = Math.max(st.orderBonusT, 3); }
+    for (const h of [m.gF, m.bF]) if (isHuman(h)) tell(h, { scene: { kind: 'birth', m, child: name, boy } });
   }
 }
 
@@ -88,9 +86,9 @@ function peopleComeOfAge() {
     if (!cap || cap.owner !== p.faction) continue;
     const units = FACTIONS[p.faction].nomad ? ['horsearch', 'horsearch', 'lancer'] : ['spear', 'archer', 'lancer'];
     addArmy(p.faction, cap.id, units, makeGeneral(p.faction, p.name, 2, year() - p.born, false));
-    if (p.faction === G.player) {
+    if (isHuman(p.faction)) {
       log(dateText() + ': ' + t('{name} joins your court and takes command of an army.', { name: pn(p.name) }), 'big');
-      HOOKS.notify({ title: pn(p.name), text: t('{name} has come of age and rides out to serve you at the head of his own troops in {city}.', { name: pn(p.name), city: cityOf(cap) }), who: p.name, whoFaction: p.faction, prov: cap.id });
+      tell(p.faction, { title: pn(p.name), text: t('{name} has come of age and rides out to serve you at the head of his own troops in {city}.', { name: pn(p.name), city: cityOf(cap) }), who: p.name, whoFaction: p.faction, prov: cap.id });
     }
   }
 }

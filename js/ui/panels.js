@@ -25,7 +25,7 @@ function refresh() {
   if (UI.selArmy && !G.armies[UI.selArmy]) UI.selArmy = null;
   renderMap();
   renderTopbar();
-  if (!turnBusy && !modalOpen && !G.over) checkMission();
+  if (!engineBusy() && !modalOpen && !G.over) checkMission();
   renderPanel();
   updateHint();
   renderAdvisor();
@@ -294,6 +294,10 @@ function armyPanel(a) {
   for (const o of others) btns.push(`<button data-act="merge" data-id="${o.id}">${t('Merge with {name} ({n})', { name: o.general ? pn(o.general.name) : t('army'), n: o.units.length })}</button>`);
   if (!a.general) btns.push(`<button data-act="appoint" ${G.factions[a.owner].gold < GENERAL_COST ? 'disabled' : ''}>${t('Appoint a general · {n}g', { n: GENERAL_COST })}</button>`);
   if (!raidCheck(a)) btns.unshift(`<button data-act="raid" class="danger" title="${t('Burn villages and seize their grain and silver. The army cannot move again this turn.')}">${t('Plunder the countryside · +{n} gold', { n: fmt(raidGold(a)) })}</button>`);
+  if (a.owner === G.player && seasAt(a.prov).length) {
+    const why = sailCheck(a);
+    btns.push(`<button data-act="sail" ${why ? 'disabled' : ''} title="${why ? t(why) : t('Hire boats and sail to another shore of the same water. An enemy army in another port may row out to fight you.')}">⛵ ${t('Sail across the {sea}', { sea: seasAt(a.prov).map(s => geoName(s)).join(' / ') })} · ${fmt(sailCost(a))}g</button>`);
+  }
   btns.push(`<button data-act="selprov" data-id="${a.prov}">${t('Province: {city}', { city: cityOf(p) })}</button>`);
   h += '<div class="btnrow">' + btns.join('') + '</div>';
   return h;
@@ -395,6 +399,7 @@ $('panel').addEventListener('click', async e => {
     case 'viewplace': { const ctx = storyContext(G.player); ctx.lp = p; playScene({ kind: 'place', id: el.dataset.k, ctx, replay: true }); return; }
     case 'wonder': err = startWonder(p); if (!err) toast(t('The work begins'), t('Masons gather in {city} to raise the {wonder}.', { city: cityOf(p), wonder: wName(p.build.id) }), 'good'); break;
     case 'sally': await doSally(a.prov); return;
+    case 'sail': await openSail(a); return;
   }
   if (err) toast(t('Cannot do that'), t(err), 'bad');
   refresh();

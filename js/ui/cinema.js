@@ -688,6 +688,7 @@ function playScene(sc) {
   el.querySelector('.cine-title').textContent = spec.title || '';
   el.querySelector('.cine-body').textContent = spec.text || '';
   el.querySelector('.cine-note').textContent = spec.note || '';
+  setTimeout(() => narrate([spec.title, spec.text].filter(Boolean).join('. ')), 700);
   el.querySelector('.cine-people').innerHTML = (spec.people || []).map((p, i) => `<div class="cine-person">${portraitSVG(p.who, { faction: p.faction })}<div class="cp-name">${pn(p.who)}</div><div class="cp-label">${p.label || ''}</div></div>` + (spec.layout === 'arch' && i === 0 ? '<div class="cine-knot">❦</div>' : '')).join('');
   const choices = el.querySelector('.cine-choices'), go = el.querySelector('.cine-go');
   choices.innerHTML = (spec.options || []).map((o, i) => `<button class="choice" data-ci="${i}" ${o.disabled ? 'disabled' : ''}><b>${o.label}</b><small>${o.hint || ''}</small></button>`).join('');
@@ -713,6 +714,7 @@ function playScene(sc) {
     const finish = () => {
       if (done) return; done = true;
       removeEventListener('resize', resize); removeEventListener('keydown', key, true);
+      hush();
       el.classList.add('out');
       if (MOOD[sc.kind] && !$('game').classList.contains('hidden')) music('map');
       setTimeout(() => { cancelAnimationFrame(CINE.raf); el.classList.add('hidden'); el.classList.remove('shown', 'out'); CINE.parts = []; resolve(); }, 450);
@@ -727,6 +729,7 @@ function playScene(sc) {
       log(dateText() + ': ' + spec.title + '. ' + result, 'event');
       choices.innerHTML = '';
       el.querySelector('.cine-body').textContent = result;
+      narrate(result);
       go.classList.remove('hidden');
       try { if (G) refresh(); } catch (err) { console.error(err); }
     };

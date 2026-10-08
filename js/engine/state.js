@@ -17,7 +17,17 @@ const HOOKS = {
   march: async () => {},
   // Called just before a battle is fought at a province.
   clash: async () => {},
+  // Hot seat: hand the device to this human ruler (the UI shows a screen between players).
+  focus: async f => { G.player = f; },
+  // Hot seat: let this human ruler play their part of the round. Resolves when they end their turn.
+  humanTurn: async () => {},
 };
+
+// The rulers played by people. In a hot-seat game several people share one device; G.player is whoever holds it.
+const isHuman = f => !!G && !!f && (G.humans ? G.humans.includes(f) : f === G.player);
+const humansAlive = () => (G.humans || [G.player]).filter(f => G.factions[f] && G.factions[f].alive);
+// A message for one human ruler (in a hot-seat game it waits until they hold the device)
+function tell(f, n) { HOOKS.notify({ ...n, for: f }); }
 
 const AGGRESSION = { temur: 0.95, golden: 0.6, white: 0.65, moghul: 0.55, khwarezm: 0.45, kart: 0.35, sarbadar: 0.45, rebels: 0 };
 
@@ -72,11 +82,12 @@ function rel(a, b) {
 const atWar = (a, b) => a !== b && (a === 'rebels' || b === 'rebels' || rel(a, b).war);
 const allied = (a, b) => a === b || (a !== 'rebels' && b !== 'rebels' && rel(a, b).alliance);
 
-function newGame(player, seed) {
+function newGame(player, seed, humans) {
   MAPDATA = MAPDATA || buildMap();
   G = {
     version: 1, player, turn: 0, seed: seed || ((Math.random() * 1e9) | 0), nextId: 1,
     factions: {}, provinces: {}, armies: {}, rel: {}, log: [], fired: [], over: null, stats: {}, fog: true,
+    humans: humans && humans.length > 1 ? PLAYABLE.filter(f => humans.includes(f)) : undefined,
   };
   for (const id in FACTIONS) {
     const F = FACTIONS[id];

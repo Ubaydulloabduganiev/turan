@@ -71,9 +71,9 @@ function coalitionTurn(L) {
     // It breaks up when the danger has passed, or after twenty seasons
     if (!G.factions[c.target].alive || dominance(c.target) < 0.22 || G.turn - c.turn > 20 || c.members.filter(m => G.factions[m].alive).length < 1) {
       G.coalition = null;
-      if (c.target === G.player && G.factions[G.player].alive) feat('coalition');
+      if (isHuman(c.target) && G.factions[c.target].alive) feat('coalition');
       log(dateText() + ': ' + t('The coalition against the {nation} breaks up.', { nation: fFull(c.target) }), c.target === G.player ? 'dip' : '');
-      if (c.target === G.player) HOOKS.notify({ minor: true, title: t('The coalition breaks up'), text: t('Our enemies no longer fight as one.') });
+      if (isHuman(c.target)) tell(c.target, { minor: true, title: t('The coalition breaks up'), text: t('Our enemies no longer fight as one.') });
     }
     return;
   }
@@ -81,7 +81,7 @@ function coalitionTurn(L) {
   if (G.lastCoalition !== undefined && G.turn - G.lastCoalition < 16) return;
   if (rng() > 0.35) return;
   // At most four: the strongest of those who fear and dislike the leader
-  const members = PLAYABLE.filter(g => g !== L && G.factions[g].alive && rel(g, L).att < 15 && !(rel(g, L).married && rel(g, L).att > 0) && g !== G.player)
+  const members = PLAYABLE.filter(g => g !== L && G.factions[g].alive && rel(g, L).att < 15 && !(rel(g, L).married && rel(g, L).att > 0) && !isHuman(g))
     .sort((a, b) => factionPower(b) - factionPower(a)).slice(0, 4);
   if (members.length < 2) return;
   G.coalition = { target: L, members, turn: G.turn };
@@ -99,7 +99,7 @@ function coalitionTurn(L) {
   }
   const names = members.map(m => fName(m)).join(', ');
   log(dateText() + ': ' + t('{list} form a grand coalition against the {nation}.', { list: names, nation: fFull(L) }), 'war');
-  if (L === G.player) HOOKS.notify({ sound: 'horn', title: t('A grand coalition!'), text: t('Our power frightens the other rulers. {list} have sworn an alliance and declared war on us together. Hold your borders and break them one by one: offer peace to the weakest.', { list: names }) });
+  if (isHuman(L)) tell(L, { sound: 'horn', title: t('A grand coalition!'), text: t('Our power frightens the other rulers. {list} have sworn an alliance and declared war on us together. Hold your borders and break them one by one: offer peace to the weakest.', { list: names }) });
   else HOOKS.notify({ minor: true, title: t('A grand coalition'), text: t('{list} have joined together against the {nation}.', { list: names, nation: fFull(L) }) });
 }
 const inCoalition = (a, b) => !!G.coalition && ((G.coalition.target === a && G.coalition.members.includes(b)) || (G.coalition.target === b && G.coalition.members.includes(a)));
@@ -126,7 +126,7 @@ function aiCallAllies(f) {
   for (const e of PLAYABLE) {
     if (e === f || !G.factions[e].alive || !rel(f, e).war) continue;
     for (const g of PLAYABLE) {
-      if (g === f || g === e || g === G.player || !G.factions[g].alive || !rel(f, g).alliance || rel(g, e).war || rel(g, e).alliance || rel(g, e).truce > 0) continue;
+      if (g === f || g === e || isHuman(g) || !G.factions[g].alive || !rel(f, g).alliance || rel(g, e).war || rel(g, e).alliance || rel(g, e).truce > 0) continue;
       if (dealValue(f, g, 'joinwar', e) > 0 && rng() < 0.2) {
         declareWar(g, e, true);
         log(t('{nation} answers the call of its ally {nation2} and joins the war.', { nation: fName(g), nation2: fName(f) }), 'war');
@@ -136,8 +136,8 @@ function aiCallAllies(f) {
 }
 
 // What an AI ruler asks of the player besides the usual offers. Returns { type, gold, city } or null.
-function aiSpecialOffer(f, chance) {
-  const pl = G.player, r = rel(f, pl);
+function aiSpecialOffer(f, chance, pl = G.player) {
+  const r = rel(f, pl);
   // An ally at war asks the player to join in
   if (r.alliance && chance < 0.3) {
     const e = PLAYABLE.find(e => e !== f && e !== pl && G.factions[e].alive && rel(f, e).war && !rel(pl, e).war && !rel(pl, e).alliance && !rel(pl, e).married && rel(pl, e).truce <= 0);
@@ -152,8 +152,8 @@ function aiSpecialOffer(f, chance) {
   return null;
 }
 
-function answerSpecialOffer(f, o, yes) {
-  const pl = G.player, r = rel(f, pl);
+function answerSpecialOffer(f, o, yes, pl = G.player) {
+  const r = rel(f, pl);
   if (o.type === 'joinwar') {
     if (yes) { declareWar(pl, o.enemy, true); r.att += 12; shiftTrust(pl, 6); log(t('{nation} answers the call of its ally {nation2} and joins the war.', { nation: fName(pl), nation2: fName(f) }), 'war'); }
     else { r.att -= 12; shiftTrust(pl, -6); }
@@ -171,9 +171,9 @@ function successionTrouble(f) {
   // The amirs swore to the heir while the old ruler lived
   if (G.factions[f].sworn) { G.factions[f].sworn = 0; return; }
   // A brother with an army of his own may claim the throne, in a realm of any size
-  if (f === G.player && rivalPrinces(f).length) { G.crisis = { kind: 'quarrel', turn: G.turn }; return; }
+  if (isHuman(f) && rivalPrinces(f).length) { G.crisis = { kind: 'quarrel', turn: G.turn, f }; return; }
   if (provsOf(f).length < 8) return;
-  if (f === G.player) { G.crisis = { kind: 'succession', turn: G.turn }; return; }
+  if (isHuman(f)) { G.crisis = { kind: 'succession', turn: G.turn, f }; return; }
   if (rng() < 0.6) breakAway(f, 1 + Math.floor(rng() * 2));
 }
 
@@ -229,6 +229,7 @@ function generalRebels(a) {
 function pickCrisis() {
   const f = G.player, st = G.factions[f];
   if (!st.alive) return null;
+  if (G.crisis && G.crisis.f && G.crisis.f !== f) return null; // it waits for the ruler it concerns
   const c = storyContext(f);
   if (G.crisis && G.crisis.kind === 'succession') { G.crisis = null; return { story: CRISES.succession, ctx: c }; }
   if (G.crisis && G.crisis.kind === 'quarrel') {
