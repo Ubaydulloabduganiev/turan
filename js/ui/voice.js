@@ -74,6 +74,32 @@ function sentences(text) {
   return out.map(s => s.trim()).filter(Boolean);
 }
 
+// Plays recorded lines and resolves when they are over (or at once, if there is nothing to play)
+function speakLines(pieces) {
+  return new Promise(resolve => {
+    if (!VOICE.on || VOICE.mode !== 'recorded') return resolve(false);
+    const have = recordedSet(), keys = [];
+    for (const piece of [].concat(pieces)) for (const s of sentencesOf(piece)) { const k = voiceKey(s); if (have.has(k)) keys.push(k); }
+    if (!keys.length) return resolve(false);
+    hush();
+    const gen = VOICE.gen, lang = LANG;
+    const clips = keys.map(k => { const a = new Audio('audio/voice/' + lang + '/' + k + '.mp3'); a.preload = 'auto'; return a; });
+    const next = i => {
+      if (gen !== VOICE.gen) return resolve(false);
+      if (i >= clips.length) { VOICE.audio = null; duckMusic(false); return resolve(true); }
+      const a = clips[i];
+      VOICE.audio = a;
+      a.volume = SND.muted ? 0 : Math.min(1, 0.4 + SND.sfxVol * 0.8);
+      a.onended = () => setTimeout(() => next(i + 1), 220);
+      a.onerror = () => next(i + 1);
+      duckMusic(true);
+      const p = a.play();
+      if (p && p.catch) p.catch(() => next(i + 1));
+    };
+    next(0);
+  });
+}
+
 // text: a string, or a list of pieces spoken one after another
 function narrate(text, force) {
   if ((!VOICE.on && !force) || !text || (Array.isArray(text) && !text.length)) return;

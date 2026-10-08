@@ -72,7 +72,9 @@ const SCENARIOS = [
     setup: () => { G.factions.kart.gold += 1500; G.provinces.herat.b.library = 1; },
   },
 ];
-const scenarioById = id => SCENARIOS.find(s => s.id === id) || null;
+const scenarioById = id => SCENARIOS.find(s => s.id === id) || (typeof challengeSpec === 'function' ? challengeSpec(id) : null);
+// A campaign's goal in words (a challenge writes its own, with the names of the day)
+const goalTextOf = S => S.challenge ? challengeGoalText(S) : t(S.goalText);
 
 // A large army under a new general, ready to march on the goal
 function strikeArmy(f, prov, units) {
@@ -91,7 +93,7 @@ function setLeader(f, name, age) {
 // A new game that starts as the scenario says
 function newScenarioGame(id) {
   const S = scenarioById(id);
-  newGame(S.faction);
+  newGame(S.faction, S.seed);
   G.scenario = { id, deadline: S.deadline, result: null };
   if (S.start) {
     // Events before the start date are history already; people are older
@@ -102,7 +104,7 @@ function newScenarioGame(id) {
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
   }
   S.setup();
-  log(dateText() + ': ' + t(S.title) + '. ' + t(S.goalText), 'history');
+  log(dateText() + ': ' + t(S.title) + '. ' + goalTextOf(S), 'history');
   return G;
 }
 

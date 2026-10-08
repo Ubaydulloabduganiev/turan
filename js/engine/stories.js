@@ -144,6 +144,10 @@ function missionDone(f, m) {
 function checkMission() {
   const f = G.player, st = G.factions[f];
   if (!st.alive) return;
+  // The first deeds of a new reign come before the council's requests
+  const deed = checkDeeds(f);
+  if (deed && HOOKS.deed) HOOKS.deed(deed, f);
+  if (deedsActive(f)) return;
   const m = st.mission;
   if (m && missionDone(f, m)) {
     st.gold += m.reward;

@@ -70,6 +70,8 @@ async function startHotseat() {
   quietNotices = true;
   newGame(humans[0], undefined, humans);
   quietNotices = false;
+  for (const f of humans) startDeeds(f);
+  G.calm = G.turn + 4;
   notices.length = 0;
   pickSel = humans[0];
   await withLoading(enterGame);

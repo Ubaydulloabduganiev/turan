@@ -113,15 +113,17 @@ async function startNew() {
   quietNotices = true; // the opening event is told in the intro instead
   newGame(pickSel);
   quietNotices = false;
+  startDeeds(pickSel);
+  G.calm = G.turn + 4; // no stories or visitors in the first turns: there is enough to learn
   notices.length = 0;
   await withLoading(enterGame);
   await new Promise(r => setTimeout(r, 1200));
+  // One window instead of two: the coronation carries the nation's advice, then the first deed shows the way
   await playScene({ kind: 'coronation', start: true });
-  const F = FACTIONS[pickSel];
-  await showModal(`<h3>${dateText()}</h3><div class="with-portrait">${rulerPortrait(pickSel)}<div><p>${t(F.blurb)}</p><p><b>${t('Your aim:')}</b> ${t('outlast every other nation. Conquer them, or make them kneel and hand you their crowns.')} ${t(F.play)}</p></div></div>
-    <p class="note">${t('Click any city to rule it, attack it or talk to its ruler. Your vizier in the corner will suggest what to do. Press End turn when you are done.')}</p>`,
-    [{ label: t('How to play'), value: 'help' }, { label: t('To war'), value: true, cls: 'big' }], { cancel: true, cls: 'parch' }).then(v => v === 'help' && openHelp());
   if (!tutorialSeen()) startTutorial();
+  refresh();
+  const d = currentDeed(G.player);
+  if (d) toast(t('Your first deed'), d.deed.text(d.ctx), 'good');
   saveGame('auto');
 }
 
@@ -166,9 +168,10 @@ async function turnStartUI(newRound) {
   await flushNotices();
   checkMission();
   await flushNotices();
-  const s = pickWhatIf() || pickCrisis() || pickSage() || pickStory();
+  const calm = G.turn < (G.calm || 0);
+  const s = pickWhatIf() || pickCrisis() || (calm ? null : pickSage() || pickStory());
   if (s) await showStory(s);
-  else {
+  else if (!calm) {
     const lm = pickLandmark();
     if (lm) { centerOnProv(LANDMARKS[lm.id].prov); await playScene({ kind: 'place', ...lm }); await flushNotices(); }
   }
@@ -356,7 +359,12 @@ if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
   const hide = () => { if (el.classList.contains('out')) return; el.classList.add('out'); setTimeout(() => el.remove(), 800); };
   el.addEventListener('click', hide);
   setTimeout(hide, 2200);
+  // The first time, the film of the opening follows the author's mark
+  let resuming = false;
+  try { resuming = sessionStorage.getItem('turan-resume') === '1'; } catch (e) { /* ignore */ }
+  if (!introSeen() && !resuming && !navigator.webdriver) setTimeout(() => { if (!G) playIntro(); }, 2300);
 })();
+$('btn-intro').onclick = () => playIntro();
 
 // Back from an update in the middle of a campaign: continue it at once
 (function resumeAfterUpdate() {

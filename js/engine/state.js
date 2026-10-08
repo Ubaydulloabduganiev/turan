@@ -17,6 +17,8 @@ const HOOKS = {
   march: async () => {},
   // Called just before a battle is fought at a province.
   clash: async () => {},
+  // A first deed of the reign is done (the UI celebrates it)
+  deed: null,
   // Hot seat: hand the device to this human ruler (the UI shows a screen between players).
   focus: async f => { G.player = f; },
   // Hot seat: let this human ruler play their part of the round. Resolves when they end their turn.

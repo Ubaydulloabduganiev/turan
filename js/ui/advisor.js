@@ -95,11 +95,31 @@ function renderAdvisor() {
     mission = `<div class="mission ${where ? 'link' : ''}" data-mission="${where || ''}"><div class="m-head">${t('Council request')} · ${left <= 0 ? t('last turn') : t('turns left: {n}', { n: left })}</div>${m.text}<div class="m-reward">${t('Reward: {n} gold', { n: fmt(m.reward) })}</div></div>`;
   }
   box.innerHTML = `<div class="adv-head" data-adv="toggle"><span>${t('Your vizier advises')}</span><span>${advisorOpen ? '–' : '+'}</span></div>` +
-    (advisorOpen ? '' : scenarioCard()) + // the campaign goal stays in sight even when the vizier is folded
-    (advisorOpen ? scenarioCard() + mission + tips.map((tp, i) => `<div class="tip ${tp.prov || tp.army || tp.realm || tp.dev ? 'link' : ''}" data-adv="${i}">${tp.text}</div>`).join('') : '');
+    (advisorOpen ? '' : scenarioCard() + deedCard()) + // the campaign goal stays in sight even when the vizier is folded
+    (advisorOpen ? scenarioCard() + deedCard() + mission + tips.map((tp, i) => `<div class="tip ${tp.prov || tp.army || tp.realm || tp.dev ? 'link' : ''}" data-adv="${i}">${tp.text}</div>`).join('') : '');
+}
+
+// The first deed of the reign, with a way to it
+function deedCard() {
+  const d = G && currentDeed(G.player);
+  if (!d) return '';
+  const where = d.deed.where ? d.deed.where(d.ctx, G.player) : '';
+  return `<div class="mission deed link" data-deed="${where || ''}" data-dip="${d.deed.dip ? 1 : ''}"><div class="m-head">${t('First deeds')} · ${d.n}/${d.of}</div>${d.deed.text(d.ctx)}<div class="m-reward">${t('Reward: {n} gold', { n: fmt(d.deed.reward) })}</div></div>`;
 }
 
 $('advisor').addEventListener('click', e => {
+  const dd = e.target.closest('[data-deed]');
+  if (dd && G && !uiLocked()) {
+    if (dd.dataset.dip) return openDiplomacy();
+    const pid = dd.dataset.deed;
+    if (pid) {
+      // For a city to take: select the nearest army that can reach it
+      const near = armiesOf(G.player).filter(a => a.moves > 0 && reachable(a)[pid]).sort((a, b) => armyPower(b) - armyPower(a))[0];
+      if (near && G.provinces[pid].owner !== G.player) { UI.selArmy = near.id; UI.selProv = near.prov; UI.reach = reachable(near); } else { UI.selArmy = null; UI.selProv = pid; }
+      centerOnProv(pid); refresh();
+    }
+    return;
+  }
   const ms = e.target.closest('[data-mission]');
   if (ms && ms.dataset.mission && G && !uiLocked()) { UI.selArmy = null; UI.selProv = ms.dataset.mission; centerOnProv(ms.dataset.mission); refresh(); return; }
   const el = e.target.closest('[data-adv]');
@@ -113,3 +133,17 @@ $('advisor').addEventListener('click', e => {
   else if (t.prov) { UI.selArmy = null; UI.selProv = t.prov; centerOnProv(t.prov); }
   refresh();
 });
+
+// A first deed done: a medal slides in with the reward, and the next deed is shown
+HOOKS.deed = (cur, f) => {
+  if (f !== G.player) return;
+  sfx('fanfare', { vol: 0.6 }); setTimeout(() => sfx('coins'), 500);
+  const next = currentDeed(f);
+  const d = document.createElement('div');
+  d.className = 'ach-banner deed-banner';
+  d.innerHTML = `<span class="ach-medal">⚑</span><div><small>${t('First deed done')} · +${fmt(cur.deed.reward)} ${t('gold')}</small><b>${cur.deed.text(cur.ctx).split('. ')[0].replace(/\.$/, '')}</b><span>${next ? t('Next: {deed}', { deed: next.deed.text(next.ctx) }) : t('Your reign has begun well. From now on the council will bring you its requests.')}</span></div>`;
+  document.body.appendChild(d);
+  setTimeout(() => d.classList.add('out'), 5200);
+  setTimeout(() => d.remove(), 6000);
+  renderAdvisor();
+};

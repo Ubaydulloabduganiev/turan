@@ -529,6 +529,7 @@ const SCENE_SPEC = {
     return {
       layout: 'throne', kicker: fFull(G.player),
       title: t('Long live {ruler}!', { ruler: pn(st.leader) }),
+      note: sc.start ? t(FACTIONS[G.player].play) : '',
       text: sc.start ? t('{date}: the amirs and beys gather to raise {ruler} as {title}. The realm is yours to rule. Outlast every rival, and Turan will be yours.', { date: dateText(), ruler: pn(st.leader), title: fTitle(G.player) })
         : t('{old} is dead. In the great hall the amirs kneel before {ruler}, the new {title}.', { old: pn(sc.old), ruler: pn(st.leader), title: fTitle(G.player) }),
       people: [{ who: st.leader, faction: G.player, label: fTitle(G.player) }],
