@@ -59,7 +59,7 @@ function sidePower(b, side, other, isDef) {
     s += v;
   }
   const g = sideGeneral(side);
-  s *= 1 + 0.07 * (g ? g.cmd : 0);
+  s *= (1 + 0.07 * (g ? g.cmd : 0)) * traitBattle(g, isDef);
   return { power: s, hasSiege };
 }
 
@@ -129,7 +129,12 @@ function succession(f) {
   const son = Object.values(G.people || {}).filter(x => x.faction === f && !x.female && x.father === st.leader && x.name !== st.leader).sort((x, y) => x.born - y.born)[0];
   st.heir = son ? son.name : newGeneralName(f);
   st.orderBonus = -10; st.orderBonusT = 4;
-  if (f === G.player) HOOKS.notify({ scene: { kind: 'coronation', f, old } });
+  if (f === G.player) {
+    G.rulers = G.rulers || [{ name: old, from: 0 }];
+    G.rulers[G.rulers.length - 1].to = G.turn;
+    G.rulers.push({ name: st.leader, from: G.turn });
+    HOOKS.notify({ scene: { kind: 'coronation', f, old } });
+  }
   successionTrouble(f);
   log(t('{name} succeeds {name2} as ruler of the {nation}.', { name: pn(st.leader), name2: pn(old), nation: fFull(f) }), 'big');
 }

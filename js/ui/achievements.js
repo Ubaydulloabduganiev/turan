@@ -11,6 +11,7 @@ const ACH = [
   { id: 'last', icon: '👑', name: 'The last nation standing', desc: 'Win the grand campaign.', check: () => G.over === 'win' },
   { id: 'steppe', icon: '🐎', name: 'Heir of Chinggis Khan', desc: 'Win the grand campaign with a steppe nation.', check: pl => G.over === 'win' && FACTIONS[pl].nomad },
   { id: 'underdog', icon: '✧', name: 'The underdog', desc: 'Win the grand campaign with the Kartids or the Sarbadars.', check: pl => G.over === 'win' && (pl === 'kart' || pl === 'sarbadar') },
+  { id: 'robber', icon: '🐪', name: 'Lord of the highway', desc: 'Plunder five enemy caravans.', check: () => feats('caravan') >= 5 },
   { id: 'buy', icon: '⚖', name: 'Bought, not won', desc: 'Buy a city from its ruler.', check: () => feats('buycity') },
   { id: 'wedding', icon: '💍', name: 'A royal wedding', desc: 'Join your house to another by marriage.', check: pl => rivalsOf(pl).some(g => rel(pl, g).married) },
   { id: 'kinship', icon: '❦', name: 'Web of kinship', desc: 'Be joined by marriage to three dynasties at once.', check: pl => rivalsOf(pl).filter(g => rel(pl, g).married).length >= 3 },

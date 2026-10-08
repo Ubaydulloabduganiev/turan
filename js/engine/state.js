@@ -201,6 +201,7 @@ function provinceOrder(p, dist) {
   o += landmarkOrder(p);
   o -= overstretch(p.owner);
   o += devOrder(p);
+  o += traitOrder(p.owner);
   return Math.round(clampN(o, 0, 120));
 }
 
@@ -210,7 +211,7 @@ function provinceIncome(p, order) {
   let tax = p.taxFree > 0 ? 0 : p.pop * TERRAIN[p.terrain].tax * TAX_INCOME[taxOf(p)] * (1 + 0.2 * p.b.market) * (p.governor ? 1.1 : 1);
   tax *= clampN(order / 70, 0.3, 1.1);
   if (p.terrain === 'oasis' && hasWonder(p.owner, 'musalla')) tax *= 1.15;
-  tax *= devTaxMult(p.owner);
+  tax *= devTaxMult(p.owner) * traitTax(p.owner);
   let trade = p.silk ? 40 + 45 * p.b.market + (hasWonder(p.owner, 'saraibazaar') ? 40 : 0) : 0;
   if (p.siege) { tax *= 0.2; trade = 0; }
   const open = p.terrain === 'steppe' || p.terrain === 'desert';
@@ -244,6 +245,7 @@ function tradeIncome(f) {
   let s = 0;
   for (const g of PLAYABLE) {
     if (g === f || !G.factions[g].alive || !rel(f, g).trade) continue;
+    if (routeRaided(f, g)) continue; // this season's caravans were robbed
     const silk = provsOf(g).filter(p => p.silk).length + provsOf(f).filter(p => p.silk).length;
     s += (30 + silk * 12) * GAME.INCOME;
   }

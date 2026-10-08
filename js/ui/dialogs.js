@@ -308,6 +308,13 @@ function openDiplomacy(f) {
 
 // ---------- The court: the people of the age ----------
 
+// A person's character: small chips, each with its meaning on hover or tap
+function traitChips(name) {
+  const tr = traitsOf(name);
+  if (!tr.length) return '';
+  return `<div class="traits">${tr.map(k => `<span class="trait ${TRAITS[k].order < 0 || TRAITS[k].tax < 0 ? 'bad' : ''}" title="${t(TRAITS[k].desc)}" data-trait="${k}">${t(TRAITS[k].name)}</span>`).join('')}</div>`;
+}
+
 function personCard(name, faction, o = {}) {
   const c = charByName(name);
   const age = o.age !== undefined ? o.age : c ? year() - c.born : personBy(name) ? year() - personBy(name).born : null;
@@ -317,6 +324,7 @@ function personCard(name, faction, o = {}) {
   return `<div class="person ${o.child ? 'child' : ''} ${dead ? 'dead' : ''}" ${o.army ? `data-army="${o.army}"` : ''}>${portraitSVG(name, { faction, age: age || undefined })}
     <div class="pc-body"><div class="pc-name">${pn(name)}</div><div class="pc-role">${role}</div>
     <div class="pc-meta">${age !== null && !o.child ? t('Age {n}', { n: age }) : ''}${dead ? ' · ' + t('died {y}', { y: c.died }) : ''}${where}</div>
+    ${!o.child && !(c && ['scholar', 'poet', 'envoy', 'consort'].includes(c.role)) ? traitChips(name) : ''}
     ${c ? `<div class="pc-bio">${t(c.bio)}</div>` : ''}</div></div>`;
 }
 
@@ -410,7 +418,7 @@ function savesHTML(mode) {
 async function openMenu() {
   const v = await showModal(`<h3>${dateText()}</h3><p class="note">${fFull(G.player)}</p>${langPicker()}${soundControls()}<p class="note ver-note" id="ver-note"></p>`, [
     { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' }, { label: gfxLabel(), value: 'gfx' },
-    { label: t('Chronicle'), value: 'chron' }, { label: t('Achievements'), value: 'ach' }, { label: t('How to play'), value: 'help' }, { label: t('Guide'), value: 'guide' }, { label: t('Save'), value: 'save' }, { label: t('Load'), value: 'load' },
+    { label: t('Chronicle'), value: 'chron' }, { label: t('Your reign'), value: 'reign' }, { label: t('Achievements'), value: 'ach' }, { label: t('How to play'), value: 'help' }, { label: t('Guide'), value: 'guide' }, { label: t('Save'), value: 'save' }, { label: t('Load'), value: 'load' },
     { label: t('Main menu'), value: 'title' }, { label: t('Resume'), value: null, cls: 'big' },
   ], { cancel: null, onOpen: m => fillVersion(m.querySelector('#ver-note')), onClick: e => { const l = e.target.closest('[data-lang]'); if (l) { setLang(l.dataset.lang); applyLang(); closeModal(null); openMenu(); } } });
   if (v === 'rivals') { setRivalMoves(!LIFE.showRivals); toast(t('Rival moves'), t(LIFE.showRivals ? 'You will watch rival armies march across the map.' : 'Rival armies will move instantly.'), ''); return openMenu(); }
@@ -424,6 +432,7 @@ async function openMenu() {
   if (v === 'guide') startTutorial();
   if (v === 'chron') openChronicle();
   if (v === 'ach') openAchievements();
+  if (v === 'reign') openReign();
   if (v === 'save') await openSaves('save');
   if (v === 'load') await openSaves('load');
   if (v === 'title' && await confirmBox(t('Leave the campaign?'), t('Unsaved progress since the last autosave will be lost.'))) toTitle();
@@ -552,12 +561,26 @@ async function checkOverUI() {
   if (G.over === 'win') {
     music('glory'); sfx('cheer');
     const v = await showModal(`<h3>${t('The last nation standing')}</h3><div class="with-portrait">${rulerPortrait(pl)}<p>${t('{date}: every rival crown has fallen or bowed. Your realm ({nation}) alone endures, ruling {n} provinces from the Caspian to the Tian Shan. Poets in Samarkand and Herat will sing of {ruler}.', { date: dateText(), nation: fFull(pl), n: provsOf(pl).length, ruler: pn(G.factions[pl].leader) })}</p></div>`,
-      [{ label: t('Main menu'), value: 'title' }, { label: t('Keep ruling'), value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
+      [{ label: t('Main menu'), value: 'title' }, { label: t('The chronicle of the reign'), value: 'reign' }, { label: t('Keep ruling'), value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
+    if (v === 'reign') await openReign(true);
     if (v === 'title') toTitle();
   } else if (G.over === 'lose') {
     music('lament');
-    await showModal(`<h3>${t('Defeat')}</h3><p>${t('The last lands of your realm ({nation}) have fallen. Your name will live only in the chronicles of your enemies.', { nation: fFull(pl) })}</p>`,
-      [{ label: t('Main menu'), value: true, cls: 'big' }], { cancel: true });
+    const v = await showModal(`<h3>${t('Defeat')}</h3><p>${t('The last lands of your realm ({nation}) have fallen. Your name will live only in the chronicles of your enemies.', { nation: fFull(pl) })}</p>`,
+      [{ label: t('The chronicle of the reign'), value: 'reign' }, { label: t('Main menu'), value: true, cls: 'big' }], { cancel: true });
+    if (v === 'reign') await openReign(true);
     toTitle();
   }
 }
+
+// Tapping a trait explains it (phones have no hover)
+document.addEventListener('click', e => {
+  const tr = e.target.closest('[data-trait]');
+  if (!tr || !TRAITS[tr.dataset.trait]) return;
+  e.stopPropagation();
+  const box = tr.parentElement;
+  let d = box.querySelector('.trait-desc');
+  if (!d) { d = document.createElement('div'); d.className = 'trait-desc'; box.appendChild(d); }
+  const text = t(TRAITS[tr.dataset.trait].desc);
+  d.textContent = d.textContent === text ? '' : text;
+}, true);

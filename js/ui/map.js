@@ -70,8 +70,8 @@ function initMap() {
     svg.parentNode.insertBefore(tc, svg);
   }
   const root = svgEl('g', { id: 'cam' }, svg);
-  for (const name of ['hit', 'owners', 'borders', 'sel', 'reach', 'labels', 'places', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
-  for (const n of ['labels', 'borders', 'owners', 'sel']) layers[n].setAttribute('pointer-events', 'none');
+  for (const name of ['hit', 'owners', 'borders', 'routes', 'sel', 'reach', 'labels', 'places', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
+  for (const n of ['labels', 'borders', 'owners', 'sel', 'routes']) layers[n].setAttribute('pointer-events', 'none');
 
   // Invisible province shapes catch clicks
   MAPDATA.sites.forEach((s, i) => {
@@ -96,6 +96,7 @@ function provPath(pid) { return outlinePath(MAPDATA.outlines[G.provinces[pid].id
 
 function renderMap() {
   if (!G) return;
+  renderRoutes();
   // A light wash of each nation's colour
   layers.owners.innerHTML = '';
   for (const p of Object.values(G.provinces)) {
@@ -146,6 +147,30 @@ function renderSelection() {
       }
     }
   } else UI.reach = null;
+}
+
+// The caravan roads: ours in gold (red where robbed this season), enemies' we could rob in grey
+function renderRoutes() {
+  if (!layers.routes) return;
+  layers.routes.innerHTML = '';
+  const pl = G.player;
+  for (const r of tradeRoutes()) {
+    const mine = r.a === pl || r.b === pl;
+    const prey = !mine && (rel(pl, r.a).war || rel(pl, r.b).war);
+    if (!mine && !prey) continue;
+    const pts = r.path.map(id => G.provinces[id]);
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join('');
+    const robbed = routeRaided(r.a, r.b);
+    svgEl('path', { d, fill: 'none', stroke: '#1a1208', 'stroke-width': 5, 'stroke-opacity': 0.45, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, layers.routes);
+    svgEl('path', { d, fill: 'none', stroke: mine ? (robbed ? '#e0573c' : '#f3d27a') : '#c9c2b0', 'stroke-width': 3, 'stroke-opacity': mine ? 1 : 0.7, 'stroke-dasharray': '2 7', 'stroke-linecap': 'round', class: 'route' }, layers.routes);
+  }
+  for (const x of G.raids || []) {
+    if (x.a !== pl && x.b !== pl && x.by !== pl) continue;
+    const p = G.provinces[x.prov];
+    const g = svgEl('g', { transform: `translate(${p.x.toFixed(1)} ${(p.y - 22).toFixed(1)})` }, layers.routes);
+    svgEl('circle', { r: 8, fill: x.by === pl ? '#3d5f1e' : '#8a1d0e', stroke: '#ffd98a', 'stroke-width': 1.4, class: 'siege-mark' }, g);
+    svgEl('path', { d: 'M-3 -1.5h6M-2.5 1.5h5', stroke: '#ffe9b8', 'stroke-width': 1.3, 'stroke-linecap': 'round' }, g);
+  }
 }
 
 function renderCities() {

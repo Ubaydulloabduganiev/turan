@@ -16,8 +16,10 @@ async function endTurn(onProgress) {
     }
     if (onProgress) onProgress('rebels');
     await rebelTurn();
+    caravansTurn();
     upkeepPhase();
     rivalsTurn();
+    traitsTurn();
     devTurn();
     G.turn++;
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
@@ -27,9 +29,18 @@ async function endTurn(onProgress) {
     familyTurn();
     checkVictory();
     checkScenario(true);
+    recordHistory();
   } finally {
     turnBusy = false;
   }
+}
+
+// A line in the chronicle of the reign: the realm's size and wealth each season
+function recordHistory() {
+  const pl = G.player, st = G.factions[pl];
+  G.hist = G.hist || [];
+  G.hist.push({ t: G.turn, p: provsOf(pl).length, g: Math.round(st.gold), pw: Math.round(factionPower(pl)) });
+  if (!G.rulers) G.rulers = [{ name: st.leader, from: 0 }];
 }
 
 function upkeepPhase() {
@@ -145,7 +156,7 @@ function finishQueues(p) {
       p.build = null;
     } else if (p.build.turns <= 0) {
       p.b[p.build.key]++;
-      if (p.owner === G.player) log(t('{city}: {building} completed.', { city: cityOf(p), building: bLevel(p.build.key, p.b[p.build.key]) }), 'good');
+      if (p.owner === G.player) { log(t('{city}: {building} completed.', { city: cityOf(p), building: bLevel(p.build.key, p.b[p.build.key]) }), 'good'); feat('built'); }
       p.build = null;
     }
   }
@@ -154,6 +165,7 @@ function finishQueues(p) {
     let army = armiesIn(p.id).find(a => a.owner === p.owner && a.units.length + done.length <= GAME.MAX_ARMY);
     if (!army) army = addArmy(p.owner, p.id, [], null);
     for (const t of done) army.units.push(makeUnit(t));
+    if (p.owner === G.player) feat('recruited', done.length);
   }
 }
 

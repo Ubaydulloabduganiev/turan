@@ -64,7 +64,8 @@ async function checkScenarioUI() {
     music('glory'); sfx('cheer');
     const v = await showModal(`<h3>${t('Campaign won')}</h3><div class="with-portrait">${rulerPortrait(G.player)}<div><p><b>${t(S.title)}</b></p>
       <p>${t('{date}: the goal is achieved. {ruler} has done what history asked of him.', { date: dateText(), ruler: pn(G.factions[G.player].leader) })}</p></div></div>`,
-      [{ label: t('Campaigns'), value: 'camps' }, { label: t('Keep ruling'), value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
+      [{ label: t('Campaigns'), value: 'camps' }, { label: t('The chronicle of the reign'), value: 'reign' }, { label: t('Keep ruling'), value: 'go', cls: 'big' }], { cancel: 'go', cls: 'parch' });
+    if (v === 'reign') await openReign(true);
     if (v === 'camps') { toTitle(); showScreen('camps'); renderCampaigns(); }
   } else {
     music('lament');

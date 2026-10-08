@@ -168,6 +168,8 @@ function answerSpecialOffer(f, o, yes) {
 
 // When the ruler of a great realm dies, the amirs of the far provinces test the new one
 function successionTrouble(f) {
+  // A brother with an army of his own may claim the throne, in a realm of any size
+  if (f === G.player && rivalPrinces(f).length) { G.crisis = { kind: 'quarrel', turn: G.turn }; return; }
   if (provsOf(f).length < 8) return;
   if (f === G.player) { G.crisis = { kind: 'succession', turn: G.turn }; return; }
   if (rng() < 0.6) breakAway(f, 1 + Math.floor(rng() * 2));
@@ -227,10 +229,17 @@ function pickCrisis() {
   if (!st.alive) return null;
   const c = storyContext(f);
   if (G.crisis && G.crisis.kind === 'succession') { G.crisis = null; return { story: CRISES.succession, ctx: c }; }
+  if (G.crisis && G.crisis.kind === 'quarrel') {
+    G.crisis = null;
+    const a = rivalPrinces(f).sort((x, y) => armyPower(y) - armyPower(x))[0];
+    if (a) return { story: QUARREL, ctx: { ...c, army: a } };
+  }
   // A proud general, in a large realm
-  if (provsOf(f).length >= 14 && (G.lastGeneralCrisis === undefined || G.turn - G.lastGeneralCrisis > 10) && rng() < 0.08) {
+  const proud = armiesOf(f).some(a => a.general && !a.general.leader && hasTrait(a.general.name, 'ambitious'));
+  if (provsOf(f).length >= 14 && (G.lastGeneralCrisis === undefined || G.turn - G.lastGeneralCrisis > 10) && rng() < (proud ? 0.16 : 0.08)) {
     const dist = distancesFrom(f);
-    const a = armiesOf(f).filter(a => a.general && !a.general.leader && a.units.length >= 4 && G.provinces[a.prov].owner === f && (dist[a.prov] || 0) >= 3 && G.provinces[a.prov].id !== st.capital)[0];
+    const a = armiesOf(f).filter(a => a.general && !a.general.leader && a.units.length >= 4 && G.provinces[a.prov].owner === f && (dist[a.prov] || 0) >= 3 && G.provinces[a.prov].id !== st.capital)
+      .sort((x, y) => hasTrait(y.general.name, 'ambitious') - hasTrait(x.general.name, 'ambitious'))[0];
     if (a) { G.lastGeneralCrisis = G.turn; return { story: CRISES.general, ctx: { ...c, army: a } }; }
   }
   return null;

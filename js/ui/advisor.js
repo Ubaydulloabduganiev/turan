@@ -47,6 +47,17 @@ function advisorTips() {
   // Growing the realm in peace
   if (totalPatronage(pl) === 0 && st.gold > 1800 && factionIncome(pl) - factionUpkeep(pl) > 300) tips.push({ score: 52, text: t('The treasury can support scholars and poets. Open Development and grant royal patronage.'), dev: true });
   { const cap = G.provinces[st.capital]; if (cap && cap.owner === pl && !cap.b.library && !cap.build && st.gold > 600 && cap.pop >= 10) tips.push({ score: 48, text: t('Build a library in {city}: it brings progress in literature and science.', { city: cityOf(cap) }), prov: cap.id }); }
+  // Caravans
+  for (const x of G.raids || []) {
+    if (x.a !== pl && x.b !== pl) continue;
+    if (x.by === 'rebels') tips.push({ score: 61, text: t('Bandits from {city} rob our caravans. Take the city to make the road safe.', { city: cityOf(G.provinces[x.prov]) }), prov: x.prov });
+    else tips.push({ score: 67, text: t('An enemy army near {city} robs our caravans. Drive it off the road.', { city: cityOf(G.provinces[x.prov]) }), prov: x.prov });
+  }
+  for (const a of armiesOf(pl)) {
+    if (a.moves <= 0 || a.besieging) continue;
+    const c = raidChances(a).find(c => c.prov !== a.prov);
+    if (c) { tips.push({ score: 57, text: t('The caravan road of {nation} and {nation2} runs through {city}. March there to plunder about {n} gold a season.', { nation: fName(c.a), nation2: fName(c.b), city: cityOf(G.provinces[c.prov]), n: fmt(c.value) }), prov: c.prov }); break; }
+  }
   // Unhappy cities
   for (const p of provsOf(pl)) {
     const o = provinceOrder(p, dist);

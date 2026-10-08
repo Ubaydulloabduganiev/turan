@@ -244,7 +244,7 @@ function statusChips(a, b) {
   const r = rel(a, b);
   let h = r.war ? `<span class="chip war">${t('War')}</span>` : `<span class="chip peace">${t('Peace')}</span>`;
   if (r.alliance) h += `<span class="chip ally">${t('Allied')}</span>`;
-  if (r.trade) h += `<span class="chip trade">${t('Trade')}</span>`;
+  if (r.trade) h += `<span class="chip trade">${t('Trade')}</span>` + (routeRaided(a, b) ? `<span class="chip war">${t('Caravans robbed')}</span>` : '');
   if (r.married) h += `<span class="chip wed">${t('Marriage')}</span>`;
   return h;
 }
@@ -257,7 +257,7 @@ function armyPanel(a) {
   const g = a.general;
   let h = `<div class="p-head">${g ? personPortrait(g.name, a.owner, g.age, 'p-portrait') : flagSVG(a.owner)}<div><div class="p-title">${g ? pn(g.name) : (mine ? t('Army') : t('{nation} army', { nation: fAdj(a.owner) }))}</div>` +
     `<div class="p-sub">${g ? `<span class="stars">${stars(Math.min(5, g.cmd))}</span> ${g.leader ? t('Ruler') + ' · ' : ''}${t('age {n}', { n: g.age })}` : t('Led by a captain')}</div>` +
-    `<div class="p-sub">${fFull(a.owner)} · ${cityOf(p)}</div></div></div>`;
+    `<div class="p-sub">${fFull(a.owner)} · ${cityOf(p)}</div>${g ? traitChips(g.name) : ''}</div></div>`;
   const men = a.units.reduce((n, u) => n + u.men, 0);
   if (!mine) {
     h += `<p>${t('{n} units, about {men} men. Strength: {s}.', { n: a.units.length, men: fmt(Math.round(men / 50) * 50), s: `<b>${strengthWord(armyPower(a))}</b>` })}</p>`;

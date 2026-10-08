@@ -120,7 +120,7 @@ function devPoints(f) {
   for (const id in WONDERS) if (hasWonder(f, id)) out.culture += 2;
   for (const s of sagesOf(f)) out[SAGES[s].track] += SAGE_PTS;
   for (const k of TRACK_ORDER) {
-    out[k] += PATRONAGE[d[k].pat].pts;
+    out[k] += PATRONAGE[d[k].pat].pts + traitDev(f, k);
     if (hasAdv(f, 'science', 5)) out[k] *= 1.2;
     out[k] = Math.round(out[k] * 10) / 10;
   }
@@ -139,7 +139,7 @@ function devOrder(p) {
     + (hasAdv(f, 'state', 1) ? 3 : 0) + (hasAdv(f, 'state', 5) ? 3 : 0) + (p.governor && hasAdv(f, 'state', 3) ? 4 : 0);
 }
 function buildCost(p, key, lvl) {
-  return Math.round(BUILDINGS[key].cost[lvl] * (hasAdv(p.owner, 'science', 3) ? 0.85 : 1));
+  return Math.round(BUILDINGS[key].cost[lvl] * (hasAdv(p.owner, 'science', 3) ? 0.85 : 1) * traitBuild(p.owner));
 }
 const stretchFrom = f => STRETCH_FROM + (hasAdv(f, 'state', 2) ? 4 : 0) + (hasAdv(f, 'state', 5) ? 6 : 0);
 const governorUpkeep = f => GOVERNOR_UPKEEP * (hasAdv(f, 'state', 3) ? 0.5 : 1);
