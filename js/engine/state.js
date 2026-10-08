@@ -76,7 +76,7 @@ function newGame(player, seed) {
   MAPDATA = MAPDATA || buildMap();
   G = {
     version: 1, player, turn: 0, seed: seed || ((Math.random() * 1e9) | 0), nextId: 1,
-    factions: {}, provinces: {}, armies: {}, rel: {}, log: [], fired: [], over: null, stats: {},
+    factions: {}, provinces: {}, armies: {}, rel: {}, log: [], fired: [], over: null, stats: {}, fog: true,
   };
   for (const id in FACTIONS) {
     const F = FACTIONS[id];

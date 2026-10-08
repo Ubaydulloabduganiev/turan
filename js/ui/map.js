@@ -59,6 +59,7 @@ function initMap() {
   svg.innerHTML = `<defs>${cityDefs()}
     <filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="3"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2"/></filter>
+    <pattern id="fog-hatch" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="9" height="9" fill="#21180f" fill-opacity="0.5"/><path d="M0 0v9" stroke="#e9dcc0" stroke-opacity="0.12" stroke-width="2.2"/></pattern>
     ${PROVINCE_DATA.map((d, i) => `<clipPath id="cp-${d[0]}"><path d="${outlinePath(MAPDATA.outlines[i])}"/></clipPath>`).join('')}
   </defs>`;
   // The painted terrain lives on a canvas under the SVG and follows the same camera
@@ -70,8 +71,9 @@ function initMap() {
     svg.parentNode.insertBefore(tc, svg);
   }
   const root = svgEl('g', { id: 'cam' }, svg);
-  for (const name of ['hit', 'owners', 'borders', 'routes', 'sel', 'reach', 'labels', 'places', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
-  for (const n of ['labels', 'borders', 'owners', 'sel', 'routes']) layers[n].setAttribute('pointer-events', 'none');
+  for (const name of ['hit', 'owners', 'borders', 'fog', 'routes', 'sel', 'reach', 'labels', 'places', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
+  for (const n of ['labels', 'borders', 'owners', 'sel', 'routes', 'fog']) layers[n].setAttribute('pointer-events', 'none');
+  layers.fogKey = null;
 
   // Invisible province shapes catch clicks
   MAPDATA.sites.forEach((s, i) => {
@@ -201,7 +203,7 @@ function renderCities() {
       const label = svgEl('text', { y: 19, 'text-anchor': 'middle', class: 'city-label' + (isCap ? ' cap' : ''), 'font-size': isCap ? 13.5 : p.pop >= 25 ? 12 : 10.5 }, g);
       label.textContent = cityOf(p);
     }
-    if (p.siege) {
+    if (p.siege && (provVisible(p.id) || p.owner === G.player || p.siege.by === G.player)) {
       const s = svgEl('g', { transform: 'translate(-17 -12)', class: 'siege-mark' }, g);
       svgEl('circle', { r: 6.5, fill: '#5e1208', stroke: '#ffcf8a', 'stroke-width': 1 }, s);
       svgEl('path', { d: 'M-3.5-3.5L3.5 3.5M3.5-3.5L-3.5 3.5', stroke: '#ffe2b8', 'stroke-width': 1.6, 'stroke-linecap': 'round' }, s);
@@ -214,10 +216,25 @@ function renderCities() {
   }
 }
 
+// The fog of war: a dark veil over the lands the player cannot see
+function renderFog() {
+  if (!layers.fog) return;
+  const key = fogOn() ? fogKey() : 'off';
+  if (layers.fogKey === key) return;
+  layers.fogKey = key;
+  layers.fog.innerHTML = '';
+  if (!fogOn()) return;
+  const seen = visibleProvs();
+  let d = '';
+  for (const p of Object.values(G.provinces)) if (!seen.has(p.id)) d += provPath(p.id);
+  if (d) svgEl('path', { d, fill: 'url(#fog-hatch)', stroke: '#1a1208', 'stroke-opacity': 0.25, 'stroke-width': 0.8, class: 'fog' }, layers.fog);
+}
+
 function renderArmies() {
   layers.armies.innerHTML = '';
+  renderFog();
   const byProv = {};
-  for (const a of Object.values(G.armies)) (byProv[a.prov] = byProv[a.prov] || []).push(a);
+  for (const a of Object.values(G.armies)) if (armyVisible(a)) (byProv[a.prov] = byProv[a.prov] || []).push(a);
   for (const pid in byProv) {
     const p = G.provinces[pid];
     const home = byProv[pid].filter(a => a.owner === p.owner), away = byProv[pid].filter(a => a.owner !== p.owner);
@@ -404,7 +421,8 @@ function hoverAt(e) {
     const p = G.provinces[tg.prov];
     html = `<b>${cityOf(p)}</b> · ${regionOf(p)}<br>${fFull(p.owner)}<br>${terrName(p.terrain)} · ${t('{n}k people', { n: Math.round(p.pop) })}${p.silk ? ' · ' + t('Silk Road') : ''}`;
     if (landmarkIn(p.id)) html += `<br><span class="gold">★ ${t(LANDMARKS[landmarkIn(p.id)].name)}</span>`;
-    if (p.siege) html += `<br><span class="bad">${t('Besieged by {nation}', { nation: fName(p.siege.by) })}</span>`;
+    if (p.siege && provVisible(p.id)) html += `<br><span class="bad">${t('Besieged by {nation}', { nation: fName(p.siege.by) })}</span>`;
+    if (!provVisible(p.id)) html += `<br><i class="muted">${t('Hidden by the fog of war')}</i>`;
     if (UI.reach && UI.reach[p.id]) {
       const r = UI.reach[p.id];
       html += '<br>' + (r.kind === 'move' ? `<span class="good">${t('Click to march here')}</span>` : r.kind === 'blocked' ? `<span class="warn">${t('At peace: declare war to enter')}</span>` : `<span class="bad">${t('Click to attack')}</span>`);

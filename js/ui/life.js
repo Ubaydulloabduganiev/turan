@@ -303,7 +303,7 @@ HOOKS.march = (a, from, to) => {
   if (!G || !LIFE.on || $('game').classList.contains('hidden')) return Promise.resolve();
   const mine = a.owner === G.player;
   const A = G.provinces[from], B = G.provinces[to];
-  if (!mine && (!LIFE.showRivals || LIFE.skip || !(nearPlayer(from) || nearPlayer(to)) || (!onScreen(A.x, A.y) && !onScreen(B.x, B.y)))) return Promise.resolve();
+  if (!mine && (!LIFE.showRivals || LIFE.skip || !(nearPlayer(from) || nearPlayer(to)) || !(provVisible(from) || provVisible(to)) || (!onScreen(A.x, A.y) && !onScreen(B.x, B.y)))) return Promise.resolve();
   return new Promise(resolve => {
     UI.hidden.add(a.id);
     renderArmies();
@@ -316,7 +316,7 @@ HOOKS.clash = (pid, b) => {
   if (!G || !LIFE.on || $('game').classList.contains('hidden')) return Promise.resolve();
   const p = G.provinces[pid];
   const involved = b && (b.att.faction === G.player || b.def.faction === G.player);
-  if (!involved && (!LIFE.showRivals || LIFE.skip || !nearPlayer(pid) || !onScreen(p.x, p.y))) return Promise.resolve();
+  if (!involved && (!LIFE.showRivals || LIFE.skip || !nearPlayer(pid) || !provVisible(pid) || !onScreen(p.x, p.y))) return Promise.resolve();
   return new Promise(resolve => LIFE.clashes.push({ x: p.x, y: p.y, t0: performance.now(), dur: involved ? 900 : 600, seed: Math.random() * 6, resolve }));
 };
 

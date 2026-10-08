@@ -130,6 +130,9 @@ const CITY_ACTIONS = [
     act: p => { p.caravan = G.turn; later(G.player, 2, 160 + (p.silk ? 80 : 0) + Math.round(p.pop * 2), t('Your caravan returns from {city} with its profits.', { city: cityOf(p) })); if (p.owner !== 'rebels') rel(G.player, p.owner).att += 3; return t('Camels laden with cloth and dried fruit set out for {city}.', { city: cityOf(p) }); } },
 
   // ---------- Someone else's city: in secret ----------
+  { id: 'spy', group: 'Secret work', own: false, sub: () => t('See through the fog for 8 turns'), name: 'Plant a spy', desc: 'A merchant in your pay settles in the city and sends word of every army in it and on the roads around it.',
+    cost: () => 80, check: p => spyThere(p.id) ? 'Your spy is already there' : myGold() < 80 ? 'Not enough gold' : null,
+    act: p => { plantSpy(p.id); return t('Your spy has settled in {city}. For eight turns you will see every army in it and around it.', { city: cityOf(p) }); } },
   { id: 'bribe', group: 'Secret work', own: false, danger: true, name: 'Bribe the elders to change sides', desc: 'Pay the city’s elders to open their gates to you. Unhappy and independent cities are easier to win.',
     cost: p => Math.round(150 + p.pop * 30 + p.b.walls * 100), check: p => covertDone(p) || (isCapital(p) ? 'A capital will not be bought' : myGold() < Math.round(150 + p.pop * 30 + p.b.walls * 100) ? 'Not enough gold' : armiesIn(p.id).some(a => a.owner === p.owner) ? 'An army guards the city' : null),
     act: p => {

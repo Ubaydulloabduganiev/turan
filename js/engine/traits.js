@@ -59,6 +59,29 @@ function traitBattle(g, isDef) {
   return 1 + traitsOf(g.name).reduce((s, k) => s + (TRAITS[k].battle || 0) + (isDef ? TRAITS[k].defend || 0 : 0), 0);
 }
 
+// ---------- A general's tricks on the battlefield ----------
+// Every general knows one or two manoeuvres, used from the battle screen. Which ones depends on his character
+// and his people: the steppe nations all know the feigned retreat.
+const ABILITIES = {
+  feint: { icon: '🐎', name: 'Feigned retreat', cd: 45, desc: 'Your horsemen turn and flee. The enemy who chases them breaks ranks, and then they wheel round and charge.' },
+  charge: { icon: '⚔', name: 'Great charge', cd: 40, desc: 'All your horsemen charge the nearest enemy at once, with fresh courage and the full weight of the gallop.' },
+  shieldwall: { icon: '🛡', name: 'Shield wall', cd: 45, desc: 'Your foot soldiers halt and lock their shields: far harder to break and to hit with arrows, but they cannot move for 15 seconds.' },
+  volley: { icon: '➶', name: 'Arrow storm', cd: 30, desc: 'Every archer looses at once, and the sky goes dark. Double damage.' },
+  rally: { icon: '⚑', name: 'Rally', cd: 60, desc: 'The general rides among his men. Fleeing regiments near him turn back, and everyone fights with more heart for a while.' },
+  terror: { icon: '☠', name: 'Terror', cd: 50, desc: 'Drums, war cries and the heads of prisoners on spears: the enemy loses heart for a while.' },
+};
+const TRAIT_ABIL = { cunning: 'feint', brave: 'charge', ambitious: 'charge', cautious: 'shieldwall', builder: 'shieldwall', learned: 'volley', greedy: 'volley', just: 'rally', pious: 'rally', generous: 'rally', cruel: 'terror', drunkard: 'terror' };
+
+function generalAbilities(g, faction) {
+  if (!g) return [];
+  const out = [];
+  const nomad = FACTIONS[faction] && FACTIONS[faction].nomad;
+  if (nomad) out.push('feint');
+  for (const k of traitsOf(g.name)) { const a = TRAIT_ABIL[k]; if (a && !out.includes(a)) out.push(a); }
+  for (const a of nomad ? ['volley'] : ['volley', 'shieldwall']) if (out.length < 2 && !out.includes(a)) out.push(a);
+  return out.slice(0, 2);
+}
+
 // Each turn: a cruel ruler is disliked, a generous one admired
 function traitsTurn() {
   for (const f of PLAYABLE) {

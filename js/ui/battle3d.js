@@ -56,7 +56,7 @@ function make3D() {
   const hgt = (x, z) => {
     let h = 7 * Math.sin(x * 0.0065 + 1.3) * Math.cos(z * 0.0058) + 4 * Math.sin((x + z) * 0.012) + 2.5 * Math.cos(x * 0.021 - z * 0.017);
     if (wallZ !== null) h *= clampN(Math.abs(z - wallZ) / 140, 0.15, 1);
-    return h;
+    return h + featHeight(x, z);
   };
   R.hgt = hgt;
   const fieldGeo = new T.PlaneGeometry(BF.W, BF.H, 120, 80);
@@ -150,6 +150,8 @@ function make3D() {
     scene.add(rocks);
   }
 
+  features3D(R);
+
   // City walls when storming a city
   if (wallZ !== null) buildWalls3D(R, wallZ);
 
@@ -157,7 +159,7 @@ function make3D() {
   buildArmies3D(R);
 
   // Arrows in flight
-  R.arrows = new T.InstancedMesh(new T.CylinderGeometry(0.09, 0.09, 5, 3).rotateX(Math.PI / 2), new T.MeshBasicMaterial({ color: '#2a1d10' }), 600);
+  R.arrows = new T.InstancedMesh(new T.CylinderGeometry(0.09, 0.09, 5, 3).rotateX(Math.PI / 2), new T.MeshBasicMaterial({ color: '#2a1d10' }), 1200);
   R.arrows.frustumCulled = false;
   scene.add(R.arrows);
 
@@ -167,8 +169,8 @@ function make3D() {
   pg.addColorStop(0, 'rgba(255,255,255,0.9)'); pg.addColorStop(1, 'rgba(255,255,255,0)');
   px.fillStyle = pg; px.fillRect(0, 0, 64, 64);
   R.dustGeo = new T.BufferGeometry();
-  R.dustGeo.setAttribute('position', new T.Float32BufferAttribute(new Float32Array(400 * 3), 3));
-  const dust = new T.Points(R.dustGeo, new T.PointsMaterial({ size: 34, map: new T.CanvasTexture(puff), transparent: true, opacity: 0.32, depthWrite: false, color: TB.terrain === 'desert' ? '#e8d3a8' : '#cdbb98' }));
+  R.dustGeo.setAttribute('position', new T.Float32BufferAttribute(new Float32Array(800 * 3), 3));
+  const dust = new T.Points(R.dustGeo, new T.PointsMaterial({ size: 46, map: new T.CanvasTexture(puff), transparent: true, opacity: 0.32, depthWrite: false, color: TB.terrain === 'desert' ? '#e8d3a8' : '#cdbb98' }));
   dust.frustumCulled = false;
   scene.add(dust);
 
@@ -340,13 +342,14 @@ function buildArmies3D(R) {
     const grp = new T.Group();
     const pole = new T.Mesh(new T.CylinderGeometry(0.25, 0.25, 26, 5).translate(0, 13, 0), new T.MeshLambertMaterial({ color: '#4a3016' }));
     const bar = new T.Mesh(new T.CylinderGeometry(0.2, 0.2, 9, 4).rotateZ(Math.PI / 2).translate(4.5, 25, 0), pole.material);
-    const cloth = new T.Mesh(new T.PlaneGeometry(9, 12).translate(4.5, 18.8, 0), new T.MeshLambertMaterial({ map: flag, side: T.DoubleSide, transparent: true, alphaTest: 0.3 }));
+    const cloth = new T.Mesh(new T.PlaneGeometry(9, 12, 6, 1).translate(4.5, 18.8, 0), new T.MeshLambertMaterial({ map: flag, side: T.DoubleSide, transparent: true, alphaTest: 0.3 }));
     const knob = new T.Mesh(new T.SphereGeometry(0.7, 6, 5).translate(0, 26.5, 0), new T.MeshLambertMaterial({ color: '#e1b54c' }));
     pole.castShadow = cloth.castShadow = true;
     grp.add(pole, bar, cloth, knob);
     R.scene.add(grp);
     r.banner = grp;
     r.cloth = cloth;
+    if (r.u.type === 'general') grp.scale.setScalar(1.35);
     // Selection ring
     const ring = new T.Mesh(new T.RingGeometry(r.r + 1, r.r + 2.6, 48).rotateX(-Math.PI / 2), new T.MeshBasicMaterial({ color: '#ffe08a', transparent: true, opacity: 0.6, depthTest: false }));
     ring.renderOrder = 5; ring.visible = false;
@@ -387,6 +390,7 @@ function buildWalls3D(R, wz) {
   const mat = new T.MeshLambertMaterial({ color: '#cdb084' });
   const dark = new T.MeshLambertMaterial({ color: '#8f7654' });
   const gap = TB.breach ? 130 : 0;
+  R.fort = { towers: {}, gate: null };
   const seg = (x0, x1) => {
     if (x1 - x0 < 2) return;
     const m = new T.Mesh(new T.BoxGeometry(x1 - x0, 15, 8), mat);
@@ -411,6 +415,13 @@ function buildWalls3D(R, wz) {
     const top = new T.Mesh(new T.CylinderGeometry(15, 15, 3, 12), dark);
     top.position.set(x, 27.5 + R.hgt(x, wz), wz + inside * 6);
     R.scene.add(top);
+    // Battlements round the top of the tower
+    const merl = new T.InstancedMesh(new T.BoxGeometry(3.4, 4, 3.4), mat, 10), d = new T.Object3D();
+    for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; d.position.set(x + Math.cos(a) * 13.5, 31 + R.hgt(x, wz), wz + inside * 6 + Math.sin(a) * 13.5); d.rotation.y = -a; d.updateMatrix(); merl.setMatrixAt(i, d.matrix); }
+    merl.castShadow = true;
+    R.scene.add(merl);
+    for (const o of [t, top, merl]) o.userData.y0 = o.position.y;
+    R.fort.towers[x] = { parts: [t, top, merl] };
   }
   if (!gap) {
     // The gatehouse, with a tiled portal
@@ -421,7 +432,11 @@ function buildWalls3D(R, wz) {
     door.position.set(BF.W / 2, 9 + R.hgt(BF.W / 2, wz), wz + inside * 6);
     const tile = new T.Mesh(new T.BoxGeometry(58, 3, 15), new T.MeshLambertMaterial({ color: '#2a8f8a' }));
     tile.position.set(BF.W / 2, 29 + R.hgt(BF.W / 2, wz), wz + inside * 6);
-    R.scene.add(g, door, tile);
+    // Two flanking gate towers with turquoise domes
+    const gt = [-34, 34].map(dx => { const m = new T.Mesh(new T.CylinderGeometry(11, 13, 36, 12), mat); m.position.set(BF.W / 2 + dx, 18 + R.hgt(BF.W / 2, wz), wz + inside * 6); m.castShadow = true; return m; });
+    const domes = [-34, 34].map(dx => { const m = new T.Mesh(new T.SphereGeometry(10, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), new T.MeshLambertMaterial({ color: '#2a8f8a' })); m.position.set(BF.W / 2 + dx, 36 + R.hgt(BF.W / 2, wz), wz + inside * 6); return m; });
+    R.scene.add(g, door, tile, ...gt, ...domes);
+    R.fort.gate = [door];
   } else {
     const rubble = new T.InstancedMesh(new T.DodecahedronGeometry(4, 0), mat, 26);
     const d = new T.Object3D();
@@ -454,10 +469,14 @@ function updateCamera3D(R, dt) {
   if (k.KeyF || k.Minus) c.dist = Math.min(1700, c.dist + c.dist * dt * 1.2);
   c.tx = clampN(c.tx, -200, BF.W + 200); c.tz = clampN(c.tz, -200, BF.H + 200);
   c.pitch = clampN(0.38 + (c.dist - 160) / 1540 * 0.55, 0.38, 0.95);
-  const cp = Math.cos(c.pitch);
-  const th = R.hgt(c.tx, c.tz);
-  R.camera.position.set(c.tx + Math.sin(c.yaw) * c.dist * cp, th + c.dist * Math.sin(c.pitch), c.tz + Math.cos(c.yaw) * c.dist * cp);
-  R.camera.lookAt(c.tx, th, c.tz);
+  // The opening sweep and the slow-motion charge move the view for a moment without touching the player's camera
+  let v = c;
+  if (TB.intro > 0) v = introCamera(R, c);
+  else if (TB.slow > 0 && TB.slowAt) { v = slowCamera(c); v.pitch = clampN(0.38 + (v.dist - 160) / 1540 * 0.55, 0.38, 0.95); }
+  const cp = Math.cos(v.pitch);
+  const th = R.hgt(v.tx, v.tz);
+  R.camera.position.set(v.tx + Math.sin(v.yaw) * v.dist * cp, th + v.dist * Math.sin(v.pitch), v.tz + Math.cos(v.yaw) * v.dist * cp);
+  R.camera.lookAt(v.tx, th, v.tz);
 }
 
 function render3D(R, dt) {
@@ -531,7 +550,10 @@ function render3D(R, dt) {
       const bxp = r.x - Math.cos(r.face) * 8, bzp = r.y - Math.sin(r.face) * 8;
       r.banner.position.set(bxp, R.hgt(bxp, bzp) + (mounted ? 4 : 0), bzp);
       r.banner.rotation.y = Math.atan2(R.camera.position.x - bxp, R.camera.position.z - bzp) + 0.45;
-      r.cloth.rotation.y = Math.sin(R.t * 2 + r.id) * 0.25;
+      // The cloth ripples in the wind, more when the regiment rides
+      const pa = r.cloth.geometry.attributes.position, amp = r.moving ? 0.22 : 0.12;
+      for (let i = 0; i < pa.count; i++) { const x = pa.getX(i); pa.setZ(i, Math.sin(R.t * (r.moving ? 7 : 4) - x * 0.7 + r.id) * x * amp); }
+      pa.needsUpdate = true;
     }
     r.ring.visible = show && (TB.sel.has(r.id) || (!r.player && [...TB.sel].some(id => TB.regs[id].target === r)));
     if (r.ring.visible) {
@@ -543,10 +565,10 @@ function render3D(R, dt) {
   // Arrows on their arcs
   let ai = 0;
   for (const a of TB.arrows) {
-    if (ai >= 600) break;
+    if (ai >= 1200) break;
     const k = 1 - a.life / a.max, k2 = Math.min(1, k + 0.03);
     const L = Math.hypot(a.x1 - a.x0, a.y1 - a.y0), arc = 20 + L * 0.28;
-    const p = (q) => [a.x0 + (a.x1 - a.x0) * q, R.hgt(a.x0, a.y0) * (1 - q) + R.hgt(a.x1, a.y1) * q + 6 + Math.sin(q * Math.PI) * arc, a.y0 + (a.y1 - a.y0) * q];
+    const p = (q) => [a.x0 + (a.x1 - a.x0) * q, R.hgt(a.x0, a.y0) * (1 - q) + R.hgt(a.x1, a.y1) * q + 6 + (a.h0 || 0) * (1 - q) + Math.sin(q * Math.PI) * arc, a.y0 + (a.y1 - a.y0) * q];
     const [x, y, z] = p(k), [x2, y2, z2] = p(k2);
     d.position.set(x, y, z); d.scale.set(1, 1, 1); d.rotation.set(0, 0, 0); d.lookAt(x2, y2, z2); d.updateMatrix();
     R.arrows.setMatrixAt(ai++, d.matrix);
@@ -556,9 +578,10 @@ function render3D(R, dt) {
   // Dust
   const pos = R.dustGeo.attributes.position.array;
   let di = 0;
-  for (const p of TB.dust) { if (di >= 400) break; pos[di * 3] = p.x; pos[di * 3 + 1] = R.hgt(p.x, p.y) + 3 + (1 - p.life) * 8; pos[di * 3 + 2] = p.y; di++; }
+  for (const p of TB.dust) { if (di >= 800) break; pos[di * 3] = p.x; pos[di * 3 + 1] = R.hgt(p.x, p.y) + 3 + (1 - p.life) * 8; pos[di * 3 + 2] = p.y; di++; }
   R.dustGeo.setDrawRange(0, di);
   R.dustGeo.attributes.position.needsUpdate = true;
+  fort3D(R);
   R.renderer.render(R.scene, R.camera);
 }
 

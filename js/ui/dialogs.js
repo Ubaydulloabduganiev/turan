@@ -318,6 +318,12 @@ function traitChips(name) {
   return `<div class="traits">${tr.map(k => `<span class="trait ${TRAITS[k].order < 0 || TRAITS[k].tax < 0 ? 'bad' : ''}" title="${t(TRAITS[k].desc)}" data-trait="${k}">${t(TRAITS[k].name)}</span>`).join('')}</div>`;
 }
 
+// A general's manoeuvres on the battlefield
+function abilChips(g, faction) {
+  const list = generalAbilities(g, faction);
+  return list.length ? `<div class="traits abils"><small>${t('In battle')}:</small>${list.map(k => `<span class="trait abil-chip" title="${t(ABILITIES[k].desc)}" data-abil="${k}">${ABILITIES[k].icon} ${t(ABILITIES[k].name)}</span>`).join('')}</div>` : '';
+}
+
 function personCard(name, faction, o = {}) {
   const c = charByName(name);
   const age = o.age !== undefined ? o.age : c ? year() - c.born : personBy(name) ? year() - personBy(name).born : null;
@@ -420,11 +426,17 @@ function savesHTML(mode) {
 
 async function openMenu() {
   const v = await showModal(`<h3>${dateText()}</h3><p class="note">${fFull(G.player)}</p>${langPicker()}${soundControls()}<p class="note ver-note" id="ver-note"></p>`, [
-    { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' }, { label: gfxLabel(), value: 'gfx' },
+    { label: t(LIFE.showRivals ? 'Rival moves: shown' : 'Rival moves: hidden'), value: 'rivals' }, { label: gfxLabel(), value: 'gfx' }, { label: t(fogOn() ? 'Fog of war: on' : 'Fog of war: off'), value: 'fog' },
     { label: t('Chronicle'), value: 'chron' }, { label: t('Your reign'), value: 'reign' }, { label: t('Achievements'), value: 'ach' }, { label: t('How to play'), value: 'help' }, { label: t('Guide'), value: 'guide' }, { label: t('Save'), value: 'save' }, { label: t('Load'), value: 'load' },
     { label: t('Main menu'), value: 'title' }, { label: t('Resume'), value: null, cls: 'big' },
   ], { cancel: null, onOpen: m => fillVersion(m.querySelector('#ver-note')), onClick: e => { const l = e.target.closest('[data-lang]'); if (l) { setLang(l.dataset.lang); applyLang(); closeModal(null); openMenu(); } } });
   if (v === 'rivals') { setRivalMoves(!LIFE.showRivals); toast(t('Rival moves'), t(LIFE.showRivals ? 'You will watch rival armies march across the map.' : 'Rival armies will move instantly.'), ''); return openMenu(); }
+  if (v === 'fog') {
+    G.fog = !fogOn();
+    toast(t(fogOn() ? 'Fog of war: on' : 'Fog of war: off'), t(fogOn() ? 'You see only the lands near your cities, armies, allies and spies.' : 'You see every army on the map.'), '');
+    renderArmies(); refresh();
+    return openMenu();
+  }
   if (v === 'gfx') {
     setGfxMode(nextGfxMode());
     const what = { light: 'Simpler drawing for older phones. Takes full effect on the next map you load.', auto: 'The game will choose by itself how much to draw on this device.', full: 'Everything is drawn in full.' };
@@ -578,12 +590,14 @@ async function checkOverUI() {
 
 // Tapping a trait explains it (phones have no hover)
 document.addEventListener('click', e => {
-  const tr = e.target.closest('[data-trait]');
-  if (!tr || !TRAITS[tr.dataset.trait]) return;
+  const tr = e.target.closest('[data-trait], [data-abil]');
+  if (!tr) return;
+  const info = tr.dataset.trait ? TRAITS[tr.dataset.trait] : ABILITIES[tr.dataset.abil];
+  if (!info) return;
   e.stopPropagation();
   const box = tr.parentElement;
   let d = box.querySelector('.trait-desc');
   if (!d) { d = document.createElement('div'); d.className = 'trait-desc'; box.appendChild(d); }
-  const text = t(TRAITS[tr.dataset.trait].desc);
+  const text = t(info.desc);
   d.textContent = d.textContent === text ? '' : text;
 }, true);

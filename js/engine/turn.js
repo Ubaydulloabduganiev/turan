@@ -23,6 +23,7 @@ async function endTurn(onProgress) {
     devTurn();
     G.turn++;
     weatherTurn();
+    fogTurn();
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
     runEvents();
     comingOfAge();

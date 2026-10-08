@@ -137,7 +137,8 @@ function provincePanel(p) {
   if (!mine && tab === 'deal') h += cityActionGroups(p, ['Dealings', 'Secret work']);
   if (!mine && tab === 'war') h += wonderSection(p);
   if (tab === 'rule' || tab === 'war') h += placeSection(p);
-  const here = armiesIn(p.id);
+  const here = armiesIn(p.id).filter(armyVisible);
+  if (!provVisible(p.id) && (tab === 'army' || tab === 'war')) h += `<div class="p-sec fog-note"><h4>${t('Fog of war')}</h4><p class="note">${t('Your scouts cannot see {city}. There may be armies there. March closer, send horsemen, or plant a spy (Dealings tab).', { city: cityOf(p) })}</p></div>`;
   if (here.length && (tab === 'army' || tab === 'war')) {
     h += `<div class="p-sec"><h4>${t('Armies here')}</h4>` + here.map(a => armyRow(a)).join('') + '</div>';
   }
@@ -185,7 +186,7 @@ function foreignActions(p, tab) {
     h += `<p class="note">${t('None of your armies can reach {city} this turn.', { city: cityOf(p) })}</p>`;
     if (near) h += `<div class="btnrow"><button data-act="selarmy" data-id="${near.id}">${t('Select your nearest army ({city})', { city: cityOf(G.provinces[near.prov]) })}</button></div>`;
   }
-  h += `<p class="note">${t('Defenders')}: ${def < 1 ? t('none to speak of') : strengthWord(def)}${p.b.walls ? ` · ${bLevel('walls', p.b.walls).toLowerCase()}` : ''}</p></div>`;
+  h += `<p class="note">${t('Defenders')}: ${!provVisible(p.id) ? t('unknown: hidden by the fog') : def < 1 ? t('none to speak of') : strengthWord(def)}${p.b.walls ? ` · ${bLevel('walls', p.b.walls).toLowerCase()}` : ''}</p></div>`;
   return h;
 }
 
@@ -263,7 +264,7 @@ function armyPanel(a) {
   const g = a.general;
   let h = `<div class="p-head">${g ? personPortrait(g.name, a.owner, g.age, 'p-portrait') : flagSVG(a.owner)}<div><div class="p-title">${g ? pn(g.name) : (mine ? t('Army') : t('{nation} army', { nation: fAdj(a.owner) }))}</div>` +
     `<div class="p-sub">${g ? `<span class="stars">${stars(Math.min(5, g.cmd))}</span> ${g.leader ? t('Ruler') + ' · ' : ''}${t('age {n}', { n: g.age })}` : t('Led by a captain')}</div>` +
-    `<div class="p-sub">${fFull(a.owner)} · ${cityOf(p)}</div>${g ? traitChips(g.name) : ''}</div></div>`;
+    `<div class="p-sub">${fFull(a.owner)} · ${cityOf(p)}</div>${g ? traitChips(g.name) + abilChips(g, a.owner) : ''}</div></div>`;
   const men = a.units.reduce((n, u) => n + u.men, 0);
   if (!mine) {
     h += `<p>${t('{n} units, about {men} men. Strength: {s}.', { n: a.units.length, men: fmt(Math.round(men / 50) * 50), s: `<b>${strengthWord(armyPower(a))}</b>` })}</p>`;

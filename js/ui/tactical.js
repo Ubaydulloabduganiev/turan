@@ -25,6 +25,8 @@ function startTactical(b) {
     for (const r of TB.regs) TB.start[r.side] += r.men;
     TB.wallY = TB.walls ? (playerSide === 'def' ? BF.H * 0.62 : BF.H * 0.38) : null;
     TB.breach = TB.walls && sideUnits(b.att).some(x => UNITS[x.u.type].cls === 'siege');
+    makeFeatures(); makeFort(); makeAbilities();
+    TB.slow = 0; TB.slowCD = 4;
     $('battle').classList.remove('hidden');
     $('busy').classList.add('hidden');
     TB.dead = []; TB.dust = [];
@@ -32,6 +34,7 @@ function startTactical(b) {
     TB.r3 = null;
     try { TB.r3 = make3D(); } catch (err) { console.error(err); TB.r3 = null; if ($('b3d')) $('b3d').remove(); }
     if (!TB.r3 && window.THREE) TB.ground = paintBattleGround(false);
+    TB.intro = TB.introMax = TB.r3 ? 5.5 : 2.4;
     TB.touch = matchMedia('(hover: none), (pointer: coarse)').matches;
     $('b-help').textContent = TB.touch
       ? t('Tap a unit to select it, tap its card to add more · tap the ground to move, an enemy to attack · drag to look around, pinch to zoom')
@@ -46,6 +49,7 @@ function startTactical(b) {
     resizeBattle();
     renderBattleTop();
     renderBattleCards();
+    renderAbilities();
     TB.last = performance.now();
     requestAnimationFrame(battleFrame);
   });
@@ -113,7 +117,8 @@ function behindWall(r) {
 function speedOf(r) {
   let s = SPEED[r.d.cls] * (r.run ? 1.45 : 1);
   if (TB.terrain === 'mountain' && (r.d.cls === 'cav' || r.d.cls === 'ha')) s *= 0.75;
-  if (inWall(r.y) && !TB.breach) s *= 0.3;
+  s *= wallSpeed(r) * groundSpeed(r);
+  if (r.wall > TB.t) s = 0;
   if (r.rout) s *= 1.2;
   return s;
 }
@@ -122,6 +127,7 @@ function aiControl(r) {
   // Simple battlefield sense for the computer's regiments (and idle player regiments defending themselves)
   const foes = enemiesOf(r);
   if (!foes.length) return;
+  if (r.disorder > TB.t && r.target && !r.target.gone && !r.target.rout) return; // lured into a chase
   const n = nearest(r, foes), dn = Math.hypot(n.x - r.x, n.y - r.y);
   if (r.d.cls === 'missile' || r.d.cls === 'ha') {
     if (r.d.cls === 'ha') {
@@ -162,6 +168,7 @@ function stepBattle(dt) {
       if (r.y > BF.H + 40 || r.y < -40) r.gone = true;
       continue;
     }
+    if (abilityStep(r)) { moveReg(r, dt); continue; }
     if (!r.player || !r.order) {
       if (!r.player) { if (TB.t > (r.side === 'def' && TB.walls ? 0 : 1.5) || r.d.cls === 'missile') aiControl(r); }
       else autoDefend(r);
@@ -171,7 +178,7 @@ function stepBattle(dt) {
     // Ranged attack
     if (t && RANGE[r.d.cls] && !inMelee(r)) {
       const d = Math.hypot(t.x - r.x, t.y - r.y);
-      if (d <= RANGE[r.d.cls] + (behindWall(r) ? 40 : 0)) {
+      if (d <= RANGE[r.d.cls] + (behindWall(r) ? 40 : 0) + groundRange(r)) {
         if (!r.order || r.order === 'attack') { r.tx = r.x; r.ty = r.y; }
         r.face = Math.atan2(t.y - r.y, t.x - r.x);
         if (r.cd <= 0) shoot(r, t);
@@ -189,6 +196,7 @@ function stepBattle(dt) {
       const d = Math.hypot(a.x - c.x, a.y - c.y);
       if (d < a.r + c.r) {
         meleeHit(a, c, dt); meleeHit(c, a, dt);
+        if (Math.random() < dt * 5 && TB.dust.length < 420) TB.dust.push({ x: (a.x + c.x) / 2 + (Math.random() - 0.5) * 40, y: (a.y + c.y) / 2 + (Math.random() - 0.5) * 30, life: 1 });
         // push apart a little so blocks stay readable
         const push = (a.r + c.r - d) * 0.5, ang = Math.atan2(c.y - a.y, c.x - a.x);
         if (push > 6) { a.x -= Math.cos(ang) * (push - 6) * 0.5; a.y -= Math.sin(ang) * (push - 6) * 0.5; c.x += Math.cos(ang) * (push - 6) * 0.5; c.y += Math.sin(ang) * (push - 6) * 0.5; }
@@ -211,9 +219,11 @@ function stepBattle(dt) {
       const col = FACTIONS[r.faction].dark;
       while (lost-- > 0 && TB.dead.length < 900) TB.dead.push({ x: r.x + (Math.random() - 0.5) * r.r * 1.6, y: r.y + (Math.random() - 0.5) * r.r * 1.2, a: Math.random() * 3, c: col });
     }
-    if (r.moving && (r.d.cls === 'cav' || r.d.cls === 'ha' || r.run) && Math.random() < dt * 14 && TB.dust.length < 160)
+    if (r.moving && (r.d.cls === 'cav' || r.d.cls === 'ha' || r.run) && Math.random() < dt * 14 && TB.dust.length < 420)
       TB.dust.push({ x: r.x - Math.cos(r.face) * r.r + (Math.random() - 0.5) * 30, y: r.y - Math.sin(r.face) * r.r + (Math.random() - 0.5) * 20, life: 1 });
   }
+  fortStep(dt);
+  aiAbilities(dt);
   for (const d of TB.dust) { d.life -= dt * 0.8; d.y -= dt * 6; }
   TB.dust = TB.dust.filter(d => d.life > 0);
   // Morale
@@ -223,7 +233,7 @@ function stepBattle(dt) {
     const loss = 1 - r.men / r.max;
     const friends = regs.filter(o => o.side === r.side && !o.gone && !o.rout).length;
     const general = regs.some(o => o.side === r.side && o.u.type === 'general' && !o.gone && !o.rout && Math.hypot(o.x - r.x, o.y - r.y) < 300);
-    const m = r.morale - loss * 80 - (friends < 3 ? 15 : 0) + (general ? 12 : 0) - (r.flanked > 0 ? 25 : 0);
+    const m = r.morale - loss * 80 - (friends < 3 ? 15 : 0) + (general ? 12 : 0) - (r.flanked > 0 ? 25 : 0) + abilMorale(r);
     if (r.flanked > 0) r.flanked -= dt;
     if (m < 8) { r.rout = true; r.target = null; r.order = null; TB.fx.push({ x: r.x, y: r.y - 30, text: t('Routing!'), life: 1.5, color: '#ffb0a0' }); }
   }
@@ -263,9 +273,12 @@ function meleeHit(a, c, dt) {
   const d = a.d, e = c.d;
   let atk = d.atk;
   if (d.cls === 'spear' && (e.cls === 'cav' || e.cls === 'ha')) atk *= 1.8;
-  if ((d.cls === 'cav') && a.charge > 0) { atk *= 2.2; a.charge -= dt * 1.5; }
+  if ((d.cls === 'cav') && a.charge > 0) { if (a.charge > 1.9) chargeMoment(a); atk *= 2.2; a.charge -= dt * 1.5; }
+  atk *= groundMelee(a, c) * (a.boost > TB.t ? 1.1 : 1);
   if (d.cls === 'missile' || d.cls === 'ha') atk *= 0.7;
-  let def = e.def + (behindWall(c) ? 4 : 0) + (inWall(c.y) && !TB.breach && c.side === 'def' ? 3 : 0);
+  let def = e.def + (behindWall(c) ? 4 : 0) + (inWall(c.y) && !wallOpen(c) && c.side === 'def' ? 3 : 0);
+  if (c.wall > TB.t) def *= 1.6;
+  if (c.disorder > TB.t) def *= 0.65;
   if (e.cls === 'cav' && d.cls === 'spear') def *= 0.8;
   // Attacks from behind hurt more and shake morale
   const ang = Math.atan2(a.y - c.y, a.x - c.x);
@@ -276,13 +289,14 @@ function meleeHit(a, c, dt) {
   a.face = Math.atan2(c.y - a.y, c.x - a.x);
 }
 
-function shoot(r, t) {
+function shoot(r, t, mult = 1) {
   r.cd = r.d.cls === 'ha' ? 2.0 : 2.4;
   let dmg = r.men / 100 * r.d.missile / (t.d.def + 6) * 5.5 * (1 + r.u.exp * 0.08);
   if (behindWall(t) && !TB.breach) dmg *= 0.5;
+  dmg *= mult * groundShot(r, t) * (t.wall > TB.t ? 0.4 : 1);
   if (t.d.cls === 'cav' || t.d.cls === 'ha') dmg *= 0.85;
   t.men = Math.max(0, t.men - dmg);
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 8 * mult; i++) {
     TB.arrows.push({ x0: r.x + (Math.random() - 0.5) * 30, y0: r.y + (Math.random() - 0.5) * 20, x1: t.x + (Math.random() - 0.5) * 40, y1: t.y + (Math.random() - 0.5) * 30, life: 0.6, max: 0.6 });
   }
 }
@@ -368,8 +382,8 @@ function drawOverlay3D() {
     c.fillRect(x, y, w, h); c.strokeRect(x, y, w, h);
   }
   for (const f of TB.fx) {
-    const p = f.big ? { x: innerWidth / 2, y: innerHeight / 2 } : toScreen(f.x, f.y, 20);
-    c.font = (f.big ? 92 : 20) + 'px Cinzel, Georgia, serif';
+    const p = f.big ? { x: innerWidth / 2, y: innerHeight / 2 } : f.mid ? { x: innerWidth / 2, y: innerHeight * (0.2 + 0.6 * f.y / BF.H) } : toScreen(f.x, f.y, 20);
+    c.font = (f.big ? 92 : f.mid ? 34 : 20) + 'px Cinzel, Georgia, serif';
     c.textAlign = 'center'; c.lineWidth = f.big ? 7 : 4; c.strokeStyle = 'rgba(0,0,0,0.75)'; c.fillStyle = f.color;
     c.strokeText(f.text, p.x, p.y); c.fillText(f.text, p.x, p.y);
   }
@@ -377,6 +391,7 @@ function drawOverlay3D() {
     c.font = '28px Cinzel, Georgia, serif'; c.textAlign = 'center'; c.fillStyle = '#ffe08a'; c.strokeStyle = '#000'; c.lineWidth = 4;
     c.strokeText(t(TB.touch ? 'Paused' : 'Paused — press Space'), innerWidth / 2, 100); c.fillText(t(TB.touch ? 'Paused' : 'Paused — press Space'), innerWidth / 2, 100);
   }
+  drawIntro(c);
 }
 const bToWorld = (x, y) => ({ x: (x - TB.view.ox) / TB.view.s, y: (y - TB.view.oy) / TB.view.s });
 
@@ -412,6 +427,7 @@ function paintBattleGround(for3d) {
       x.beginPath(); x.moveTo(px, py); x.lineTo(px - 1.5, py - 4); x.moveTo(px + 1.5, py); x.lineTo(px + 2.5, py - 5); x.stroke();
     }
   }
+  paintFeatures(x, for3d);
   if (for3d) {
     // In 3D the trees and rocks are real objects; the ground only needs to fade into the land around it
     const base = (GROUND[TB.terrain] || GROUND.steppe)[0];
@@ -456,6 +472,7 @@ function paintWalls2D(x) {
     x.fillStyle = '#6d5a3c'; for (let px = 0; px < BF.W; px += 18) x.fillRect(px, wy - 14 - 6, 10, 6);
     x.strokeStyle = 'rgba(80,60,36,0.5)'; x.lineWidth = 1; for (let py = wy - 10; py < wy + 14; py += 7) { x.beginPath(); x.moveTo(0, py); x.lineTo(BF.W, py); x.stroke(); }
     for (let px = 60; px < BF.W; px += 200) {
+      if (Math.abs(px - BF.W / 2) < 90) continue;
       x.fillStyle = '#00000040'; x.beginPath(); x.ellipse(px + 8, wy + 22, 26, 8, 0, 0, Math.PI * 2); x.fill();
       x.fillStyle = wall; x.beginPath(); x.arc(px, wy, 24, 0, Math.PI * 2); x.fill();
       x.strokeStyle = '#6d5a3c'; x.lineWidth = 3; x.stroke();
@@ -477,6 +494,7 @@ function drawBattle() {
     c.fillStyle = 'rgba(70,52,30,0.9)'; c.beginPath(); c.ellipse(BF.W / 2, TB.wallY, 70, 18, 0, 0, Math.PI * 2); c.fill();
     c.fillStyle = '#8f7652'; for (let i = 0; i < 9; i++) { c.beginPath(); c.arc(BF.W / 2 - 60 + i * 15, TB.wallY + ((i * 7) % 11) - 5, 5 + (i % 3) * 2, 0, Math.PI * 2); c.fill(); }
   }
+  drawFort2D(c);
   // The fallen
   for (const d of TB.dead) {
     c.fillStyle = d.c; c.globalAlpha = 0.75;
@@ -509,7 +527,7 @@ function drawBattle() {
     c.strokeStyle = '#ffe08a'; c.lineWidth = 1.5 / v.s; c.strokeRect(a.x, a.y, b.x - a.x, b.y - a.y);
   }
   for (const f of TB.fx) {
-    c.font = (f.big ? 90 : 18) + 'px Palatino Linotype, Georgia, serif';
+    c.font = (f.big ? 90 : f.mid ? 36 : 18) + 'px Palatino Linotype, Georgia, serif';
     c.textAlign = 'center'; c.lineWidth = f.big ? 6 : 3; c.strokeStyle = '#000a'; c.fillStyle = f.color;
     c.strokeText(f.text, f.x, f.y); c.fillText(f.text, f.x, f.y);
   }
@@ -518,6 +536,7 @@ function drawBattle() {
     c.font = '28px Palatino Linotype, Georgia, serif'; c.textAlign = 'center'; c.fillStyle = '#ffe08a';
     c.fillText(t(TB.touch ? 'Paused' : 'Paused — press Space'), window.innerWidth / 2, 90);
   }
+  drawIntro(c);
 }
 
 function drawRegiment(c, r) {
@@ -595,12 +614,17 @@ function renderBattleCards() {
 let cardT = 0;
 function battleFrame(now) {
   if (!TB) return;
-  const dt = Math.min(0.05, (now - TB.last) / 1000);
+  const raw = Math.min(0.25, (now - TB.last) / 1000), real = Math.min(0.05, raw);
   TB.last = now;
-  if (!TB.paused && !TB.over) for (let i = 0; i < TB.speed; i++) stepBattle(dt);
+  let dt = real;
+  // The cinematic moments run on the clock, however slowly the frames come
+  if (TB.intro > 0) { TB.intro -= raw; if (TB.intro <= 0) skipIntro(); dt = 0; }
+  if (TB.slow > 0) { TB.slow -= raw; dt *= 0.25; }
+  if (TB.slowCD > 0 && !TB.paused) TB.slowCD -= real;
+  if (!TB.paused && !TB.over && dt > 0) for (let i = 0; i < (TB.slow > 0 ? 1 : TB.speed); i++) stepBattle(dt);
   if (TB.r3) { render3D(TB.r3, dt); drawOverlay3D(); } else drawBattle();
   cardT -= dt;
-  if (cardT <= 0 && TB) { cardT = 0.3; renderBattleTop(); renderBattleCards(); }
+  if (cardT <= 0 && TB) { cardT = 0.3; renderBattleTop(); renderBattleCards(); renderAbilities(); }
   if (TB) requestAnimationFrame(battleFrame);
 }
 
@@ -609,6 +633,7 @@ function battleFrame(now) {
 const touches = new Map();
 bc.addEventListener('pointerdown', e => {
   if (!TB || TB.over) return;
+  if (skipIntro()) return;
   if (TB.r3) {
     touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (e.button === 1 || touches.size === 2) { TB.pan = { x: e.clientX, y: e.clientY, pinch: touches.size === 2 ? touchSpan() : 0 }; TB.drag = null; e.preventDefault(); return; }
@@ -737,7 +762,7 @@ $('b-cam').addEventListener('click', e => {
   if (k === 'in') c.dist = Math.max(160, c.dist / 1.3); if (k === 'out') c.dist = Math.min(1700, c.dist * 1.3);
 });
 window.addEventListener('keydown', e => {
-  if (!TB || $('battle').classList.contains('hidden')) return;
+  if (!TB || $('battle').classList.contains('hidden') || TB.intro > 0) return;
   if (TB.r3 && !e.ctrlKey && !e.metaKey) TB.r3.keys[e.code] = true;
   if (e.code === 'Space') { TB.paused = !TB.paused; syncBattleButtons(); e.preventDefault(); }
   if (e.key === 'a' && e.ctrlKey) { e.preventDefault(); selectAllRegs(); }
