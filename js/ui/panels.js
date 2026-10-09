@@ -10,7 +10,7 @@ let lastArmyShown = null;
 let lastAchCheck = 0;
 function refresh() {
   if (G) {
-    $('game').dataset.season = G.turn % 2 ? 'autumn' : 'spring';
+    $('game').dataset.season = seasonOf();
     // The interface wears the player's colours
     const F = FACTIONS[G.player], rs = document.documentElement.style;
     if (rs.getPropertyValue('--nation') !== F.color) { rs.setProperty('--nation', F.color); rs.setProperty('--nation-dark', F.dark); }

@@ -132,8 +132,8 @@ function upkeepPhase() {
     r.att = clampN(r.att, -100, 100);
   }
 
-  // Rulers age and die
-  if (G.turn % 2 === 1) {
+  // Rulers age and die, once a year
+  if (newYear()) {
     for (const a of Object.values(G.armies)) {
       if (!a.general) continue;
       a.general.age++;
@@ -222,8 +222,8 @@ function runEvents() {
   for (let i = 0; i < EVENTS.length; i++) {
     let e = EVENTS[i];
     if (G.fired.includes(i)) continue;
-    const due = (e.when[0] - GAME.START_YEAR) * 2 + e.when[1];
-    if (G.turn < due) continue;
+    const due = turnAt(e.when[0], e.when[1]);
+    if (nowM() < due) continue;
     G.fired.push(i);
     // A choice made at a turning point may change what happens
     const v = eventVariant(e);

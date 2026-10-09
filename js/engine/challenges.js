@@ -24,7 +24,7 @@ function challengeSpec(id) {
   const types = weekly ? ['campaign', 'campaign', 'storm'] : ['conquest', 'storm', 'defence'];
   const type = types[Math.floor(r() * types.length)];
   const faction = PLAYABLE[Math.floor(r() * PLAYABLE.length)];
-  const start = 2 * Math.floor(r() * 6); // a spring between 1370 and 1375
+  const start = 12 * Math.floor(r() * 6); // an April between 1370 and 1375
   // Look at the map of that day, then put the world back as it was
   const saved = G, tellKeep = HOOKS.notify;
   HOOKS.notify = () => {}; // a quiet look: nothing of this game is told
@@ -115,7 +115,7 @@ const weekChallenge = () => challengeSpec('weekly:' + weekKey());
 function challengeGoalText(S) {
   const [s, v] = S.goalText;
   const cityName = id => cityById(id);
-  return t(s, { city: v.city ? cityName(v.city) : '', list: v.list ? v.list.map(cityName).join(', ') : '', nation: v.nation ? fFull(v.nation) : '', date: dateText(S.deadline) });
+  return t(s, { city: v.city ? cityName(v.city) : '', list: v.list ? v.list.map(cityName).join(', ') : '', nation: v.nation ? fFull(v.nation) : '', date: dateM(S.deadline) });
 }
 
 // The score of a won challenge: speed first, then the realm you hold

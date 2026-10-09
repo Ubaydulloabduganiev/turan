@@ -181,7 +181,7 @@ function storyContext(f) {
     f, st, mine, p: pick(rich.slice(0, Math.max(1, Math.ceil(rich.length / 2)))) || rich[0],
     silk: pick(mine.filter(p => p.silk)), oasis: pick(mine.filter(p => p.terrain === 'oasis')),
     cap: G.provinces[st.capital], rival: pick(rivals), enemy: pick(rivals.filter(g => rel(f, g).war || rel(f, g).att < -20)),
-    gen: pick(generals), year: year(), spring: G.turn % 2 === 0,
+    gen: pick(generals), year: year(), spring: seasonOf() === 'spring',
   };
 }
 const cost = (ctx, base) => Math.round(base * (1 + provsOf(ctx.f).length / 12));

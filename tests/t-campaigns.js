@@ -49,15 +49,16 @@ exports.challengesBuild = async ({ page, assert }) => {
 exports.longCampaignBalance = async ({ page, quietHooks, assert }) => {
   const p = await page('en');
   await quietHooks(p);
+  if (process.env.ONLY || process.env.RUNS) await p.evaluate(([o, n]) => { if (o) window.ONLY = o.split(','); if (n) window.RUNS = +n; }, [process.env.ONLY || '', process.env.RUNS || '']);
   const rows = await p.evaluate(async () => {
     const out = [];
     const pathTo = (from, to) => { const prev = { [from]: null }, q = [from]; while (q.length) { const c = q.shift(); if (c === to) break; for (const n of G.provinces[c].adj) if (!(n in prev)) { prev[n] = c; q.push(n); } } const path = []; for (let k = to; k && k !== from; k = prev[k]) path.unshift(k); return path; };
     for (const S of SCENARIOS) {
-      if (S.goal.type === 'hold') continue;
+      if (S.goal.type === 'hold' || (window.ONLY && !window.ONLY.includes(S.id))) continue;
       let wins = 0;
-      for (let run = 0; run < 2; run++) {
+      for (let run = 0; run < (window.RUNS || 2); run++) {
         newScenarioGame(S.id);
-        for (let k = 0; k < 40 && !G.scenario.result; k++) {
+        for (let k = 0; k <= S.deadline - S.start + 1 && !G.scenario.result; k++) {
           const pl = G.player, goal = S.goal;
           if (goal.type === 'develop') { for (const t in goal.dev) devOf(pl)[t].pat = 2; for (const q of provsOf(pl)) if (!q.build) for (const key of ['library', 'madrasa']) if (!buildCheck(q, key)) { startBuild(q, key); break; } }
           else for (const a of armiesOf(pl).sort((x, y) => armyPower(y) - armyPower(x))) {
@@ -68,7 +69,7 @@ exports.longCampaignBalance = async ({ page, quietHooks, assert }) => {
             if (armyPower(a) < 60) continue;
             const strong = armiesOf(pl).filter(x => armyPower(x) >= 60).sort((x, y) => x.id < y.id ? -1 : 1);
             const own = S.id === 'revenge' ? goal.provs[strong.indexOf(a) % goal.provs.length] : left[0];
-            if (G.provinces[own].owner === pl && a.prov === own) continue;
+            if (G.provinces[own].owner === pl && a.prov === own && strong.filter(x => x.prov === own).length < 2 && armyPower(a) < 120) continue;
             const tgt = (G.provinces[own].owner !== pl ? own : null) || left.sort((x, y) => pathTo(a.prov, x).length - pathTo(a.prov, y).length)[0];
             for (const step of pathTo(a.prov, tgt)) { if (!G.armies[a.id] || a.moves <= 0) break; if (moveBlocked(a, step) === 'peace') declareWar(pl, G.provinces[step].owner, true); const r = await moveArmy(a, step); if (!r.ok || r.kind !== 'move') break; }
           }
@@ -76,12 +77,12 @@ exports.longCampaignBalance = async ({ page, quietHooks, assert }) => {
         }
         if (G.scenario.result === 'win') wins++;
       }
-      out.push({ id: S.id, wins });
+      out.push({ id: S.id, wins, runs: window.RUNS || 2 });
     }
     return out;
   });
   const lost = rows.filter(r => r.wins === 0);
-  console.log('        ' + rows.map(r => `${r.id} ${r.wins}/2`).join(', '));
+  console.log('        ' + rows.map(r => `${r.id} ${r.wins}/${r.runs}`).join(', '));
   assert(!lost.length, 'never won: ' + lost.map(r => r.id).join(', '));
   await p.close2();
 };

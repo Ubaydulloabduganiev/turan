@@ -174,3 +174,7 @@ body.quake #game { animation: quake 0.6s cubic-bezier(.36, .07, .19, .97); }
 #modal button, #panel button { position: relative; z-index: 2; }
 #modal h3, .p-title { pointer-events: none; }
 #modal h3 button, #modal h3 a { pointer-events: auto; }
+
+/* The four seasons on the map */
+#game[data-season="summer"] #terrain { filter: saturate(1.05) brightness(1.04) sepia(0.08); }
+#game[data-season="winter"] #terrain { filter: saturate(0.55) brightness(1.08) contrast(0.95) hue-rotate(8deg); }

@@ -545,7 +545,7 @@ function importSave() {
 }
 
 const HELP = [
-  ['p', 'You rule one of the seven nations of Turkistan in 1370. Each turn is half a year. The last nation standing wins. Destroy your rivals in war, or make them submit to you. You lose if your last city falls.'],
+  ['p', 'You rule one of the seven nations of Turkistan in 1370. Each turn is one month. The last nation standing wins. Destroy your rivals in war, or make them submit to you. You lose if your last city falls.'],
   ['h', 'The easy way to play'],
   ['li', 'Click any city. If it is yours, you can issue decrees, recruit soldiers and build. If it belongs to someone else, you can attack it with any army that can reach it, or talk to its ruler: trade, alliances, marriages, tribute, or a demand to submit.'],
   ['li', 'Your vizier, in the corner, suggests good moves each turn. Click a suggestion to go there.'],

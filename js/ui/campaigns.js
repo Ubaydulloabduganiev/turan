@@ -38,7 +38,7 @@ function renderCampaigns() {
   const cards = SCENARIOS.map(s => {
     const done = got['sc_' + s.id];
     return `<div class="camp" data-camp="${s.id}">${flagSVG(s.faction)}<div class="camp-body">
-      <div class="camp-year">${dateText(s.start)} · ${fName(s.faction)} · ${t(s.difficulty)}${done ? ` · <b class="good">${icon('check')} ${t('Completed')}</b>` : ''}</div>
+      <div class="camp-year">${dateM(s.start)} · ${fName(s.faction)} · ${t(s.difficulty)}${done ? ` · <b class="good">${icon('check')} ${t('Completed')}</b>` : ''}</div>
       <h3>${t(s.title)}</h3><p>${t(s.blurb)}</p><p class="camp-goal"><b>${t('Goal')}:</b> ${goalTextOf(s)}</p></div></div>`;
   }).join('');
   const hot = `<div class="camp hot" data-camp="hotseat"><div class="camp-flags">${PLAYABLE.slice(0, 4).map(f => flagSVG(f)).join('')}</div>

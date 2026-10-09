@@ -44,10 +44,21 @@ function rng() { // seeded, so a saved game continues the same way
 const pick = list => list[Math.floor(rng() * list.length)];
 const clampN = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 
-function dateText(turn = G.turn) {
-  return t(GAME.SEASONS[turn % 2]) + ' ' + (GAME.START_YEAR + Math.floor(turn / 2));
-}
-const year = () => GAME.START_YEAR + Math.floor(G.turn / 2);
+// ---------- The calendar: one turn is one month, from April 1370 ----------
+// Games saved before the months came keep their half-year turns (G.tpy is then missing: 2 turns a year).
+const tpy = () => (G ? G.tpy || 2 : 12);
+function monthOf(turn = G.turn) { return tpy() === 12 ? (GAME.START_MONTH + turn) % 12 : (turn % 2 ? 9 : 3); }
+function yearOf(turn = G.turn) { return tpy() === 12 ? GAME.START_YEAR + Math.floor((GAME.START_MONTH + turn) / 12) : GAME.START_YEAR + Math.floor(turn / 2); }
+const year = () => yearOf(G.turn);
+// The present as a turn of the monthly calendar, also in an old half-year game
+const nowM = () => turnAt(year(), monthOf());
+// winter (December–February), spring, summer, autumn
+function seasonOf(turn = G.turn) { const m = monthOf(turn); return m === 11 || m < 2 ? 'winter' : m < 5 ? 'spring' : m < 8 ? 'summer' : 'autumn'; }
+// The last turn of a year (December), when people grow a year older
+const newYear = () => tpy() === 12 ? monthOf() === 11 : G.turn % 2 === 1;
+function dateText(turn = G.turn) { return t('{month} {year}', { month: t(GAME.MONTHS[monthOf(turn)]), year: yearOf(turn) }); }
+// A date of the monthly calendar (campaign starts and deadlines), whatever game is loaded
+function dateM(turn) { const m = (GAME.START_MONTH + turn) % 12; return t('{month} {year}', { month: t(GAME.MONTHS[(m + 12) % 12]), year: GAME.START_YEAR + Math.floor((GAME.START_MONTH + turn) / 12) }); }
 
 // ---------- New game ----------
 
@@ -100,7 +111,7 @@ function provinceFromData(d, i) {
 function newGame(player, seed, humans) {
   MAPDATA = MAPDATA || buildMap();
   G = {
-    version: 1, player, turn: 0, seed: seed || ((Math.random() * 1e9) | 0), nextId: 1,
+    version: 1, tpy: 12, player, turn: 0, seed: seed || ((Math.random() * 1e9) | 0), nextId: 1,
     factions: {}, provinces: {}, armies: {}, rel: {}, log: [], fired: [], over: null, stats: {}, fog: true,
     humans: humans && humans.length > 1 ? PLAYABLE.filter(f => humans.includes(f)) : undefined,
   };
@@ -389,7 +400,7 @@ function gameFromText(text) {
 }
 function saveFileName() {
   const name = (FACTIONS[G.player].short || G.player).toString().replace(/[^A-Za-z0-9]+/g, '-');
-  return `turan-${name}-${GAME.START_YEAR + Math.floor(G.turn / 2)}-${G.turn % 2 ? 'autumn' : 'spring'}.json`;
+  return `turan-${name}-${year()}-${GAME.MONTHS[monthOf()].toLowerCase()}.json`;
 }
 
 function saveMeta(slot) {

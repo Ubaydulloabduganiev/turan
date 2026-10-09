@@ -43,7 +43,7 @@ for (const f of ['js/i18n.js', 'js/data.js', 'js/characters.js', 'js/engine/stat
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 const D = vm.runInContext('({ GAME, FACTIONS, UNITS, BUILDINGS, TERRAIN, EVENTS, RANDOM_EVENTS, WONDERS, STORIES, CHARACTERS, DECREES, LANDMARKS })', ctx);
 const add = v => { if (typeof v === 'string' && v) keys.add(v); };
-D.GAME.SEASONS.forEach(add);
+D.GAME.MONTHS.forEach(add); add('{month} {year}');
 for (const F of Object.values(D.FACTIONS)) ['name', 'full', 'adj', 'title', 'difficulty', 'blurb', 'play'].forEach(k => add(F[k]));
 for (const u of Object.values(D.UNITS)) { add(u.name); add(u.desc); }
 for (const b of Object.values(D.BUILDINGS)) { add(b.name); add(b.desc); b.levels.forEach(add); }

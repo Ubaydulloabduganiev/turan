@@ -35,7 +35,7 @@ function reignGraph(w, h) {
 function reignStats() {
   const pl = G.player, st = G.factions[pl], s = G.stats[pl] || {}, hs = histOf(pl);
   const peak = Math.max(provsOf(pl).length, ...hs.map(e => e.p));
-  const startYear = GAME.START_YEAR + Math.floor(((G.scenario && scenarioById(G.scenario.id) && scenarioById(G.scenario.id).start) || 0) / 2);
+  const startYear = yearOf((G.scenario && scenarioById(G.scenario.id) && scenarioById(G.scenario.id).start) || 0);
   return [
     ['Years of the reign', `${startYear}–${year()}`],
     ['Provinces at the height', peak],

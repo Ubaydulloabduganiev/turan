@@ -30,7 +30,7 @@ const ACH = [
   { id: 'scholars', icon: '📜', name: 'Patron of learning', desc: 'Keep three scholars or poets at your court.', check: pl => sagesOf(pl).length >= 3 },
   { id: 'advance', icon: '☼', name: 'Master of a field', desc: 'Win all five advances in one field.', check: pl => TRACK_ORDER.some(k => devOf(pl)[k].lvl >= 5) },
   { id: 'golden', icon: '🌟', name: 'A golden age', desc: 'Win all twenty advances.', check: () => !!G.goldenAge },
-  { id: 'golden_early', icon: '⏳', name: 'Ahead of its time', desc: 'Crown a golden age before 1400.', check: () => !!G.goldenAge && GAME.START_YEAR + Math.floor(G.goldenAge / 2) < 1400 },
+  { id: 'golden_early', icon: '⏳', name: 'Ahead of its time', desc: 'Crown a golden age before 1400.', check: () => !!G.goldenAge && yearOf(G.goldenAge) < 1400 },
   ...SCENARIOS.map(s => ({ id: 'sc_' + s.id, icon: '📖', name: s.title, desc: 'Complete the campaign.', campaign: s.id, check: () => G.scenario && G.scenario.id === s.id && G.scenario.result === 'win' })),
 ];
 

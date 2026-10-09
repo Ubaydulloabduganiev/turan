@@ -5,15 +5,16 @@
 //   goal.type 'hold'    : still hold every listed city when the deadline comes (lost if one falls for good)
 //   goal.type 'develop' : reach the listed advances before the deadline while keeping the listed cities
 
-const turnOf = (y, autumn) => (y - GAME.START_YEAR) * 2 + (autumn ? 1 : 0);
+// A campaign starts in its historical month and runs for a number of monthly turns
+const T0 = { khwarezm: turnAt(1371, 9), toqtamish: turnAt(1377, 9), revenge: turnAt(1387, 10), sarai: turnAt(1395, 4), heirs: turnAt(1405, 3), ulughbeg: turnAt(1409, 9), india: turnAt(1398, 8), ankara: turnAt(1402, 5) };
 
 const SCENARIOS = [
   {
-    id: 'khwarezm', faction: 'temur', start: turnOf(1371, 1), deadline: turnOf(1379, 1), difficulty: 'Easy',
+    id: 'khwarezm', faction: 'temur', start: T0.khwarezm, deadline: T0.khwarezm + 16, difficulty: 'Easy',
     title: 'The Conquest of Khwarezm',
     blurb: 'Husayn Sufi of Khwarezm refuses to return Kath and Khiva to the Chagatai Ulus. Temur swears to take the whole oasis of the lower Amu Darya, with its rich capital Urgench. History gave him eight years.',
     goal: { type: 'take', provs: ['urgench', 'khiva', 'kath'] },
-    goalText: 'Take Urgench, Khiva and Kath before the end of 1379.',
+    goalText: 'Take Urgench, Khiva and Kath before {date}.',
     setup: () => {
       declareWar('temur', 'khwarezm', true); rel('temur', 'khwarezm').att = -60; G.factions.temur.gold += 1000;
       // The army of the invasion waits in the Kyzylkum, on the road to Kath
@@ -22,11 +23,11 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'toqtamish', faction: 'white', start: turnOf(1377, 1), deadline: turnOf(1383, 0), difficulty: 'Normal',
+    id: 'toqtamish', faction: 'white', start: T0.toqtamish, deadline: T0.toqtamish + 11, difficulty: 'Normal',
     title: 'Toqtamish and the Golden Throne',
     blurb: 'Urus Khan is dead. The young Toqtamish, a prince of the house of Jochi who once fled to Temur, now holds the White Horde. Beyond the Volga, Mamai rules Sarai through puppet khans. Your riders have already crossed the Yaik and taken Saraichik. Unite the two halves of the Horde of Jochi.',
     goal: { type: 'take', provs: ['sarai', 'hajjitarkhan'] },
-    goalText: 'Take Sarai and Hajji-Tarkhan before the spring of 1383. Mamai will be weakest after his war in Rus\u2019, in 1380.',
+    goalText: 'Take Sarai and Hajji-Tarkhan before {date}.',
     setup: () => {
       setLeader('white', 'Toqtamish', 27);
       declareWar('white', 'golden', true); rel('white', 'golden').att = -70;
@@ -40,23 +41,23 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'moghul', faction: 'moghul', start: 0, deadline: turnOf(1377, 0), difficulty: 'Normal',
+    id: 'moghul', faction: 'moghul', start: 0, deadline: 14, difficulty: 'Normal',
     title: 'The Khan Strikes Back',
     blurb: 'Twice the Moghul khans conquered Transoxiana, and twice the amirs of Samarkand drove them out. Now Qamar al-Din Dughlat rules the steppe, and the upstart Temur sits in Samarkand. Take back the cities of the Chagatai Ulus.',
     goal: { type: 'take', provs: ['samarkand', 'tashkent'] },
-    goalText: 'Take Samarkand and Tashkent before the spring of 1377.',
+    goalText: 'Take Samarkand and Tashkent before {date}.',
     setup: () => { G.factions.moghul.gold += 1500; strikeArmy('moghul', 'fergana', ['horsearch', 'horsearch', 'dughlat', 'dughlat', 'lancer', 'lancer', 'heavycav', 'spear', 'spear', 'archer', 'siege', 'siege']); },
   },
   {
-    id: 'sarbadar', faction: 'sarbadar', start: 0, deadline: turnOf(1383, 0), difficulty: 'Hard',
+    id: 'sarbadar', faction: 'sarbadar', start: 0, deadline: 26, difficulty: 'Hard',
     title: 'The Last Sarbadars',
     blurb: 'The Sarbadars of Sabzevar, a republic of rebels who chose death over Mongol tribute, have ruled western Khorasan for forty years. Now the Kartids of Herat press from the east, and a far greater storm is rising beyond the Amu Darya.',
     goal: { type: 'hold', provs: ['sabzevar', 'nishapur'] },
-    goalText: 'Still hold Sabzevar and Nishapur in the spring of 1383. Temur will come for Khorasan.',
+    goalText: 'Still hold Sabzevar and Nishapur in {date}. Temur will come for Khorasan.',
     setup: () => { declareWar('kart', 'sarbadar', true); rel('temur', 'sarbadar').att = -25; },
     // Temur marches on Khorasan, as he did in 1381
     onTurn: () => {
-      if (G.turn === turnOf(1380, 1) && G.factions.temur.alive && !rel('temur', 'sarbadar').war) {
+      if (G.turn === 21 && G.factions.temur.alive && !rel('temur', 'sarbadar').war) {
         declareWar('temur', 'sarbadar');
         const at = provsOf('temur').filter(p => p.adj.some(n => ['merv', 'sarakhs', 'tus', 'abiward', 'nishapur'].includes(n)))[0] || G.provinces[G.factions.temur.capital];
         if (at) addArmy('temur', at.id, ['spear', 'spear', 'archer', 'archer', 'lancer', 'heavycav', 'siege', 'tovachi'], null);
@@ -64,19 +65,20 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'herat', faction: 'kart', start: 0, deadline: turnOf(1395, 0), difficulty: 'Normal',
+    id: 'herat', faction: 'kart', start: 0, deadline: 56, difficulty: 'Normal',
     title: 'Herat, City of Poets',
     blurb: 'Herat is small in land but great in learning: its madrasas, painters and poets are famous from Tabriz to Delhi. Malik Ghiyath al-Din can never outfight his neighbours. He can outshine them.',
     goal: { type: 'develop', provs: ['herat'], dev: { culture: 5, trade: 3 } },
-    goalText: 'Win all five advances in Literature and arts and three in Trade before 1395, and keep Herat.',
+    goalText: 'Win all five advances in Literature and arts and three in Trade before {date}, and keep Herat.',
     setup: () => { G.factions.kart.gold += 1500; G.provinces.herat.b.library = 1; },
   },
   {
-    id: 'revenge', faction: 'golden', start: turnOf(1387, 1), deadline: turnOf(1391, 0), difficulty: 'Hard',
+    id: 'revenge', faction: 'golden', start: T0.revenge, deadline: T0.revenge + 7, difficulty: 'Hard',
     title: 'The Ungrateful Khan',
     blurb: 'Toqtamish owes his throne to Temur, and he has not forgotten it: he hates him for it. Now he rules the whole Horde of Jochi, from the Volga to the Syr Darya. Temur and his best men are far away in Persia. This winter the Horde rides south.',
     goal: { type: 'take', provs: ['otrar', 'tashkent', 'bukhara'] },
-    goalText: 'Take Otrar, Tashkent and Bukhara before the spring of 1391. Temur will come back from Persia in the autumn of 1388.',
+    goalText: 'Take Otrar, Tashkent and Bukhara before {date}. Temur will come back from Persia in {back}.',
+    goalVars: () => ({ back: dateM(T0.revenge + 2) }),
     winText: 'Bukhara, Tashkent and Otrar fly the banners of the Horde. In history Toqtamish burned the palaces of Transoxiana and then fled before Temur’s return. In this story, the Chagatai Ulus has lost its heart, and the steppe rules the cities once more.',
     setup: () => {
       annex('golden', 'white');
@@ -93,7 +95,7 @@ const SCENARIOS = [
     },
     // Temur comes back from Persia
     onTurn: () => {
-      if (G.turn === turnOf(1388, 1) && G.factions.temur.alive) {
+      if (G.turn === T0.revenge + 2 && G.factions.temur.alive) {
         const at = G.provinces.samarkand.owner === 'temur' ? 'samarkand' : (provsOf('temur')[0] || {}).id;
         if (at) { addArmy('temur', at, ['heavyinf', 'spear', 'spear', 'archer', 'archer', 'lancer', 'heavycav', 'tovachi'], makeGeneral('temur', G.factions.temur.leader, 6, 52, true)); }
         HOOKS.notify({ title: t('Temur returns'), text: t('Riders bring the news: Temur has crossed the Amu Darya with the army of Persia, and he is marching north.'), history: true });
@@ -101,11 +103,11 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'sarai', faction: 'temur', start: turnOf(1395, 0), deadline: turnOf(1397, 1), difficulty: 'Normal',
+    id: 'sarai', faction: 'temur', start: T0.sarai, deadline: T0.sarai + 5, difficulty: 'Normal',
     title: 'The Sack of Sarai',
     blurb: 'On the Terek, in April 1395, Temur has broken the army of Toqtamish. The khan has fled into the steppe. Now the road lies open to Sarai, the richest city of the north, where the Horde keeps the treasure of a hundred and fifty years.',
     goal: { type: 'take', provs: ['sarai', 'hajjitarkhan'] },
-    goalText: 'Take Sarai and Hajji-Tarkhan before the autumn of 1397.',
+    goalText: 'Take Sarai and Hajji-Tarkhan before {date}.',
     winText: 'Sarai burns, and Hajji-Tarkhan with it. The Golden Horde never recovers: its trade turns away to new roads, and the steppe empire of Batu fades. Temur rides home to Samarkand with the craftsmen of the north in his train.',
     setup: () => {
       annex('golden', 'white');
@@ -122,11 +124,11 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'heirs', faction: 'temur', start: turnOf(1405, 1), deadline: turnOf(1409, 1), difficulty: 'Normal',
+    id: 'heirs', faction: 'temur', start: T0.heirs, deadline: T0.heirs + 8, difficulty: 'Normal',
     title: 'The Heirs of Temur',
     blurb: 'In February 1405 Temur died at Otrar, on his way to China. His grandson Khalil Sultan has seized Samarkand and the treasury, and scatters gold to win the amirs. In Herat, Temur’s youngest son, Shah Rukh, gathers the army of Khorasan.',
     goal: { type: 'take', provs: ['samarkand', 'bukhara'] },
-    goalText: 'Take Samarkand and Bukhara from Khalil Sultan before the autumn of 1409.',
+    goalText: 'Take Samarkand and Bukhara from Khalil Sultan before {date}.',
     winText: 'Shah Rukh enters Samarkand in 1409 and gives it to his son Ulugh Beg. He rules the empire of Temur from Herat for forty years, in peace, among poets, painters and builders. The age of the sword gives way to the age of the book.',
     setup: () => {
       setLeader('temur', 'Shah Rukh', 28);
@@ -142,11 +144,11 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'ulughbeg', faction: 'temur', start: turnOf(1409, 1), deadline: turnOf(1420, 0), difficulty: 'Normal',
+    id: 'ulughbeg', faction: 'temur', start: T0.ulughbeg, deadline: T0.ulughbeg + 21, difficulty: 'Normal',
     title: 'Ulugh Beg’s Samarkand',
     blurb: 'Samarkand has a new master: Ulugh Beg, grandson of Temur, fifteen years old, who loves the stars more than the sword. Around him gather mathematicians and astronomers. Make his city the capital of learning of the whole world.',
     goal: { type: 'develop', provs: ['samarkand'], dev: { science: 5, culture: 3 } },
-    goalText: 'Win all five advances in Science and three in Literature and arts before 1420, and keep Samarkand.',
+    goalText: 'Win all five advances in Science and three in Literature and arts before {date}, and keep Samarkand.',
     winText: 'On a hill above Samarkand rises the great observatory, with a sextant forty metres high. Ulugh Beg’s star tables, the most exact since Ptolemy, are copied in Istanbul, in Delhi and, centuries later, in Oxford.',
     setup: () => {
       setLeader('temur', 'Ulugh Beg', 15);
@@ -161,11 +163,11 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'india', faction: 'temur', start: turnOf(1398, 1), deadline: turnOf(1401, 1), difficulty: 'Hard',
+    id: 'india', faction: 'temur', start: T0.india, deadline: T0.india + 6, difficulty: 'Hard',
     title: 'The Road to Delhi',
     blurb: 'Autumn 1398. Old Firuz Shah is dead, and his heirs fight over Delhi like dogs over a bone. Temur, sixty-two years old, has crossed the Hindu Kush and bridged the Indus. His grandson Pir Muhammad already holds Multan. Ahead lie the deserts of the Punjab, the fortress of Bhatnir and the war elephants of Sultan Mahmud.',
     goal: { type: 'take', provs: ['bhatnir', 'delhi'] },
-    goalText: 'Take the fortress of Bhatnir and Delhi before the autumn of 1401. Beware the war elephants: they break any line of horsemen.',
+    goalText: 'Take the fortress of Bhatnir and Delhi before {date}. Beware the war elephants: they break any line of horsemen.',
     winText: 'Delhi falls in December 1398, and its treasures are carried north for months. Temur rides home with ninety captured elephants, loaded with stone, and with the masons of India, who will raise the great mosque of Bibi-Khanym in Samarkand.',
     setup: () => {
       setLeader('temur', 'Amir Temur', 62);
@@ -192,11 +194,11 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'ankara', faction: 'temur', start: turnOf(1402, 0), deadline: turnOf(1404, 1), difficulty: 'Hard',
+    id: 'ankara', faction: 'temur', start: T0.ankara, deadline: T0.ankara + 5, difficulty: 'Hard',
     title: 'The Thunderbolt and the Lame',
     blurb: 'Two conquerors who have never lost a battle. Bayezid the Thunderbolt has crushed the crusaders at Nicopolis and holds Constantinople in a stranglehold. He has answered Temur’s letters with insults. Now Temur has taken Sivas and marches into Anatolia, and Bayezid lifts the siege of Constantinople to meet him near Ankara.',
     goal: { type: 'take', provs: ['ankara', 'bursa'] },
-    goalText: 'Take Ankara and the Ottoman capital Bursa before the autumn of 1404. Temur’s agents are talking to the Tatar horsemen in Bayezid’s army.',
+    goalText: 'Take Ankara and the Ottoman capital Bursa before {date}. Temur’s agents are talking to the Tatar horsemen in Bayezid’s army.',
     winText: 'On 28 July 1402, near Ankara, the Tatars change sides, the Serbian knights fight to the last, and Bayezid is taken prisoner. He dies in captivity the next year. His sons fight each other for ten years, Constantinople is saved for half a century, and the kings of Europe write to Temur to thank him.',
     setup: () => {
       setLeader('temur', 'Amir Temur', 66);
@@ -267,7 +269,7 @@ function historicRulers() {
 }
 const scenarioById = id => SCENARIOS.find(s => s.id === id) || (typeof challengeSpec === 'function' ? challengeSpec(id) : null);
 // A campaign's goal in words (a challenge writes its own, with the names of the day)
-const goalTextOf = S => S.challenge ? challengeGoalText(S) : t(S.goalText);
+const goalTextOf = S => S.challenge ? challengeGoalText(S) : t(S.goalText, Object.assign({ date: dateM(S.deadline) }, S.goalVars ? S.goalVars() : {}));
 
 // A large army under a new general, ready to march on the goal
 function strikeArmy(f, prov, units) {
@@ -290,8 +292,8 @@ function newScenarioGame(id) {
   G.scenario = { id, deadline: S.deadline, result: null };
   if (S.start) {
     // Events before the start date are history already; people are older
-    for (let i = 0; i < EVENTS.length; i++) { const e = EVENTS[i]; if ((e.when[0] - GAME.START_YEAR) * 2 + e.when[1] <= S.start && !G.fired.includes(i)) G.fired.push(i); }
-    const years = Math.floor(S.start / 2);
+    for (let i = 0; i < EVENTS.length; i++) { const e = EVENTS[i]; if (turnAt(e.when[0], e.when[1]) <= S.start && !G.fired.includes(i)) G.fired.push(i); }
+    const years = Math.floor((GAME.START_MONTH + S.start) / 12);
     for (const a of Object.values(G.armies)) if (a.general) a.general.age += years;
     G.turn = S.start;
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);

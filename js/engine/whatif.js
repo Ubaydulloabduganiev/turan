@@ -3,7 +3,8 @@
 // decides. The first choice is always what really happened; the others change what comes later.
 // Rival rulers decide too, usually as history did, so every campaign can take its own path.
 
-const TT = (y, s = 0) => (y - GAME.START_YEAR) * 2 + s;
+// A moment of history in the monthly calendar: spring (April) or autumn (October) of a year
+const TT = (y, s = 0) => turnAt(y, s ? 9 : 3);
 const alt = k => (G.alt && G.alt[k]) || null;
 function setAlt(k, v) { G.alt = G.alt || {}; G.alt[k] = v; }
 // A consequence that comes some turns later
@@ -211,7 +212,7 @@ function pickWhatIf() {
   if (G.wonders && G.wonders.bibikhanym && !alt('bibi') && ownerOf('samarkand') === pl && G.turn >= (G.bibiAt || 0)) return { story: whatifStory(BIBI), ctx: storyContext(pl), whatif: true };
   for (const w of WHATIFS) {
     if (w.by !== pl || G.altDone[w.id] !== undefined || !alive(pl)) continue;
-    if (G.turn < w.from || G.turn > w.to || !w.when()) continue;
+    if (nowM() < w.from || nowM() > w.to || !w.when()) continue;
     G.altDone[w.id] = 'open';
     return { story: whatifStory(w), ctx: storyContext(pl), whatif: true };
   }
@@ -236,9 +237,9 @@ function whatifStory(w) {
 function whatifTurn() {
   G.altDone = G.altDone || {};
   for (const w of WHATIFS) {
-    if (G.altDone[w.id] !== undefined || G.turn < w.from) continue;
-    if (isHuman(w.by)) { if (G.turn > w.to) G.altDone[w.id] = 0; continue; } // the moment passed
-    if (!alive(w.by) || G.turn > w.to) { G.altDone[w.id] = 0; continue; }
+    if (G.altDone[w.id] !== undefined || nowM() < w.from) continue;
+    if (isHuman(w.by)) { if (nowM() > w.to) G.altDone[w.id] = 0; continue; } // the moment passed
+    if (!alive(w.by) || nowM() > w.to) { G.altDone[w.id] = 0; continue; }
     if (isHuman(w.vs)) continue; // a person answers this one from the other side
     if (!w.when()) continue;
     // A rival decides: usually as history did
@@ -278,7 +279,7 @@ function eventVariant(e) {
     if (tq && tq !== 'backed') {
       out.effect = { ...e.effect, leader: 'Temur-Malik' };
       out.text = 'Urus Khan dies in the winter of 1377. Without Toqtamish to challenge them, his son Temur-Malik takes the throne of the White Horde.';
-    } else if (tq === 'backed' && alive('temur')) altLater('toqtamish_betrays', Math.max(G.turn + 4, TT(1385, 1)));
+    } else if (tq === 'backed' && alive('temur')) altLater('toqtamish_betrays', G.turn + Math.max(4, TT(1385, 1) - nowM()));
   }
   if (e.title === 'Battle of Kulikovo') {
     const k = alt('kulikovo');

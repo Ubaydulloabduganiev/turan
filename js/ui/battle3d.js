@@ -25,7 +25,7 @@ function make3D() {
   const rnd = mulberry32(TB.b.prov.length * 131 + G.turn);
 
   // ---------- Light and sky: a spring morning or a golden autumn afternoon ----------
-  const autumn = G.turn % 2 === 1;
+  const season = seasonOf(), autumn = season === 'autumn' || season === 'winter';
   const sky = autumn ? { top: '#5d86b8', hor: '#f2c98f', sun: '#ffd8a0', ground: '#6b5a3a' } : { top: '#6f9fd2', hor: '#e6e1cf', sun: '#fff1d8', ground: '#5d6a40' };
   if (TB.terrain === 'desert') sky.hor = '#f0d2a0';
   scene.fog = new T.Fog(sky.hor, 900, 3400);

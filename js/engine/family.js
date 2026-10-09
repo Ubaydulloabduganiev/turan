@@ -63,7 +63,8 @@ function arrangeMarriage(a, b) {
 // Each turn, married couples may have children
 function familyTurn() {
   for (const m of G.marriages || []) {
-    if (G.turn < m.turn + 2 || m.kids.length >= 3 || rng() > 0.13) continue;
+    // about one child in four years (the chance is per turn: a month, or half a year in old saves)
+    if (G.turn < m.turn + (tpy() === 12 ? 10 : 2) || m.kids.length >= 3 || rng() > (tpy() === 12 ? 0.025 : 0.13)) continue;
     if (!G.factions[m.gF] || !G.factions[m.gF].alive) continue;
     const boy = rng() < 0.55;
     const name = boy ? freshName(NAMES[FACTIONS[m.gF].names], SON_TITLE[m.gF] || '') : freshName(BRIDES[FACTIONS[m.gF].names] || BRIDES.turkic);

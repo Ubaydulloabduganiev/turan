@@ -5,12 +5,16 @@
 const GAME = {
   START_YEAR: 1370,
   MAX_ARMY: 16,
-  SEASONS: ['Spring', 'Autumn'],
+  START_MONTH: 3, // the game opens in April 1370; every turn is one month
+  MONTHS: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
   INCOME: 0.7,
   UPKEEP: 0.75, // scales what armies cost each turn // scales every source of gold; keeps the treasury tight enough that choices cost something
 };
 
 // nomad: steppe people (horse units need no stables, cities rarely accept them gladly)
+// The turn of a date in the monthly calendar (m: 0 = January)
+const turnAt = (y, m) => (y - GAME.START_YEAR) * 12 + m - GAME.START_MONTH;
+
 const FACTIONS = {
   temur: {
     name: 'Amir Temur', full: 'Chagatai Ulus of Amir Temur', adj: 'Temurid', color: '#2f6fb3', dark: '#1b416b',
@@ -397,17 +401,17 @@ const NAMES = {
   persian: ['Mahmud', 'Hasan', 'Ali', 'Shams al-Din', 'Nizam al-Din', 'Fakhr al-Din', 'Muhammad', 'Abdallah', 'Qutb al-Din', 'Ghiyath', 'Jalal', 'Rukn al-Din', 'Yahya', 'Lutf Allah'],
 };
 
-// Historical events. `when` is [year, season index]. `if` names factions that must still exist.
+// Historical events. `when` is [year, month] (0 = January). `if` names factions that must still exist.
 const EVENTS = [
-  { when: [1370, 0], title: 'Kurultai at Balkh', text: 'In April 1370 the amirs of the Chagatai Ulus gather at Balkh and proclaim Temur their Great Amir. A descendant of Ögedei, Soyurghatmish, is raised as puppet khan.', effect: { faction: 'temur', order: 10 } },
-  { when: [1371, 1], title: 'Khwarezm defies Temur', text: 'Husayn Sufi refuses to hand back Kath and Khiva to the Chagatai Ulus. Temur swears to take them by force.', effect: { relation: ['temur', 'khwarezm', -40] } },
-  { when: [1373, 0], title: 'Urus Khan marches on Sarai', text: 'Urus Khan of the White Horde drives Mamai\'s puppet khan from Sarai and claims the throne of all the Jochids.', effect: { relation: ['white', 'golden', -50] } },
-  { when: [1375, 1], title: 'Toqtamish flees to Temur', text: 'The young Jochid prince Toqtamish, defeated by Urus Khan, takes refuge at Temur\'s court. Temur gives him Otrar and Sauran and an army.', effect: { relation: ['temur', 'white', -30] } },
-  { when: [1377, 1], title: 'Death of Urus Khan', text: 'Urus Khan dies in the winter of 1377. His sons quarrel over the throne, and the White Horde is shaken.', effect: { faction: 'white', order: -15, leader: 'Toqtamish' } },
-  { when: [1380, 1], title: 'Battle of Kulikovo', text: 'On the field of Kulikovo, Prince Dmitry of Moscow defeats Mamai. The Golden Horde loses many of its best riders.', effect: { faction: 'golden', armyLoss: 0.35 } },
-  { when: [1381, 0], title: 'Plague on the Silk Road', text: 'The Black Death returns along the caravan routes. Towns on the Silk Road lose many of their people.', effect: { plague: 0.12 } },
-  { when: [1388, 1], title: 'A great caravan from China', text: 'A rich caravan arrives from Ming China, bringing silk and porcelain to the bazaars of the west.', effect: { silkGold: 400 } },
-  { when: [1399, 0], title: 'Bibi-Khanym rises in Samarkand', text: 'Masons from across the conquered lands raise a great congregational mosque in Samarkand. Whoever holds the city gains prestige.', effect: { holder: 'samarkand', order: 15, gold: 1000 } },
+  { when: [1370, 3], title: 'Kurultai at Balkh', text: 'In April 1370 the amirs of the Chagatai Ulus gather at Balkh and proclaim Temur their Great Amir. A descendant of Ögedei, Soyurghatmish, is raised as puppet khan.', effect: { faction: 'temur', order: 10 } },
+  { when: [1371, 9], title: 'Khwarezm defies Temur', text: 'Husayn Sufi refuses to hand back Kath and Khiva to the Chagatai Ulus. Temur swears to take them by force.', effect: { relation: ['temur', 'khwarezm', -40] } },
+  { when: [1373, 3], title: 'Urus Khan marches on Sarai', text: 'Urus Khan of the White Horde drives Mamai\'s puppet khan from Sarai and claims the throne of all the Jochids.', effect: { relation: ['white', 'golden', -50] } },
+  { when: [1375, 9], title: 'Toqtamish flees to Temur', text: 'The young Jochid prince Toqtamish, defeated by Urus Khan, takes refuge at Temur\'s court. Temur gives him Otrar and Sauran and an army.', effect: { relation: ['temur', 'white', -30] } },
+  { when: [1377, 11], title: 'Death of Urus Khan', text: 'Urus Khan dies in the winter of 1377. His sons quarrel over the throne, and the White Horde is shaken.', effect: { faction: 'white', order: -15, leader: 'Toqtamish' } },
+  { when: [1380, 8], title: 'Battle of Kulikovo', text: 'On the field of Kulikovo, Prince Dmitry of Moscow defeats Mamai. The Golden Horde loses many of its best riders.', effect: { faction: 'golden', armyLoss: 0.35 } },
+  { when: [1381, 4], title: 'Plague on the Silk Road', text: 'The Black Death returns along the caravan routes. Towns on the Silk Road lose many of their people.', effect: { plague: 0.12 } },
+  { when: [1388, 9], title: 'A great caravan from China', text: 'A rich caravan arrives from Ming China, bringing silk and porcelain to the bazaars of the west.', effect: { silkGold: 400 } },
+  { when: [1399, 4], title: 'Bibi-Khanym rises in Samarkand', text: 'Masons from across the conquered lands raise a great congregational mosque in Samarkand. Whoever holds the city gains prestige.', effect: { holder: 'samarkand', order: 15, gold: 1000 } },
 ];
 
 const RANDOM_EVENTS = [
