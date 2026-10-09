@@ -106,3 +106,15 @@ with every unit, sixty turns of the computer rulers and hot seat.
     node tests/run.js --long       # also the slow balance runs of every campaign
 
 They also run on GitHub on every push (.github/workflows/tests.yml).
+
+## Translations for review
+
+All texts, city and region names and people's names can go out as one spreadsheet for native speakers to check,
+and come back into the game:
+
+    node tools/i18n-sheet.js export translations.xlsx   # English, Uzbek, Russian, Turkish side by side
+    node tools/i18n-sheet.js import translations.xlsx   # puts the corrections back into js/lang and js/i18n.js
+
+The file opens in Excel, LibreOffice and Google Sheets (download it as .xlsx again). Reviewers change only the
+language columns. Missing translations are marked yellow. Words in {braces} are filled in by the game and must
+stay in every translation; a line where they do not match is skipped and reported.

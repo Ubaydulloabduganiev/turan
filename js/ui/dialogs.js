@@ -160,9 +160,19 @@ async function afterCapture(pid, ownerBefore) {
 // Moves the selected army towards a province, fighting if needed.
 async function orderMove(a, pid) {
   let r = UI.reach && UI.reach[pid];
+  // Beyond this turn's march: a standing order, carried on at the start of each turn
+  if (!r && orderPath(a, pid)) {
+    const path = setMarch(a, pid);
+    toast(t('March orders'), t('{name} marches on {city}: about {n} turns.', { name: armyName(a), city: cityById(pid), n: orderTurns(a, path) }), 'good');
+    const rep = await followArmy(a);
+    if (rep) attentionReport(rep);
+    if (G.armies[a.id]) { UI.selArmy = a.id; UI.selProv = a.prov; }
+    refresh();
+    return;
+  }
   if (!r) {
     if (a.moves <= 0) toast(t('No moves left'), t('This army has already marched this turn.'), 'bad');
-    else toast(t('Too far'), t('That province cannot be reached this turn.'), 'bad');
+    else toast(t('Too far'), t('No road leads there through our own or allied lands.'), 'bad');
     return;
   }
   if (r.kind === 'blocked') {

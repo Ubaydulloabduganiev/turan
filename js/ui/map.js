@@ -286,6 +286,17 @@ function renderArmies() {
   renderFog();
   const byProv = {};
   for (const a of Object.values(G.armies)) if (armyVisible(a)) (byProv[a.prov] = byProv[a.prov] || []).push(a);
+  // Standing march orders: a dotted road to where each army is going
+  for (const a of armiesOf(G.player)) {
+    if (!a.dest) continue;
+    const path = orderPath(a, a.dest);
+    if (!path) continue;
+    const pts = [a.prov, ...path].map(id => G.provinces[id]);
+    const d = pts.map((p, i) => (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join('');
+    svgEl('path', { d, class: 'march-order' + (UI.selArmy === a.id ? ' sel' : ''), 'stroke-width': 3.2 * UI.k }, layers.armies);
+    const end = pts[pts.length - 1];
+    svgEl('circle', { cx: end.x, cy: end.y, r: 5 * UI.k, class: 'march-end' }, layers.armies);
+  }
   for (const pid in byProv) {
     const p = G.provinces[pid];
     // Several armies on one side stand as one banner with the others furled behind it; the selected or strongest leads

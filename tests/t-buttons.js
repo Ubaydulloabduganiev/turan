@@ -10,6 +10,7 @@ async function covered(p) {
       if (!r.width || !r.height || r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) continue;
       const st = getComputedStyle(el); if (st.visibility === 'hidden' || st.pointerEvents === 'none' || +st.opacity === 0) continue;
       if (el.closest('.hidden, #modal-wrap.hidden')) continue;
+      const shut = el.closest('details:not([open])'); if (shut && !el.closest('summary')) continue; // folded away
       let clipped = false;
       for (let a = el.parentElement; a; a = a.parentElement) { const s = getComputedStyle(a); if (/(auto|scroll|hidden)/.test(s.overflowY + s.overflowX)) { const ar = a.getBoundingClientRect(); const cy = r.top + r.height / 2, cx = r.left + r.width / 2; if (cy < ar.top || cy > ar.bottom || cx < ar.left || cx > ar.right) clipped = true; } }
       if (clipped) continue;

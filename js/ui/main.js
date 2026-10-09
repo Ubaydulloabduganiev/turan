@@ -162,6 +162,7 @@ async function doEndTurn() {
 // What a ruler sees at the start of their turn: news, the council, a choice to make
 async function turnStartUI(newRound) {
   if (!G) return;
+  await runStandingOrders();
   refresh();
   const st = G.factions[G.player];
   turnBanner(t('Treasury {gold} gold · {n} nations remain', { gold: fmt(st.gold), n: nationsLeft().length }));

@@ -29,6 +29,7 @@ function refresh() {
   renderPanel();
   updateHint();
   renderAdvisor();
+  renderAttention();
   juiceCheck();
 }
 
@@ -83,26 +84,36 @@ function provincePanel(p) {
   if (mine && order < 35) h += `<p class="note bad">${t('The people are close to revolt. Lower taxes, build a mosque or station troops here.')}</p>`;
   if (p.sacked > 0) h += `<p class="note warn">${t('The city is still recovering from a sack.')}</p>`;
 
-  // Tabs: for your city Rule / Army / Build; for another's War / Diplomacy / Dealings
-  const tabs = mine ? [['rule', t('Rule'), 'seal'], ['army', t('Army'), 'swords'], ['build', t('Build'), 'hammer']] : [['war', t('War'), 'swords'], ['dip', t('Diplomacy'), 'letter'], ['deal', t('Dealings'), 'scales']];
+  // Tabs: for your city City / Army / Build; for another's War / Diplomacy / Dealings
+  const tabs = mine ? [['rule', t('City'), 'seal'], ['army', t('Army'), 'swords'], ['build', t('Build'), 'hammer']] : [['war', t('War'), 'swords'], ['dip', t('Diplomacy'), 'letter'], ['deal', t('Dealings'), 'scales']];
   if (!tabs.some(([k]) => k === UI.ptab)) UI.ptab = tabs[0][0];
   if (!mine && p.owner === 'rebels' && UI.ptab === 'dip') UI.ptab = 'war';
   h += `<div class="ptabs">${tabs.map(([k, l, ic]) => `<button data-act="ptab" data-k="${k}" class="${UI.ptab === k ? 'on' : ''}">${icon(ic)}${l}</button>`).join('')}</div>`;
   const tab = UI.ptab;
 
   if (mine && tab === 'rule') {
-    h += citySectionTax(p) + cityActionGroups(p, ['Treasury']);
-  }
-  if (mine && tab === 'rule') {
+    // What matters most, first: the next things worth doing here
+    h += quickActions(p, order);
+    h += `<div class="p-sec gov"><label class="switch"><input type="checkbox" data-act="gov" ${p.gov ? 'checked' : ''}><span></span></label><div><b>${t('Governor')}</b><p class="note">${p.gov ? t('The governor builds and keeps order here by himself, leaving at least {n} gold in the treasury.', { n: GOV_RESERVE }) : t('Hand this city to a governor: he will build and keep order by himself.')}</p></div></div>`;
+    h += citySectionTax(p);
     h += `<div class="p-sec"><h4>${t('Royal decrees')}</h4><div class="decrees">` + Object.keys(DECREES).map(k => {
       const D = DECREES[k], why = decreeCheck(p, k);
       const price = k === 'feast' ? t('−{n} gold', { n: fmt(D.cost(p)) }) : k === 'tax' ? t('+{n} gold', { n: fmt(D.gain(p)) }) : t('+2 militia');
       return `<button data-act="decree" data-k="${k}" ${why ? 'disabled' : ''} title="${t(why || D.desc)}"><b>${t(D.name)}</b><small>${price}</small></button>`;
     }).join('') + '</div>' + (p.decree === G.turn ? `<p class="note">${t('You have already issued a decree here this turn.')}</p>` : '') + '</div>';
-    h += cityActionGroups(p, ['Government', 'Give away']);
+    // The rest, folded away until wanted
+    h += fold('treasury', t('Treasury'), cityActionGroups(p, ['Treasury'], true));
+    h += fold('gov', t('Government'), cityActionGroups(p, ['Government'], true));
+    h += fold('give', t('Give away'), cityActionGroups(p, ['Give away'], true));
   }
   if (mine && tab === 'army') {
     h += `<div class="p-sec"><h4>${t('Recruit')}</h4>`;
+    if ((p.lastRecruit || []).length && p.lastRecruitTurn !== G.turn) {
+      const why = repeatCheck(p), counts = {};
+      for (const u of p.lastRecruit) counts[u] = (counts[u] || 0) + 1;
+      const what = Object.keys(counts).map(u => (counts[u] > 1 ? counts[u] + '× ' : '') + uName(u)).join(', ');
+      h += `<button class="repeat" data-act="repeat" ${why ? 'disabled' : ''} title="${why ? t(why) : t('Order the same troops as last time')}">${icon('plus')}<span>${t('Same again: {what}', { what })}</span><small>${t('{n}g', { n: fmt(repeatCost(p)) })}</small></button>`;
+    }
     const list = recruitable(p);
     if (!list.length) h += `<p class="note">${t('Build barracks or stables to train troops here.')}</p>`;
     else {
@@ -122,28 +133,60 @@ function provincePanel(p) {
     if (p.build) {
       h += `<p class="note">${t('Building {what}: {n} turns left', { what: `<b>${buildName(p)}</b>`, n: p.build.turns })} <button class="small" data-act="cancelbuild">${t('Cancel')}</button></p>`;
     }
-    for (const k of BUILDING_ORDER) {
+    // What can be built now comes first, the governor's choice marked; finished and locked ones are folded away
+    const best = suggestBuild(p);
+    const row = k => {
       const B = BUILDINGS[k], lvl = p.b[k], next = lvl + 1;
       let right = '';
       if (next <= 3) {
         const why = buildCheck(p, k);
-        right = `<button class="small" data-act="build" data-k="${k}" ${why ? 'disabled' : ''} title="${t(why || B.desc)}">${bLevel(k, next)} · ${t('{n}g', { n: buildCost(p, k, next) })} · ${t('{n}t', { n: B.turns[next] })}</button>`;
+        right = `<button class="small${k === best ? ' best' : ''}" data-act="build" data-k="${k}" ${why ? 'disabled' : ''} title="${t(why || B.desc)}">${bLevel(k, next)} · ${t('{n}g', { n: buildCost(p, k, next) })} · ${t('{n}t', { n: B.turns[next] })}</button>`;
       }
-      h += `<div class="bld"><div>${bName(k)} <span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('')}</span><div class="lv">${lvl ? bLevel(k, lvl) : t('Not built')}</div></div>${right}</div>`;
-    }
+      return `<div class="bld${k === best ? ' best' : ''}"><div>${k === best ? icon('star', 'best-ic', t('Recommended')) : ''}${bName(k)} <span class="pips">${[1, 2, 3].map(i => `<i class="${i <= lvl ? 'on' : ''}"></i>`).join('')}</span><div class="lv">${lvl ? bLevel(k, lvl) : t('Not built')}</div></div>${right}</div>`;
+    };
+    const open = BUILDING_ORDER.filter(k => p.b[k] < maxBuildLevel(p)).sort((x, y) => (y === best) - (x === best));
+    const rest = BUILDING_ORDER.filter(k => !open.includes(k));
+    h += open.map(row).join('') || `<p class="note">${t('Nothing can be built here right now.')}</p>`;
     h += '</div>';
+    if (rest.length) h += fold('bld-rest', t('Other buildings ({n})', { n: rest.length }), rest.map(row).join(''));
     h += wonderSection(p);
   }
   if (!mine) h += foreignActions(p, tab);
   if (!mine && tab === 'deal') h += cityActionGroups(p, ['Dealings', 'Secret work']);
   if (!mine && tab === 'war') h += wonderSection(p);
-  if (tab === 'rule' || tab === 'war') h += placeSection(p);
+  if (tab === 'war') h += placeSection(p);
+  if (tab === 'rule' && placeSection(p)) h += fold('place', t('Special place'), placeSection(p));
   const here = armiesIn(p.id).filter(armyVisible);
   if (!provVisible(p.id) && (tab === 'army' || tab === 'war')) h += `<div class="p-sec fog-note"><h4>${t('Fog of war')}</h4><p class="note">${t('Your scouts cannot see {city}. There may be armies there. March closer, send horsemen, or plant a spy (Dealings tab).', { city: cityOf(p) })}</p></div>`;
   if (here.length && (tab === 'army' || tab === 'war')) {
     h += `<div class="p-sec"><h4>${t('Armies here')}</h4>` + here.map(a => armyRow(a)).join('') + '</div>';
   }
   return h;
+}
+
+// A section folded away until it is wanted; the panel remembers which ones the player keeps open
+const openFolds = new Set();
+function fold(id, title, body) {
+  if (!body) return '';
+  return `<details class="fold" data-fold="${id}" ${openFolds.has(id) ? 'open' : ''}><summary>${title}</summary>${body}</details>`;
+}
+$('panel').addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.fold) { if (d.open) openFolds.add(d.dataset.fold); else openFolds.delete(d.dataset.fold); } }, true);
+
+// The building a governor would choose here
+function suggestBuild(p) { return p.build ? null : buildWishes(p, p.owner).find(k => !buildCheck(p, k)) || null; }
+
+// The few things most worth doing in this city now, as one-click buttons
+function quickActions(p, order) {
+  const out = [];
+  if (p.siege) out.push(`<button data-act="ptab" data-k="army" class="danger-soft">${icon('swords')}<span>${t('The city is besieged: raise troops')}</span></button>`);
+  if (order < 45 && !decreeCheck(p, 'feast')) out.push(`<button data-act="decree" data-k="feast" class="warn">${icon('cup')}<span>${t(DECREES.feast.name)}</span><small>${t('−{n} gold', { n: fmt(DECREES.feast.cost(p)) })}</small></button>`);
+  const best = suggestBuild(p);
+  if (best) out.push(`<button data-act="build" data-k="${best}" title="${t(BUILDINGS[best].desc)}">${icon('hammer')}<span>${t('Build: {what}', { what: bLevel(best, p.b[best] + 1) })}</span><small>${t('{n}g', { n: fmt(buildCost(p, best, p.b[best] + 1)) })} · ${t('{n}t', { n: BUILDINGS[best].turns[p.b[best] + 1] })}</small></button>`);
+  else if (p.build) out.push(`<button data-act="ptab" data-k="build">${icon('hourglass')}<span>${t('Building {what}: {n} turns left', { what: buildName(p), n: p.build.turns })}</span></button>`);
+  if ((p.lastRecruit || []).length && p.lastRecruitTurn !== G.turn && !repeatCheck(p)) out.push(`<button data-act="repeat">${icon('plus')}<span>${t('Train the same troops again')}</span><small>${t('{n}g', { n: fmt(repeatCost(p)) })}</small></button>`);
+  else if (recruitable(p).length && !p.queue.length && frontier(p) && !armiesIn(p.id).some(a => a.owner === p.owner)) out.push(`<button data-act="ptab" data-k="army">${icon('shield')}<span>${t('No troops guard this border city')}</span></button>`);
+  if (!out.length) return '';
+  return `<div class="p-sec quick"><h4>${t('Recommended')}</h4>${out.join('')}</div>`;
 }
 
 // ---------- Someone else's province: war and diplomacy in one place ----------
@@ -277,7 +320,10 @@ function armyPanel(a) {
     <div><span>${t('Moves left')}</span>${a.moves} / ${armyMoves(a)}</div><div><span>${t('Upkeep')}</span>${a.units.reduce((n, u) => n + unitUpkeep(u.type, F.nomad), 0)}</div></div>`;
   if (a.besieging && p.siege) {
     h += `<p class="note warn">${t('Besieging {city}: turn {turn}. The city should fall in about {n} turns, or you can storm the walls now.', { city: cityOf(p), turn: p.siege.turns + 1, n: siegeTurns(p) })}</p>`;
-  } else if (a.moves > 0) h += `<p class="note">${t('Click a highlighted province to march. Red means battle or siege.')}</p>`;
+  } else if (a.dest) {
+    const path = orderPath(a, a.dest);
+    h += `<p class="note march">${icon('flag')}${t('Marching on {city}: about {n} turns more.', { city: cityById(a.dest), n: path ? orderTurns(a, path) : '?' })} <button class="small" data-act="unmarch">${t('Cancel orders')}</button></p>`;
+  } else if (a.moves > 0) h += `<p class="note">${t('Click a highlighted province to march, or any far city to give a march order for several turns. Red means battle or siege.')}</p>`;
   else h += `<p class="note">${t('This army has marched as far as it can this turn.')}</p>`;
 
   h += `<div class="p-sec"><h4>${t('Units')}</h4><div class="ucards">` + a.units.map((u, i) => {
@@ -312,13 +358,13 @@ function citySectionTax(p) {
   return `<div class="p-sec"><h4>${t('City taxes')}</h4><div class="taxrow">${btns}</div>
     <p class="note">${p.taxFree > 0 ? t('Tax-free for {n} more turns.', { n: p.taxFree }) : own ? t('This city has its own tax rate.') + ` <a href="#" data-act="citytax" data-k="realm">${t('Use the realm’s rate')}</a>` : t('Following the realm’s tax rate (set in the Realm screen).')}</p></div>`;
 }
-function cityActionGroups(p, groups) {
+function cityActionGroups(p, groups, bare) {
   const list = cityActionsFor(p).filter(A => groups.includes(A.group));
   let h = '';
   for (const g of groups) {
     const acts = list.filter(A => A.group === g);
     if (!acts.length) continue;
-    h += `<div class="p-sec"><h4>${t(g)}</h4><div class="decrees">` + acts.map(A => {
+    h += `<div class="p-sec">${bare ? '' : `<h4>${t(g)}</h4>`}<div class="decrees">` + acts.map(A => {
       const why = A.check(p), c = A.cost(p);
       return `<button data-act="cityact" data-k="${A.id}" class="${A.danger ? 'danger-soft' : ''}" ${why ? 'disabled' : ''} title="${t(why || A.desc)}"><b>${t(A.name)}</b><small>${why ? t(why) : c ? t('−{n} gold', { n: fmt(c) }) : A.sub ? A.sub(p) : ''}</small></button>`;
     }).join('') + '</div></div>';
@@ -361,7 +407,10 @@ $('panel').addEventListener('click', async e => {
     case 'cityact': await doCityAction(p, el.dataset.k); return;
     case 'build': err = startBuild(p, el.dataset.k); if (!err) sfx('build'); break;
     case 'cancelbuild': cancelBuild(p); break;
-    case 'recruit': if (el.classList.contains('off')) return; err = recruit(p, el.dataset.t); if (!err) sfx('coins', { vol: 0.7 }); break;
+    case 'recruit': if (el.classList.contains('off')) return; err = recruit(p, el.dataset.t); if (!err) { noteRecruit(p, el.dataset.t); sfx('coins', { vol: 0.7 }); } break;
+    case 'repeat': err = repeatRecruit(p); if (!err) sfx('coins', { vol: 0.7 }); break;
+    case 'gov': p.gov = !p.gov; if (p.gov) for (const r of governTurn(G.player)) attentionReport(r); break;
+    case 'unmarch': cancelMarch(a); break;
     case 'unqueue': cancelRecruit(p, +el.dataset.i); break;
     case 'selarmy': UI.selArmy = el.dataset.id; UI.selProv = G.armies[el.dataset.id].prov; break;
     case 'selprov': UI.selArmy = null; UI.selProv = el.dataset.id; break;
