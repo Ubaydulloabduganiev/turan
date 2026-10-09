@@ -1,0 +1,22 @@
+name: Tests
+# Plays the game in a real browser on every push: buttons, languages, saves, campaigns, battles, the world.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install the test browser
+        run: |
+          cd tests
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run the tests
+        run: node tests/run.js

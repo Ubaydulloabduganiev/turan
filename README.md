@@ -93,3 +93,16 @@ js/ui/              map, panels, dialogs, the battlefield and screen flow
 ```
 
 The engine in `js/engine/` does not touch the page, so it can be run and tested in Node.js.
+
+## Tests
+
+The game is tested in a real browser: every window's buttons, the city panel on desktop and phone, language
+switching, saving and loading (also saves from older versions), every campaign, the daily challenges, battles
+with every unit, sixty turns of the computer rulers and hot seat.
+
+    cd tests && npm install && npx playwright install chromium   # once
+    node tests/run.js              # the quick tests (about two minutes)
+    node tests/run.js buttons      # only tests whose name contains "buttons"
+    node tests/run.js --long       # also the slow balance runs of every campaign
+
+They also run on GitHub on every push (.github/workflows/tests.yml).

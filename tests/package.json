@@ -1,0 +1,8 @@
+{
+  "name": "turan-tests",
+  "private": true,
+  "description": "Browser tests for Turan. Run with: node tests/run.js",
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}
