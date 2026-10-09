@@ -46,7 +46,7 @@ const SCENARIOS = [
     blurb: 'Twice the Moghul khans conquered Transoxiana, and twice the amirs of Samarkand drove them out. Now Qamar al-Din Dughlat rules the steppe, and the upstart Temur sits in Samarkand. Take back the cities of the Chagatai Ulus.',
     goal: { type: 'take', provs: ['samarkand', 'tashkent'] },
     goalText: 'Take Samarkand and Tashkent before {date}.',
-    setup: () => { G.factions.moghul.gold += 1500; strikeArmy('moghul', 'fergana', ['horsearch', 'horsearch', 'dughlat', 'dughlat', 'lancer', 'lancer', 'heavycav', 'spear', 'spear', 'archer', 'siege', 'siege']); },
+    setup: () => { G.factions.moghul.gold += 1500; strikeArmy('moghul', 'fergana', ['horsearch', 'horsearch', 'dughlat', 'dughlat', 'lancer', 'lancer', 'heavycav', 'spear', 'spear', 'archer', 'siege', 'siege']); strikeArmy('moghul', 'fergana', ['horsearch', 'horsearch', 'horsearch', 'dughlat', 'lancer', 'heavycav', 'spear', 'archer']); },
   },
   {
     id: 'sarbadar', faction: 'sarbadar', start: 0, deadline: 26, difficulty: 'Hard',
@@ -70,7 +70,11 @@ const SCENARIOS = [
     blurb: 'Herat is small in land but great in learning: its madrasas, painters and poets are famous from Tabriz to Delhi. Malik Ghiyath al-Din can never outfight his neighbours. He can outshine them.',
     goal: { type: 'develop', provs: ['herat'], dev: { culture: 5, trade: 3 } },
     goalText: 'Win all five advances in Literature and arts and three in Trade before {date}, and keep Herat.',
-    setup: () => { G.factions.kart.gold += 1500; G.provinces.herat.b.library = 1; },
+    setup: () => {
+      G.factions.kart.gold += 1500; G.provinces.herat.b.library = 1;
+      // Malik Pir Ali pays his neighbours to keep away while his poets write
+      for (const g of neighbourFactions('kart')) if (g !== 'rebels' && !rel('kart', g).war) rel('kart', g).truce = 18;
+    },
   },
   {
     id: 'revenge', faction: 'golden', start: T0.revenge, deadline: T0.revenge + 7, difficulty: 'Hard',
@@ -144,7 +148,7 @@ const SCENARIOS = [
     },
   },
   {
-    id: 'ulughbeg', faction: 'temur', start: T0.ulughbeg, deadline: T0.ulughbeg + 21, difficulty: 'Normal',
+    id: 'ulughbeg', faction: 'temur', start: T0.ulughbeg, deadline: T0.ulughbeg + 24, difficulty: 'Normal',
     title: 'Ulugh Beg’s Samarkand',
     blurb: 'Samarkand has a new master: Ulugh Beg, grandson of Temur, fifteen years old, who loves the stars more than the sword. Around him gather mathematicians and astronomers. Make his city the capital of learning of the whole world.',
     goal: { type: 'develop', provs: ['samarkand'], dev: { science: 5, culture: 3 } },

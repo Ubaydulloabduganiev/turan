@@ -2009,4 +2009,6 @@ Object.assign(I18N.ru, {
   "Win all five advances in Literature and arts and three in Trade before {date}, and keep Herat.": "До срока ({date}) получите все пять достижений в литературе и искусстве и три в торговле и удержите Герат.",
   "Win all five advances in Science and three in Literature and arts before {date}, and keep Samarkand.": "До срока ({date}) получите все пять достижений в науке и три в литературе и искусстве и удержите Самарканд.",
   "You rule one of the seven nations of Turkistan in 1370. Each turn is one month. The last nation standing wins. Destroy your rivals in war, or make them submit to you. You lose if your last city falls.": "Вы правите одной из семи держав Туркестана в 1370 году. Каждый ход — один месяц. Побеждает последняя устоявшая держава. Уничтожьте соперников в войне или заставьте их покориться. Вы проигрываете, если пал ваш последний город.",
+  "Nothing to repeat": "Нечего повторять",
+  "This city can no longer train these troops": "Этот город больше не может обучать эти войска",
 });

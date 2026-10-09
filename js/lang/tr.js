@@ -2009,4 +2009,6 @@ Object.assign(I18N.tr, {
   "Win all five advances in Literature and arts and three in Trade before {date}, and keep Herat.": "{date} tarihinden önce Edebiyat ve sanatta beş ilerlemenin hepsini, Ticarette üçünü kazan ve Herat'ı elinde tut.",
   "Win all five advances in Science and three in Literature and arts before {date}, and keep Samarkand.": "{date} tarihinden önce Bilimde beş ilerlemenin hepsini, Edebiyat ve sanatta üçünü kazan ve Semerkant'ı elinde tut.",
   "You rule one of the seven nations of Turkistan in 1370. Each turn is one month. The last nation standing wins. Destroy your rivals in war, or make them submit to you. You lose if your last city falls.": "1370 yılında Türkistan'ın yedi devletinden birine hükmediyorsunuz. Her tur bir aydır. Ayakta kalan son devlet kazanır. Rakiplerinizi savaşta yok edin ya da size boyun eğdirin. Son şehriniz düşerse kaybedersiniz.",
+  "Nothing to repeat": "Tekrarlanacak bir şey yok",
+  "This city can no longer train these troops": "Bu şehir artık bu birlikleri yetiştiremez",
 });

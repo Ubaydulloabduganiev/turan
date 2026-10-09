@@ -39,7 +39,7 @@ for (const f of files) {
 // Game data
 const ctx = { console, localStorage: { getItem: () => null, setItem() {} }, document: { documentElement: {} } };
 vm.createContext(ctx);
-for (const f of ['js/i18n.js', 'js/data.js', 'js/characters.js', 'js/engine/state.js', 'js/engine/battle.js', 'js/engine/actions.js', 'js/engine/turn.js', 'js/engine/ai.js', 'js/engine/stories.js', 'js/engine/places.js', 'js/engine/family.js', 'js/engine/cityacts.js', 'js/engine/whatif.js'])
+for (const f of ['js/i18n.js', 'js/data.js', 'js/characters.js', 'js/engine/state.js', 'js/engine/battle.js', 'js/engine/actions.js', 'js/engine/turn.js', 'js/engine/ai.js', 'js/engine/stories.js', 'js/engine/places.js', 'js/engine/family.js', 'js/engine/cityacts.js', 'js/engine/whatif.js', 'js/engine/orders.js'])
   vm.runInContext(fs.readFileSync(path.join(root, f), 'utf8'), ctx, { filename: f });
 const D = vm.runInContext('({ GAME, FACTIONS, UNITS, BUILDINGS, TERRAIN, EVENTS, RANDOM_EVENTS, WONDERS, STORIES, CHARACTERS, DECREES, LANDMARKS })', ctx);
 const add = v => { if (typeof v === 'string' && v) keys.add(v); };

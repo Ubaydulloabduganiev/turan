@@ -2009,4 +2009,6 @@ Object.assign(I18N.uz, {
   "Win all five advances in Literature and arts and three in Trade before {date}, and keep Herat.": "{date}gacha Adabiyot va sanʼatda barcha beshta va Savdoda uchta yutuqqa erishing hamda Hirotni saqlab qoling.",
   "Win all five advances in Science and three in Literature and arts before {date}, and keep Samarkand.": "{date}gacha Ilm-fanda barcha beshta va Adabiyot va sanʼatda uchta yutuqqa erishing hamda Samarqandni saqlab qoling.",
   "You rule one of the seven nations of Turkistan in 1370. Each turn is one month. The last nation standing wins. Destroy your rivals in war, or make them submit to you. You lose if your last city falls.": "Siz 1370-yilda Turkistonning yetti davlatidan biriga hukmronlik qilasiz. Har bir yurish bir oyga teng. Oxirgi qolgan davlat gʻolib boʻladi. Raqiblaringizni urushda yoʻq qiling yoki ularni oʻzingizga boʻysundiring. Oxirgi shahringiz qulasa, yutqazasiz.",
+  "Nothing to repeat": "Takrorlash uchun buyruq yoʻq",
+  "This city can no longer train these troops": "Bu shahar endi bu qoʻshinlarni tayyorlay olmaydi",
 });
