@@ -15,6 +15,7 @@ const ART = {
     muhammadsultankhan: 'img/portraits/muhammadsultankhan.jpg', clavijo: 'img/portraits/clavijo.jpg', ibnkhaldun: G_ + 'persian1.jpg',
     jahangir: G_ + 'turkic2.jpg', muhammadsultan: G_ + 'mongol3.jpg', khalilsultan: G_ + 'turkic4.jpg',
     qamaraldin: G_ + 'mongol1.jpg', khizrkhoja: G_ + 'mongol2.jpg', urus: G_ + 'turkic3.jpg', temurmalik: G_ + 'soldier1.jpg',
+    murad: 'img/portraits/murad.jpg', bayezid: 'img/portraits/bayezid.jpg',
     mamai: G_ + 'mongol4.jpg', husaynsufi: G_ + 'persian3.jpg', yusufsufi: G_ + 'persian1.jpg',
   },
   // Figures from period miniatures, for everyone the chronicles did not paint
@@ -24,6 +25,9 @@ const ART = {
     persian: [G_ + 'persian1.jpg', G_ + 'persian3.jpg', G_ + 'turkic2.jpg', G_ + 'turkic4.jpg'],
     female: [G_ + 'female1.jpg', G_ + 'female5.jpg', G_ + 'female6.jpg', G_ + 'female7.jpg', G_ + 'female8.jpg'],
     young: [G_ + 'young1.jpg'],
+    ottoman: [G_ + 'turkic2.jpg', G_ + 'turkic4.jpg', G_ + 'persian1.jpg', G_ + 'soldier1.jpg'],
+    mamluk: [G_ + 'turkic3.jpg', G_ + 'soldier1.jpg', G_ + 'mongol3.jpg', G_ + 'turkic4.jpg'],
+    indian: [G_ + 'persian1.jpg', G_ + 'persian3.jpg', G_ + 'turkic2.jpg'],
   },
   // Story figures
   types: { ming: 'img/portraits/ming.jpg', genoese: 'img/portraits/clavijo.jpg', soldier: G_ + 'soldier1.jpg', merchant: G_ + 'persian1.jpg', herder: G_ + 'mongol2.jpg', pretender: G_ + 'mongol4.jpg', spy: G_ + 'turkic3.jpg' },

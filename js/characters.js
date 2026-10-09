@@ -93,6 +93,61 @@ const CHARACTERS = [
     look: { hat: 'taj', beard: 'forked', hair: '#2a1a0e', robe: '#5a4a3a', trim: '#a89a7a', skin: 1 },
     bio: 'A dervish leader who could raise the poor of Khorasan with a single sermon.' },
 
+  // ----- The Ottomans -----
+  { id: 'murad', name: 'Murad I', faction: 'ottoman', born: 1326, died: 1389, role: 'ruler',
+    look: { hat: 'turban', beard: 'long', hair: '#3a2a1a', robe: '#a8202a', trim: '#e6d29a', skin: 0 },
+    bio: 'The third Ottoman ruler, who took Adrianople, created the Janissaries and called himself Sultan. He was killed at the battle of Kosovo in 1389.' },
+  { id: 'bayezid', name: 'Bayezid', faction: 'ottoman', born: 1360, died: 1403, role: 'prince', joins: 1381,
+    look: { hat: 'turban', beard: 'short', hair: '#4a2a1a', robe: '#7a1a2a', trim: '#e6d29a', skin: 0 },
+    bio: 'Called Yildirim, the Thunderbolt, for the speed of his campaigns. He besieged Constantinople and crushed the crusaders at Nicopolis, then met Temur at Ankara in 1402 and died his prisoner.' },
+  { id: 'lalashahin', name: 'Lala Shahin Pasha', faction: 'ottoman', born: 1325, died: 1388, role: 'amir',
+    look: { hat: 'turban', beard: 'long', hair: '#ccc', robe: '#5a3a2a', trim: '#c9b28a', skin: 0 },
+    bio: "Murad's tutor and the first beylerbey of Rumelia, conqueror of much of Thrace." },
+  { id: 'evrenos', name: 'Evrenos Bey', faction: 'ottoman', born: 1330, died: 1417, role: 'amir',
+    look: { hat: 'helmet', beard: 'long', hair: '#555', robe: '#6a2a2a', trim: '#c9b28a', skin: 0 },
+    bio: 'A frontier lord of the Balkans who served four Ottoman sultans and lived to a great age.' },
+
+  // ----- The Mamluks -----
+  { id: 'shaban', name: "al-Ashraf Sha'ban", faction: 'mamluk', born: 1354, died: 1377, role: 'ruler',
+    look: { hat: 'turban', beard: 'none', hair: '#2a1a0e', robe: '#e6dcc0', trim: '#4f6470', skin: 0 },
+    bio: 'A young sultan of the house of Qalawun who ruled Egypt and Syria from Cairo, until his own amirs strangled him in 1377.' },
+  { id: 'barquq', name: 'Barquq', faction: 'mamluk', born: 1336, died: 1399, role: 'amir',
+    look: { hat: 'helmet', beard: 'short', hair: '#3a2a1a', robe: '#3a4a52', trim: '#d8b45a', skin: 1 },
+    bio: 'A Circassian slave soldier who rose to make himself sultan in 1382. He refused to submit to Temur and had his envoys put to death.' },
+
+  // ----- The Jalayirids -----
+  { id: 'uvais', name: 'Shaikh Uvais', faction: 'jalayir', born: 1338, died: 1374, role: 'ruler',
+    look: { hat: 'mongol', beard: 'goatee', hair: '#1a1410', robe: '#8b5a2b', trim: '#e6d29a', skin: 1 },
+    bio: 'Sultan of Baghdad and Tabriz, a handsome and cultured prince who painted and wrote poetry, and whose court was famous for its artists.' },
+  { id: 'husaynjalayir', name: 'Husayn Jalayir', faction: 'jalayir', born: 1355, died: 1382, role: 'prince',
+    look: { hat: 'mongol', beard: 'none', hair: '#1a1410', robe: '#6a4020', trim: '#c9b28a', skin: 1 },
+    bio: "Shaikh Uvais's son and heir, who lost much of his father's realm and was killed by his own brother." },
+  { id: 'ahmadjalayir', name: 'Ahmad Jalayir', faction: 'jalayir', born: 1359, died: 1410, role: 'prince', joins: 1376,
+    look: { hat: 'turban', beard: 'short', hair: '#1a1410', robe: '#5a3a2a', trim: '#e6d29a', skin: 1 },
+    bio: 'A poet and patron of painters who fled from Temur again and again, losing and winning back Baghdad.' },
+
+  // ----- The Muzaffarids -----
+  { id: 'shahshuja', name: 'Shah Shuja', faction: 'muzaffar', born: 1333, died: 1384, role: 'ruler',
+    look: { hat: 'taj', beard: 'long', hair: '#2a1a0e', robe: '#6a7a2a', trim: '#e6d29a', skin: 0 },
+    bio: 'The Shah of Shiraz who blinded his own father to take the throne, and whose court poet was Hafez.' },
+  { id: 'shahmansur', name: 'Shah Mansur', faction: 'muzaffar', born: 1345, died: 1393, role: 'amir',
+    look: { hat: 'helmet', beard: 'short', hair: '#2a1a0e', robe: '#4b5418', trim: '#c9b28a', skin: 0 },
+    bio: "The bravest of the Muzaffarids. In 1393 he charged Temur's own guard at Shiraz with a few thousand riders and died fighting." },
+  { id: 'zaynalabidin', name: 'Zayn al-Abidin', faction: 'muzaffar', born: 1355, died: 1393, role: 'prince',
+    look: { hat: 'turban', beard: 'short', hair: '#2a1a0e', robe: '#5a6a2a', trim: '#e6d29a', skin: 0 },
+    bio: "Shah Shuja's son and heir, who lost Shiraz to his cousin Shah Mansur." },
+
+  // ----- The Delhi Sultanate -----
+  { id: 'firuzshah', name: 'Firuz Shah Tughluq', faction: 'delhi', born: 1309, died: 1388, role: 'ruler',
+    look: { hat: 'turban', beard: 'long', hair: '#ddd', robe: '#c2457a', trim: '#e6d29a', skin: 2 },
+    bio: 'A gentle sultan who dug canals, founded towns and hospitals and moved two of the pillars of Ashoka to Delhi.' },
+  { id: 'fathkhan', name: 'Fath Khan', faction: 'delhi', born: 1351, died: 1376, role: 'prince',
+    look: { hat: 'turban', beard: 'short', hair: '#1a1410', robe: '#8a2a5a', trim: '#e6d29a', skin: 2 },
+    bio: "Firuz Shah's beloved eldest son and heir, who died before his father." },
+  { id: 'junanshah', name: 'Khan-i Jahan Junan Shah', faction: 'delhi', born: 1335, died: 1387, role: 'amir',
+    look: { hat: 'turban', beard: 'long', hair: '#3a2a1a', robe: '#74284a', trim: '#c9b28a', skin: 2 },
+    bio: 'The vizier of Delhi, son of a Hindu convert, who built seven great mosques in the city.' },
+
   // ----- Notable figures of the age (they appear in stories) -----
   { id: 'naqshband', name: 'Baha al-Din Naqshband', faction: null, born: 1318, died: 1389, role: 'scholar',
     look: { hat: 'taj', beard: 'long', hair: '#ddd', robe: '#5a4a3a', trim: '#a89a7a', skin: 1 },

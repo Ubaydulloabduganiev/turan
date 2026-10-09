@@ -62,6 +62,7 @@ for (const lang of ['en', 'uz', 'ru', 'tr']) {
   for (const id in D.WONDERS) { add(t(D.WONDERS[id].name), 'narrator', true); add(t(D.WONDERS[id].desc)); }
   // The historical campaigns: how each begins and how it ends
   for (const S of vm.runInContext('SCENARIOS', ctx)) { add(t(S.title), 'narrator', true); add(t(S.blurb)); if (S.winText) add(t(S.winText)); }
+  add(t('The Tatars change sides'), 'narrator', true); add(t('The Tatar horsemen of Bayezid’s army ride over to Temur, as his agents promised. They were Turks of the steppe, they said, and Temur was their own kind.'));
   add(t('Temur returns'), 'narrator', true); add(t('Riders bring the news: Temur has crossed the Amu Darya with the army of Persia, and he is marching north.'));
 }
 fs.writeFileSync(path.join(__dirname, 'voice-lines.json'), JSON.stringify(lines, null, 0));

@@ -10,7 +10,7 @@ async function endTurn(onProgress) {
   try {
     // Hot seat: whoever opened the round has played; the other people play at their place in the order
     const opener = G.player;
-    for (const f of PLAYABLE) {
+    for (const f of POWERS) {
       if (!G.factions[f].alive) continue;
       if (isHuman(f)) {
         if (G.humans && f !== opener) { await HOOKS.humanTurn(f); if (G.over) return; }
@@ -243,7 +243,7 @@ function runEvents() {
     }
     if (x.armyLoss) for (const a of armiesOf(x.faction)) { for (const u of a.units) u.men = Math.round(u.men * (1 - x.armyLoss)); cleanArmy(a); }
     if (x.plague) for (const p of Object.values(G.provinces)) if (p.silk) p.pop *= 1 - x.plague;
-    if (x.silkGold) for (const f of PLAYABLE) if (G.factions[f].alive) G.factions[f].gold += Math.min(x.silkGold, provsOf(f).filter(p => p.silk).length * 60);
+    if (x.silkGold) for (const f of POWERS) if (G.factions[f].alive) G.factions[f].gold += Math.min(x.silkGold, provsOf(f).filter(p => p.silk).length * 60);
     if (x.holder) {
       const p = G.provinces[x.holder];
       if (p.owner !== 'rebels') { G.factions[p.owner].gold += x.gold || 0; p.unrest = Math.max(0, p.unrest - (x.order || 0)); }

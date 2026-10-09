@@ -27,7 +27,7 @@ const FIRST_DEEDS = [
   { id: 'friend', reward: 400,
     make: () => ({}),
     text: () => t('Make a friend: sign a trade agreement or an alliance with another ruler. Open Diplomacy at the top of the screen.'),
-    done: f => PLAYABLE.some(g => g !== f && G.factions[g].alive && (rel(f, g).trade || rel(f, g).alliance)), dip: true },
+    done: f => POWERS.some(g => g !== f && G.factions[g].alive && (rel(f, g).trade || rel(f, g).alliance)), dip: true },
   { id: 'win', reward: 500,
     make: f => ({ base: G.stats[f].won }),
     text: () => t('Win a battle against any enemy.'),

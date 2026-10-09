@@ -30,7 +30,7 @@ function dominance(f) { return provsOf(f).length / totalProvinces(); }
 // The nation with the most land
 function leadingNation() {
   let best = null, n = 0;
-  for (const f of PLAYABLE) { if (!G.factions[f].alive) continue; const k = provsOf(f).length; if (k > n) { n = k; best = f; } }
+  for (const f of POWERS) { if (!G.factions[f].alive) continue; const k = provsOf(f).length; if (k > n) { n = k; best = f; } }
   return best;
 }
 // Every city beyond the fourteenth is harder to govern
@@ -45,16 +45,16 @@ function overstretch(f) {
 
 function rivalsTurn() {
   // Reputation slowly heals, and kept alliances earn respect
-  for (const f of PLAYABLE) {
+  for (const f of POWERS) {
     if (!G.factions[f].alive) continue;
-    const allies = PLAYABLE.filter(g => g !== f && G.factions[g].alive && rel(f, g).alliance).length;
+    const allies = POWERS.filter(g => g !== f && G.factions[g].alive && rel(f, g).alliance).length;
     shiftTrust(f, (50 - trustOf(f)) * 0.02 + Math.min(1, allies * 0.3));
   }
   // Fear of the strongest
   const L = leadingNation();
   if (L) {
     const d = dominance(L) - (hasAdv(L, 'culture', 5) ? 0.08 : 0);
-    if (d > 0.25) for (const g of PLAYABLE) {
+    if (d > 0.25) for (const g of POWERS) {
       if (g === L || !G.factions[g].alive) continue;
       const r = rel(g, L);
       r.att = clampN(r.att - (d - 0.25) * 12 - (r.married ? 0 : 0.5), -100, 100);
@@ -81,7 +81,7 @@ function coalitionTurn(L) {
   if (G.lastCoalition !== undefined && G.turn - G.lastCoalition < 16) return;
   if (rng() > 0.35) return;
   // At most four: the strongest of those who fear and dislike the leader
-  const members = PLAYABLE.filter(g => g !== L && G.factions[g].alive && rel(g, L).att < 15 && !(rel(g, L).married && rel(g, L).att > 0) && !isHuman(g))
+  const members = POWERS.filter(g => g !== L && G.factions[g].alive && rel(g, L).att < 15 && !(rel(g, L).married && rel(g, L).att > 0) && !isHuman(g))
     .sort((a, b) => factionPower(b) - factionPower(a)).slice(0, 4);
   if (members.length < 2) return;
   G.coalition = { target: L, members, turn: G.turn };
@@ -109,7 +109,7 @@ const inCoalition = (a, b) => !!G.coalition && ((G.coalition.target === a && G.c
 // An ally that has grown much stronger, and cares little for its name, may turn on its friend
 function aiBetray(f) {
   if (G.turn < 6) return false;
-  for (const g of PLAYABLE) {
+  for (const g of POWERS) {
     if (g === f || !G.factions[g].alive) continue;
     const r = rel(f, g);
     if (!r.alliance || r.married) continue;
@@ -123,9 +123,9 @@ function aiBetray(f) {
 
 // Allies call on each other when they are at war
 function aiCallAllies(f) {
-  for (const e of PLAYABLE) {
+  for (const e of POWERS) {
     if (e === f || !G.factions[e].alive || !rel(f, e).war) continue;
-    for (const g of PLAYABLE) {
+    for (const g of POWERS) {
       if (g === f || g === e || isHuman(g) || !G.factions[g].alive || !rel(f, g).alliance || rel(g, e).war || rel(g, e).alliance || rel(g, e).truce > 0) continue;
       if (dealValue(f, g, 'joinwar', e) > 0 && rng() < 0.2) {
         declareWar(g, e, true);
@@ -140,7 +140,7 @@ function aiSpecialOffer(f, chance, pl = G.player) {
   const r = rel(f, pl);
   // An ally at war asks the player to join in
   if (r.alliance && chance < 0.3) {
-    const e = PLAYABLE.find(e => e !== f && e !== pl && G.factions[e].alive && rel(f, e).war && !rel(pl, e).war && !rel(pl, e).alliance && !rel(pl, e).married && rel(pl, e).truce <= 0);
+    const e = POWERS.find(e => e !== f && e !== pl && G.factions[e].alive && rel(f, e).war && !rel(pl, e).war && !rel(pl, e).alliance && !rel(pl, e).married && rel(pl, e).truce <= 0);
     if (e) return { type: 'joinwar', gold: 0, enemy: e };
   }
   // A much stronger neighbour that dislikes us demands a border town

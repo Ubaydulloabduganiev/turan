@@ -29,7 +29,7 @@ function advisorTips() {
   // A wonder within reach
   for (const id in WONDERS) { const p = G.provinces[WONDERS[id].prov]; if (p.owner === pl && !wonderCheck(p)) { tips.push({ score: 58, text: t('You can afford to raise the {wonder} in {city}.', { wonder: wName(id), city: cityOf(p) }), prov: p.id }); break; } }
   // Weak rivals may kneel
-  for (const f of PLAYABLE) {
+  for (const f of POWERS) {
     if (f === pl || !G.factions[f].alive) continue;
     if (dealValue(pl, f, 'submit') > 0) {
       const p = provsOf(f)[0];

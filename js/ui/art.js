@@ -10,6 +10,12 @@ const EMBLEMS = {
   khwarezm: c => `<path d="M20 9l3.2 7.3 7.8-1.6-4.6 6.5 4.6 6.5-7.8-1.6L20 33.4l-3.2-7.3-7.8 1.6 4.6-6.5L9 14.7l7.8 1.6z" fill="${c}"/>`,
   kart: c => `<path d="M12 35V22c0-6 8-10 8-13 0 3 8 7 8 13v13z" fill="${c}"/><path d="M17 35v-8c0-2 3-4 3-4s3 2 3 4v8z" fill="#00000055"/>`,
   sarbadar: c => `<g fill="none" stroke="${c}" stroke-width="3" stroke-linecap="round"><path d="M10 34L30 12M30 34L10 12"/><path d="M8 14l4-4M32 14l-4-4" stroke-width="4"/></g>`,
+  // Crescent of the Ottomans, Mamluk cup, Jalayirid falcon wing, Muzaffarid sun, Delhi parasol
+  ottoman: c => `<path d="M23 10a12 12 0 1 0 0 24a9.5 9.5 0 1 1 0-24z" fill="${c}"/><path d="M28 17l1.4 3 3.2.3-2.4 2.1.8 3.2-3-1.7-2.8 1.7.7-3.2-2.4-2.1 3.2-.3z" fill="${c}"/>`,
+  mamluk: c => `<path d="M11 14h18l-3 9c-1 3-4 4-6 4s-5-1-6-4z" fill="${c}"/><path d="M20 27v5M14 34h12" stroke="${c}" stroke-width="3" stroke-linecap="round"/>`,
+  jalayir: c => `<path d="M9 30c4-9 11-16 22-18-3 3-5 6-6 9 3-1 5-1 7 0-4 1-7 3-9 6 2 0 4 1 5 2-6 1-13 1-19 1z" fill="${c}"/>`,
+  muzaffar: c => `<circle cx="20" cy="22" r="6" fill="${c}"/><g stroke="${c}" stroke-width="2.6" stroke-linecap="round"><path d="M20 9v4M20 31v4M7 22h4M29 22h4M11 13l3 3M29 13l-3 3M11 31l3-3M29 31l-3-3"/></g>`,
+  delhi: c => `<path d="M8 21q12-13 24 0z" fill="${c}"/><path d="M20 21v13M15 34h10" stroke="${c}" stroke-width="3" stroke-linecap="round"/><circle cx="20" cy="9.5" r="2" fill="${c}"/>`,
   rebels: c => `<path d="M13 14l14 18M27 14L13 32" stroke="${c}" stroke-width="3.4" stroke-linecap="round"/>`,
 };
 
@@ -65,7 +71,19 @@ function unitSVG(type, f) {
   const coats = ['#f1ede4', '#8a5a33', '#3b2a1e', '#c69a62'];
   const kindFoot = heavy ? 'helm' : nomad ? 'cap' : 'turban';
   let body = '';
-  switch (d.cls) {
+  // A war elephant in the manner of a miniature: grey body, tusk, a howdah in the nation's colour with an archer
+  const eleph = (x, y, s) => `<g transform="translate(${x} ${y}) scale(${s})">
+    <ellipse cx="0" cy="13" rx="15" ry="1.8" fill="#00000033"/>
+    <path d="M-11 4v9h4v-8M-4 5v8h4v-8M5 5v8h4v-8M10 3v10h4V4" fill="#8d8a86" stroke="${ink}" stroke-width=".5"/>
+    <path d="M-13 2q-2-11 9-13 9-2 16 2 5 3 5 9 0 4 1 9-1 2-2 0l-1-7q-2 2-6 2h-16q-5 0-6-2z" fill="#9c9893" stroke="${ink}" stroke-width=".6"/>
+    <path d="M8-7q2 4 1 8" fill="none" stroke="${ink}" stroke-width=".5"/><circle cx="12.6" cy="-4" r=".7" fill="${ink}"/>
+    <path d="M14 1q4 1 5-2" fill="none" stroke="#efe6d0" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M-12 1q-3 3-2 6" fill="none" stroke="${ink}" stroke-width=".8"/>
+    <path d="M-8-8h13v4h-13z" fill="${c}" stroke="${gold}" stroke-width=".6"/><path d="M-9-12h15l-1.5 4h-12z" fill="${dk}" stroke="${gold}" stroke-width=".5"/>
+    <path d="M-7.5-12l6-5 6 5" fill="${c}" stroke="${gold}" stroke-width=".5"/>
+    <g transform="translate(-1.5 -9) scale(.7)">${head('turban')}${bow}</g></g>`;
+  if (type === 'elephant') body = eleph(24, 30, 1) + eleph(58, 33, 1.06);
+  else switch (d.cls) {
     case 'spear': body = man(20, 36, 1, kindFoot, spear + shield) + man(40, 38, 1.05, kindFoot, spear + shield) + man(60, 36, 1, kindFoot, spear + shield); break;
     case 'missile': body = man(22, 37, 1, nomad ? 'cap' : 'turban', bow) + man(42, 38, 1.04, nomad ? 'cap' : 'turban', bow) + man(62, 37, 1, nomad ? 'cap' : 'turban', bow); break;
     case 'inf': body = man(22, 37, 1, 'helm', type === 'ghuri' ? axe : sword + shield) + man(42, 38, 1.06, 'helm', type === 'ghuri' ? axe : sword + shield) + man(62, 37, 1, 'helm', type === 'ghuri' ? axe : sword + shield); break;

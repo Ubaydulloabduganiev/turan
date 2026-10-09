@@ -238,6 +238,37 @@ function soldierGeos(kind) {
   const kaftan = (y0, len = 1) => lathe([[1.45, y0], [1.32, y0 + 0.6 * len], [1.05, y0 + 1.6 * len], [0.86, y0 + 2.2 * len], [1.02, y0 + 3.0 * len], [0.95, y0 + 3.75 * len], [0.42, y0 + 4.1 * len], [0, y0 + 4.15 * len]], 12);
   const sleeves = (y, fwd) => [1, -1].map(sz => new T.CylinderGeometry(0.27, 0.32, 2.5, 7).rotateX(sz * 0.18).rotateZ(-fwd).translate(0.45 + Math.sin(fwd) * 1.1, y - 1.05, sz * 1.08));
   const hands = (y, fwd) => [1, -1].map(sz => colored(new T.SphereGeometry(0.26, 7, 6).translate(0.45 + Math.sin(fwd) * 2.2, y - 2.1, sz * 1.18), skin));
+  if (kind === 'elephant') {
+    // A war elephant: great grey body, domed head, trunk, ears and tusks, a howdah with an archer on its back
+    const grey = '#ffffff', ivory = '#efe6d0';
+    const body = merge([
+      colored(new T.SphereGeometry(1, 16, 12).scale(4.0, 2.7, 2.2).translate(-0.3, 9.2, 0), grey),
+      colored(new T.SphereGeometry(1, 12, 10).scale(1.8, 2.0, 1.7).translate(3.7, 10.6, 0), grey),
+      colored(new T.CylinderGeometry(0.75, 0.3, 6.8, 9).rotateZ(0.12).translate(5.1, 6.6, 0), grey),
+      ...[1, -1].map(sz => colored(new T.SphereGeometry(1, 9, 7).scale(0.35, 1.9, 1.5).translate(3.2, 10.8, sz * 1.9), grey)),
+      colored(new T.ConeGeometry(0.25, 2.4, 5).rotateZ(0.6).translate(-4.5, 8.4, 0), grey),
+    ]);
+    const y0 = 11.6;
+    const fixed = [
+      ...[1, -1].map(sz => colored(new T.ConeGeometry(0.3, 3.0, 6).rotateZ(-1.9).translate(5.6, 8.0, sz * 0.8), ivory)),
+      colored(new T.BoxGeometry(3.0, 0.4, 3.0).translate(-0.6, y0 + 0.3, 0), '#6e4a2a'),
+      head(-0.6, y0 + 4.5), helmet(-0.6, y0 + 4.75), ...hands(y0 + 3.6, 0.5),
+      colored(new T.TorusGeometry(1.7, 0.1, 4, 12, Math.PI).rotateZ(-Math.PI / 2).translate(0.6, y0 + 2.3, 1.0), wood),
+    ];
+    // The howdah's cloth and canopy take the nation's colour
+    const tunic = merge([
+      colored(new T.BoxGeometry(5.2, 3.2, 4.8).translate(-0.4, y0 - 1.4, 0), '#ffffff'),
+      colored(kaftan(y0 + 0.4, 0.75), '#ffffff'),
+      colored(new T.ConeGeometry(2.6, 1.6, 4).rotateY(Math.PI / 4).translate(-0.6, y0 + 7.2, 0), '#ffffff'),
+    ]);
+    const hleg = merge([colored(new T.CylinderGeometry(1.0, 0.9, 6.6, 9).translate(0, -3.3, 0), '#ffffff')]);
+    // An elephant towers over the horsemen: everything a third larger
+    const S = 1.4, fixedG = merge(fixed);
+    for (const g of [body, fixedG, tunic, hleg]) g.scale(S, S, S);
+    const HIPS = [[2.0, 6.7, 1.0], [2.0, 6.7, -1.0], [-2.6, 6.7, 1.0], [-2.6, 6.7, -1.0]].map(v => v.map(n => n * S));
+    const horseWhole = merge([body, ...HIPS.map(([x, y, z]) => hleg.clone().translate(x, y, z))]);
+    return { horse: body, fixed: fixedG, tunic, hleg, HIPS, horseWhole, whole: fixedG };
+  }
   if (kind === 'cav' || kind === 'ha' || kind === 'general') {
     // The horse: a rounded barrel, deep chest, arched neck and long head
     const horse = merge([
@@ -291,10 +322,10 @@ function soldierGeos(kind) {
 function buildArmies3D(R) {
   const T = THREE;
   // At sea everyone stands in the boats: horsemen leave their horses ashore
-  const kindOf = r => TB.naval ? (r.d.cls === 'ha' ? 'missile' : r.d.cls === 'cav' ? 'inf' : r.d.cls) : r.u.type === 'general' ? 'general' : r.d.cls;
+  const kindOf = r => TB.naval ? (r.d.cls === 'ha' ? 'missile' : r.d.cls === 'cav' ? 'inf' : r.d.cls) : r.u.type === 'general' ? 'general' : r.u.type === 'elephant' ? 'elephant' : r.d.cls;
   const need = {};
   for (const r of TB.regs) {
-    r.per = (r.d.cls === 'cav' || r.d.cls === 'ha') ? 3 : 4;
+    r.per = r.u.type === 'elephant' && !TB.naval ? 2 : (r.d.cls === 'cav' || r.d.cls === 'ha') ? 3 : 4;
     const k = kindOf(r);
     need[k] = (need[k] || 0) + Math.ceil(r.max / r.per);
   }
@@ -341,7 +372,7 @@ function buildArmies3D(R) {
       pool.tunic.setColorAt(f.slot, col.clone().offsetHSL(0, 0, (Math.random() - 0.5) * 0.06));
       if (pool.horse) {
         // bay, chestnut, dun, grey and black horses
-        const hc = [[0.06, 0.55, 0.22], [0.05, 0.6, 0.3], [0.09, 0.4, 0.45], [0.08, 0.05, 0.62], [0.07, 0.2, 0.1], [0.06, 0.5, 0.17]][Math.floor(Math.random() * 6)];
+        const hc = k === 'elephant' ? [0.07, 0.07, 0.6] : [[0.06, 0.55, 0.22], [0.05, 0.6, 0.3], [0.09, 0.4, 0.45], [0.08, 0.05, 0.62], [0.07, 0.2, 0.1], [0.06, 0.5, 0.17]][Math.floor(Math.random() * 6)];
         const c = new T.Color().setHSL(hc[0], hc[1], hc[2] + (Math.random() - 0.5) * 0.06);
         pool.horse.setColorAt(f.slot, c);
         for (let k = 0; k < 4; k++) pool.legs.setColorAt(f.slot * 4 + k, c);
@@ -387,7 +418,8 @@ function bannerTexture(f) {
 // Where figure i of n stands, relative to the regiment's centre and facing
 function slotOf(r, i, n) {
   const mounted = (r.d.cls === 'cav' || r.d.cls === 'ha') && !TB.naval;
-  const cols = TB.naval ? 3 : mounted ? 6 : 10, sp = TB.naval ? 5.5 : mounted ? 11 : 6.6;
+  const big = r.u.type === 'elephant' && !TB.naval;
+  const cols = TB.naval ? 3 : big ? 5 : mounted ? 6 : 10, sp = TB.naval ? 5.5 : big ? 21 : mounted ? 11 : 6.6;
   const rows = Math.ceil(n / cols);
   const col = i % cols, row = Math.floor(i / cols);
   const lx = (col - (Math.min(cols, n) - 1) / 2) * sp, ly = (rows - 1) / 2 * sp - row * sp; // row 0 is the front
@@ -543,7 +575,7 @@ function render3D(R, dt) {
       alive.sort((a, b) => (b.x * fx + b.z * fz) - (a.x * fx + a.z * fz));
       for (const f of alive.slice(0, alive.length - want)) {
         f.alive = false;
-        if (!escaped) addCorpse3D(R, f, r, mounted);
+        if (!escaped) addCorpse3D(R, f, r, mounted && r.kind3 !== 'elephant');
       }
       alive = alive.slice(alive.length - want);
     }
@@ -565,7 +597,7 @@ function render3D(R, dt) {
       const targetFace = dist > 4 && !fight ? Math.atan2(dz, dx) : r.rout ? r.face : r.face;
       f.face += ((targetFace - f.face + Math.PI * 3) % (Math.PI * 2) - Math.PI) * Math.min(1, dt * 6);
       let ox = 0, oz = 0, bob = 0, tilt = 0;
-      if (walking) bob = Math.abs(Math.sin(R.t * (mounted ? 11 : 8) + f.ph)) * (mounted ? 1.1 : 0.55);
+      if (walking) bob = r.kind3 === 'elephant' ? Math.abs(Math.sin(R.t * 5 + f.ph)) * 0.5 : Math.abs(Math.sin(R.t * (mounted ? 11 : 8) + f.ph)) * (mounted ? 1.1 : 0.55);
       if (walking && mounted) tilt = Math.sin(R.t * 11 + f.ph) * 0.06;
       if (fight && s.row < 2) { const l = Math.sin(R.t * 7 + f.ph) * 1.3; ox = Math.cos(f.face) * l; oz = Math.sin(f.face) * l; tilt = Math.sin(R.t * 7 + f.ph) * 0.08; }
       d.position.set(f.x + ox, R.hgt(f.x, f.z) + bob + (TB.naval ? 2.6 + Math.sin(R.t * 1.6 + r.id) * 0.8 : 0), f.z + oz);
@@ -576,7 +608,7 @@ function render3D(R, dt) {
       pool.tunic.setMatrixAt(f.slot, d.matrix);
       if (pool.horse) pool.horse.setMatrixAt(f.slot, d.matrix);
       // Legs swing from the hip: a marching stride, or a horse's gallop (front pair, then hind pair)
-      const H = pool.HIPS, gallop = mounted, freq = mounted ? (r.run || r.d.cls !== 'inf' ? 11 : 8) : 8;
+      const H = pool.HIPS, gallop = mounted, freq = r.kind3 === 'elephant' ? 5 : mounted ? (r.run || r.d.cls !== 'inf' ? 11 : 8) : 8;
       for (let k = 0; k < H.length; k++) {
         const ph = gallop ? [0, 0.6, Math.PI, Math.PI + 0.6][k] : k * Math.PI;
         const a = walking ? Math.sin(R.t * freq + f.ph + ph) * (gallop ? 0.62 : 0.5) : (fight && !gallop ? Math.sin(R.t * 3 + f.ph + ph) * 0.08 : 0);

@@ -115,6 +115,9 @@ const SCENARIOS = [
       transferProvince(G.provinces.saraichik, 'temur', 5);
       strikeArmy('temur', 'saraichik', ['heavyinf', 'heavyinf', 'spear', 'spear', 'archer', 'archer', 'lancer', 'heavycav', 'heavycav', 'tovachi', 'siege', 'siege']);
       strikeArmy('temur', 'saraichik', ['horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'tovachi']);
+      // The victors of the Terek, who came north through the Iron Gates of Derbent
+      for (const id of ['derbent', 'terek']) if (G.provinces[id]) transferProvince(G.provinces[id], 'temur', 5);
+      strikeArmy('temur', 'terek', ['horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'heavycav', 'heavyinf', 'spear', 'archer', 'siege']);
       G.factions.temur.gold += 2000;
     },
   },
@@ -157,7 +160,111 @@ const SCENARIOS = [
       for (const id of ['samarkand', 'bukhara']) if (G.provinces[id]) G.provinces[id].b.madrasa = Math.max(1, G.provinces[id].b.madrasa || 0);
     },
   },
+  {
+    id: 'india', faction: 'temur', start: turnOf(1398, 1), deadline: turnOf(1401, 1), difficulty: 'Hard',
+    title: 'The Road to Delhi',
+    blurb: 'Autumn 1398. Old Firuz Shah is dead, and his heirs fight over Delhi like dogs over a bone. Temur, sixty-two years old, has crossed the Hindu Kush and bridged the Indus. His grandson Pir Muhammad already holds Multan. Ahead lie the deserts of the Punjab, the fortress of Bhatnir and the war elephants of Sultan Mahmud.',
+    goal: { type: 'take', provs: ['bhatnir', 'delhi'] },
+    goalText: 'Take the fortress of Bhatnir and Delhi before the autumn of 1401. Beware the war elephants: they break any line of horsemen.',
+    winText: 'Delhi falls in December 1398, and its treasures are carried north for months. Temur rides home with ninety captured elephants, loaded with stone, and with the masons of India, who will raise the great mosque of Bibi-Khanym in Samarkand.',
+    setup: () => {
+      setLeader('temur', 'Amir Temur', 62);
+      for (const f of ['khwarezm', 'kart', 'sarbadar', 'muzaffar']) if (G.factions[f].alive) annex('temur', f);
+      for (const id of ['kabul', 'kandahar', 'quetta', 'peshawar', 'sistan', 'kunduz', 'badakhshan', 'khuttal', 'multan']) if (G.provinces[id] && G.provinces[id].owner !== 'temur') transferProvince(G.provinces[id], 'temur', 5);
+      // The sultanate after Firuz Shah: the east has broken away, and Mallu Iqbal rules in the sultan's name
+      setLeader('delhi', 'Nasir al-Din Mahmud', 25);
+      for (const id of ['jaunpur', 'kannauj']) if (G.provinces[id]) transferProvince(G.provinces[id], 'rebels', 0);
+      declareWar('temur', 'delhi', true); rel('temur', 'delhi').att = -80;
+      // Mallu Iqbal waits on the road to Delhi with the elephants; the city keeps a garrison
+      addArmy('delhi', 'samana', ['elephant', 'elephant', 'elephant', 'heavyinf', 'heavyinf', 'spear', 'spear', 'archer', 'archer', 'heavycav'], makeGeneral('delhi', 'Mallu Iqbal', 3, 40, false));
+      addArmy('delhi', 'delhi', ['elephant', 'spear', 'spear', 'archer', 'archer'], null);
+      G.provinces.samana.b.walls = 0; G.provinces.delhi.b.walls = 2;
+      G.provinces.bhatnir.b.walls = 2;
+      addArmy('rebels', 'bhatnir', ['spear', 'archer', 'archer'], null);
+      // Temur's army on the Indus, and Pir Muhammad's at Multan
+      const main = armiesOf('temur').find(a => a.general && a.general.leader);
+      if (main) { main.prov = 'multan'; main.units.push(...['tovachi', 'tovachi', 'heavycav', 'heavycav', 'horsearch', 'horsearch', 'heavyinf', 'heavyinf', 'archer', 'archer', 'siege'].map(makeUnit)); main.units.splice(16); main.moves = armyMoves(main); }
+      addArmy('temur', 'multan', ['horsearch', 'horsearch', 'horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'heavycav'], makeGeneral('temur', 'Pir Muhammad Mirza', 3, 24, false)).moves = 2;
+      strikeArmy('temur', 'multan', ['heavyinf', 'spear', 'spear', 'archer', 'archer', 'siege', 'siege']);
+      // Fear goes before Temur: cities open their gates rather than rise against him
+      G.factions.temur.orderBonus = 15; G.factions.temur.orderBonusT = 10;
+      G.factions.temur.gold += 3000;
+    },
+  },
+  {
+    id: 'ankara', faction: 'temur', start: turnOf(1402, 0), deadline: turnOf(1404, 1), difficulty: 'Hard',
+    title: 'The Thunderbolt and the Lame',
+    blurb: 'Two conquerors who have never lost a battle. Bayezid the Thunderbolt has crushed the crusaders at Nicopolis and holds Constantinople in a stranglehold. He has answered Temur’s letters with insults. Now Temur has taken Sivas and marches into Anatolia, and Bayezid lifts the siege of Constantinople to meet him near Ankara.',
+    goal: { type: 'take', provs: ['ankara', 'bursa'] },
+    goalText: 'Take Ankara and the Ottoman capital Bursa before the autumn of 1404. Temur’s agents are talking to the Tatar horsemen in Bayezid’s army.',
+    winText: 'On 28 July 1402, near Ankara, the Tatars change sides, the Serbian knights fight to the last, and Bayezid is taken prisoner. He dies in captivity the next year. His sons fight each other for ten years, Constantinople is saved for half a century, and the kings of Europe write to Temur to thank him.',
+    setup: () => {
+      setLeader('temur', 'Amir Temur', 66);
+      for (const f of ['khwarezm', 'kart', 'sarbadar', 'muzaffar', 'jalayir']) if (G.factions[f].alive) annex('temur', f);
+      for (const id of ['tbilisi', 'shamakhi', 'van', 'erzurum', 'erzincan', 'diyarbakir', 'sivas', 'malatya', 'luristan', 'shushtar', 'hormuz', 'astarabad', 'mazandaran', 'rayy', 'merv', 'tus']) if (G.provinces[id] && G.provinces[id].owner !== 'temur') transferProvince(G.provinces[id], 'temur', 5);
+      // Bayezid's empire: every beylik of Anatolia, the Balkans to the Danube
+      G.charsJoined = (G.charsJoined || []).concat(['bayezid']);
+      setLeader('ottoman', 'Bayezid', 42);
+      for (const id of ['kutahya', 'aydin', 'antalya', 'konya', 'kastamonu', 'amasya', 'varna']) if (G.provinces[id] && G.provinces[id].owner !== 'ottoman') transferProvince(G.provinces[id], 'ottoman', 5);
+      declareWar('temur', 'ottoman', true); rel('temur', 'ottoman').att = -90;
+      // Bayezid has marched from the siege of Constantinople and waits for Temur in the open plain of Ankara
+      const main = armiesOf('ottoman').find(a => a.general && a.general.leader);
+      if (main) { main.prov = 'ankara'; main.units.push(...['janissary', 'janissary', 'janissary', 'heavycav', 'heavycav', 'spear', 'archer', 'horsearch', 'horsearch', 'horsearch'].map(makeUnit)); main.units.splice(16); }
+      // His son Suleyman holds Bursa
+      addArmy('ottoman', 'bursa', ['janissary', 'spear', 'archer', 'heavycav'], makeGeneral('ottoman', 'Suleyman Chelebi', 3, 25, false));
+      for (const a of armiesIn('ankara')) if (a.owner === 'ottoman' && a !== main) a.prov = 'kutahya';
+      G.provinces.ankara.b.walls = 0; G.provinces.bursa.b.walls = 1; G.provinces.nicomedia.b.walls = 1;
+      const tm = armiesOf('temur').find(a => a.general && a.general.leader);
+      if (tm) { tm.prov = 'sivas'; tm.units.push(...['tovachi', 'tovachi', 'heavycav', 'heavycav', 'horsearch', 'horsearch', 'heavyinf', 'archer', 'siege', 'siege'].map(makeUnit)); tm.moves = armyMoves(tm); }
+      // Temur's grandson Muhammad Sultan leads the riders who will race to Bursa
+      G.charsJoined.push('muhammadsultan');
+      addArmy('temur', 'sivas', ['horsearch', 'horsearch', 'horsearch', 'horsearch', 'lancer', 'lancer', 'heavycav', 'heavycav', 'tovachi'], makeGeneral('temur', 'Muhammad Sultan Mirza', 4, 27, false)).moves = 2;
+      strikeArmy('temur', 'sivas', ['heavyinf', 'heavyinf', 'spear', 'spear', 'archer', 'archer', 'siege']);
+      G.factions.temur.orderBonus = 15; G.factions.temur.orderBonusT = 10;
+      G.factions.temur.gold += 3000;
+      tatarsDefect();
+    },
+  },
 ];
+// Ankara, 1402: the Tatar horsemen of Bayezid's army go over to Temur, as his agents arranged
+function tatarsDefect() {
+  let n = 0;
+  for (const a of armiesOf('ottoman')) for (let i = a.units.length - 1; i >= 0; i--) if (a.units[i].type === 'horsearch' && n < 4) { a.units.splice(i, 1); n++; }
+  if (!n) return;
+  const tm = armiesOf('temur').find(a => a.general && a.general.leader) || armiesOf('temur')[0];
+  if (tm) addArmy('temur', tm.prov, Array(n).fill('horsearch'), makeGeneral('temur', 'Qara Tatar', 2, 40, false)).moves = 2;
+  HOOKS.notify({ title: t('The Tatars change sides'), text: t('The Tatar horsemen of Bayezid’s army ride over to Temur, as his agents promised. They were Turks of the steppe, they said, and Temur was their own kind.'), history: true });
+}
+
+// Who ruled each nation in a given year, so a campaign that starts late finds the right people on the thrones
+const RULERS = {
+  golden: [[1370, 'Beglerbeg Mamai'], [1380, 'Toqtamish'], [1396, 'Temur Qutlugh'], [1400, 'Shadi Beg']],
+  white: [[1370, 'Urus Khan'], [1377, 'Toqtamish']],
+  moghul: [[1370, 'Qamar al-Din Dughlat'], [1389, 'Khizr Khoja'], [1399, 'Shams-i Jahan']],
+  khwarezm: [[1370, 'Husayn Sufi'], [1372, 'Yusuf Sufi'], [1380, 'Sulayman Sufi']],
+  ottoman: [[1370, 'Murad I'], [1389, 'Bayezid'], [1403, 'Suleyman Chelebi'], [1413, 'Mehmed I']],
+  mamluk: [[1370, "al-Ashraf Sha'ban"], [1377, 'al-Mansur Ali'], [1382, 'Barquq'], [1399, 'Faraj'], [1412, 'al-Muayyad Shaykh']],
+  jalayir: [[1370, 'Shaikh Uvais'], [1374, 'Husayn Jalayir'], [1382, 'Ahmad Jalayir']],
+  muzaffar: [[1370, 'Shah Shuja'], [1384, 'Zayn al-Abidin'], [1387, 'Shah Mansur']],
+  delhi: [[1370, 'Firuz Shah Tughluq'], [1388, 'Ghiyath al-Din Tughluq II'], [1394, 'Nasir al-Din Mahmud'], [1413, 'Daulat Khan Lodi']],
+};
+function historicRulers() {
+  // Bayezid's empire of the 1390s: the beyliks of Anatolia and the Black Sea coast
+  if (year() >= 1390 && year() < 1403 && G.factions.ottoman.alive) {
+    const lands = ['kutahya', 'aydin', 'antalya', 'kastamonu', 'amasya', 'varna'].concat(year() >= 1397 ? ['konya', 'sivas'] : []);
+    for (const id of lands) if (G.provinces[id] && G.provinces[id].owner === 'rebels') transferProvince(G.provinces[id], 'ottoman', 5);
+  }
+  if (year() >= 1394 && G.provinces.jaunpur && G.provinces.jaunpur.owner === 'delhi') transferProvince(G.provinces.jaunpur, 'rebels', 0);
+  for (const f in RULERS) {
+    if (!G.factions[f] || !G.factions[f].alive) continue;
+    const r = RULERS[f].filter(x => x[0] <= year()).pop();
+    if (!r || r[1] === G.factions[f].leader) continue;
+    const c = charByName(r[1]);
+    setLeader(f, r[1], c ? year() - c.born : 35);
+    const h = charByName(G.factions[f].heir);
+    if ((h && h.died <= year()) || G.factions[f].heir === r[1]) G.factions[f].heir = null;
+  }
+}
 const scenarioById = id => SCENARIOS.find(s => s.id === id) || (typeof challengeSpec === 'function' ? challengeSpec(id) : null);
 // A campaign's goal in words (a challenge writes its own, with the names of the day)
 const goalTextOf = S => S.challenge ? challengeGoalText(S) : t(S.goalText);
@@ -189,7 +296,13 @@ function newScenarioGame(id) {
     G.turn = S.start;
     for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
   }
+  if (S.start) historicRulers();
   S.setup();
+  // People who were dead by then do not lead armies: new commanders take their place
+  if (S.start) for (const a of Object.values(G.armies)) {
+    const c = a.general && charByName(a.general.name);
+    if (c && c.died <= year() && G.factions[a.owner].leader !== a.general.name) { a.general.name = newGeneralName(a.owner); a.general.age = 30 + Math.floor(rng() * 20); a.general.leader = false; }
+  }
   log(dateText() + ': ' + t(S.title) + '. ' + goalTextOf(S), 'history');
   return G;
 }

@@ -23,7 +23,7 @@ function tradeRoute(a, b) {
 // Every trade agreement in force, with its road
 function tradeRoutes() {
   const out = [];
-  for (const a of PLAYABLE) for (const b of PLAYABLE) {
+  for (const a of POWERS) for (const b of POWERS) {
     if (a >= b || !G.factions[a].alive || !G.factions[b].alive || !rel(a, b).trade) continue;
     const path = tradeRoute(a, b);
     if (path) out.push({ a, b, path, key: relKey(a, b) });

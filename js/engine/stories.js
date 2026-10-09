@@ -115,7 +115,7 @@ function newMission(f) {
   if (site) opts.push({ type: 'build', target: site.id, key: 'market', level: site.b.market + 1, turns: 4, reward: 700,
     text: t('Build a {building} in {city}, so the merchants prosper.', { building: bLevel('market', site.b.market + 1), city: cityOf(site) }) });
   // Trade
-  const partner = PLAYABLE.find(g => g !== f && G.factions[g].alive && !rel(f, g).war && !rel(f, g).trade && rel(f, g).att > -15);
+  const partner = POWERS.find(g => g !== f && G.factions[g].alive && !rel(f, g).war && !rel(f, g).trade && rel(f, g).att > -15);
   if (partner) opts.push({ type: 'trade', target: partner, turns: 4, reward: 500, text: t('Sign a trade agreement with the {nation}.', { nation: fFull(partner) }) });
   // A stronger army
   const units = armiesOf(f).reduce((n, a) => n + a.units.length, 0);
@@ -175,7 +175,7 @@ function checkMission() {
 function storyContext(f) {
   const st = G.factions[f], mine = provsOf(f);
   const rich = mine.slice().sort((a, b) => b.pop - a.pop);
-  const rivals = PLAYABLE.filter(g => g !== f && G.factions[g].alive);
+  const rivals = POWERS.filter(g => g !== f && G.factions[g].alive);
   const generals = armiesOf(f).filter(a => a.general && !a.general.leader);
   return {
     f, st, mine, p: pick(rich.slice(0, Math.max(1, Math.ceil(rich.length / 2)))) || rich[0],

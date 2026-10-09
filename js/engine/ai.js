@@ -49,7 +49,7 @@ function aiDiplomacy(f) {
   const st = G.factions[f], my = factionPower(f) + 40;
   if (aiBetray(f)) return;
   aiCallAllies(f);
-  for (const g of PLAYABLE) {
+  for (const g of POWERS) {
     if (g === f || isHuman(g) || !G.factions[g].alive) continue;
     const r = rel(f, g);
     if (r.war) {
@@ -65,7 +65,7 @@ function aiDiplomacy(f) {
   }
   // War on a weaker neighbour
   if (G.turn < 2) return;
-  const wars = PLAYABLE.filter(g => g !== f && G.factions[g].alive && rel(f, g).war).length;
+  const wars = POWERS.filter(g => g !== f && G.factions[g].alive && rel(f, g).war).length;
   const few = nationsLeft().length <= 3; // the endgame: fewer rivals, bolder rulers
   if (wars >= 2 || rng() > AGGRESSION[f] * (few ? 0.4 : 0.18)) return;
   let best = null, bs = 0;
@@ -73,9 +73,12 @@ function aiDiplomacy(f) {
     if (g === 'rebels' || !G.factions[g].alive) continue;
     const r = rel(f, g);
     if (r.war || (r.alliance && !few) || r.truce > 0 || (r.married && r.att > -40 && !few)) continue;
+    // The great powers beyond Turan are busy with their own world: they turn on Turan late, and rarely
+    const farOnNear = FACTIONS[f].far && !FACTIONS[g].far;
+    if (farOnNear && G.turn < 30) continue;
     const ratio = my / (factionPower(g) + 40);
-    const busy = PLAYABLE.filter(x => x !== g && G.factions[x].alive && rel(g, x).war).length; // pile on a ruler already at war
-    const s = ratio * AGGRESSION[f] - r.att / (few ? 150 : 50) - (isHuman(g) ? 0 : 0.1) + busy * 0.25;
+    const busy = POWERS.filter(x => x !== g && G.factions[x].alive && rel(g, x).war).length; // pile on a ruler already at war
+    const s = ratio * AGGRESSION[f] - r.att / (few ? 150 : 50) - (isHuman(g) ? 0 : 0.1) + busy * 0.25 - (farOnNear ? 0.5 : 0);
     if (ratio > (few ? 0.9 : 1.35) && s > bs) { bs = s; best = g; }
   }
   if (best && bs > (few ? 0.5 : 1.1)) declareWar(f, best);
@@ -157,7 +160,7 @@ function aiRecruit(f) {
   const st = G.factions[f], F = FACTIONS[f];
   const income = st.lastIncome || factionIncome(f);
   let upkeep = factionUpkeep(f);
-  const atWarNow = PLAYABLE.some(g => g !== f && G.factions[g].alive && rel(f, g).war) || neighbourFactions(f).has('rebels');
+  const atWarNow = POWERS.some(g => g !== f && G.factions[g].alive && rel(f, g).war) || neighbourFactions(f).has('rebels');
   const limit = income * (atWarNow ? 0.85 : 0.6) + Math.max(0, st.gold - 1500) / 8;
   const prefs = F.nomad ? PREFS.nomad : PREFS.settled;
   const provs = provsOf(f).filter(p => !p.siege && p.queue.length < 2)

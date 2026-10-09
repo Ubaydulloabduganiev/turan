@@ -116,7 +116,7 @@ function devPoints(f) {
   }
   const cap = G.provinces[st.capital];
   if (cap && cap.owner === f) { out.culture += 1; out.state += 1.5; out.science += 0.5; }
-  for (const g of PLAYABLE) if (g !== f && G.factions[g].alive && rel(f, g).trade) out.trade += 1;
+  for (const g of POWERS) if (g !== f && G.factions[g].alive && rel(f, g).trade) out.trade += 1;
   for (const id in WONDERS) if (hasWonder(f, id)) out.culture += 2;
   for (const s of sagesOf(f)) out[SAGES[s].track] += SAGE_PTS;
   for (const k of TRACK_ORDER) {
@@ -149,7 +149,7 @@ const prestigeBonus = f => hasAdv(f, 'culture', 4) ? 10 : 0;
 // ---------- Each turn ----------
 
 function devTurn() {
-  for (const f of PLAYABLE) {
+  for (const f of POWERS) {
     const st = G.factions[f];
     if (!st.alive) continue;
     const d = devOf(f);
@@ -162,7 +162,7 @@ function devTurn() {
       while (d[k].lvl < 5 && d[k].pts >= ADV_COST[d[k].lvl]) advance(f, k);
     }
     // The ruler of a cultured realm is admired abroad
-    if (hasAdv(f, 'culture', 2)) for (const g of PLAYABLE) if (g !== f && G.factions[g].alive) { const r = rel(f, g); r.att = Math.min(100, r.att + 0.5); }
+    if (hasAdv(f, 'culture', 2)) for (const g of POWERS) if (g !== f && G.factions[g].alive) { const r = rel(f, g); r.att = Math.min(100, r.att + 0.5); }
     if (!isHuman(f)) aiPatronage(f);
   }
   sagesTurn();
@@ -196,12 +196,12 @@ function sageFree(id) {
   const S = SAGES[id], c = CHAR_BY_ID[id];
   if (!S || !c) return false;
   if (year() < S.from || year() > S.to || year() >= c.died) return false;
-  return !PLAYABLE.some(f => sagesOf(f).includes(id)) && !(G.sagesGone || []).includes(id);
+  return !POWERS.some(f => sagesOf(f).includes(id)) && !(G.sagesGone || []).includes(id);
 }
 
 function sagesTurn() {
   // Death takes them in their historical years
-  for (const f of PLAYABLE) {
+  for (const f of POWERS) {
     const list = sagesOf(f);
     for (const id of list.slice()) {
       const c = CHAR_BY_ID[id];
@@ -212,7 +212,7 @@ function sagesTurn() {
     }
   }
   // Rich rival courts attract the free ones
-  for (const f of PLAYABLE) {
+  for (const f of POWERS) {
     if (isHuman(f) || !G.factions[f].alive || G.factions[f].gold < 1500 || rng() > 0.05) continue;
     const free = Object.keys(SAGES).filter(sageFree);
     if (!free.length) continue;
@@ -233,7 +233,7 @@ function sageStory(id) {
       { label: ctx => t('Welcome him with a robe of honour (−{n} gold)', { n: 150 }), hint: 'He joins your court.',
         act: ctx => { ctx.st.gold -= 150; sagesOf(ctx.f).push(id); HOOKS.notify({ scene: { kind: 'scholar', id } }); log(dateText() + ': ' + t('{name} joins your court.', { name: pn(c.name) }), 'history'); return t('{name} bows and kisses the carpet before your throne.', { name: pn(c.name) }); } },
       { label: () => t('Send him on his way'), hint: 'He will look for another patron.',
-        act: () => { const rivals = PLAYABLE.filter(f => !isHuman(f) && G.factions[f].alive); if (rivals.length) sagesOf(pick(rivals)).push(id); return t('{name} takes the road to another court.', { name: pn(c.name) }); } },
+        act: () => { const rivals = POWERS.filter(f => !isHuman(f) && G.factions[f].alive); if (rivals.length) sagesOf(pick(rivals)).push(id); return t('{name} takes the road to another court.', { name: pn(c.name) }); } },
     ],
   };
 }

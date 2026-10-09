@@ -84,10 +84,10 @@ function generalAbilities(g, faction) {
 
 // Each turn: a cruel ruler is disliked, a generous one admired
 function traitsTurn() {
-  for (const f of PLAYABLE) {
+  for (const f of POWERS) {
     if (!G.factions[f].alive) continue;
     const tr = rulerTraits(f);
-    if (tr.includes('cruel')) for (const g of PLAYABLE) if (g !== f && G.factions[g].alive) { const r = rel(f, g); r.att = Math.max(-100, r.att - 0.3); }
+    if (tr.includes('cruel')) for (const g of POWERS) if (g !== f && G.factions[g].alive) { const r = rel(f, g); r.att = Math.max(-100, r.att - 0.3); }
     if (tr.includes('generous')) shiftTrust(f, 0.3);
   }
 }

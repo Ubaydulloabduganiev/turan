@@ -10,7 +10,7 @@ const BRIDES = {
 };
 // A bride the chronicles remember: Khanzada of Khwarezm married Temur's son Jahangir
 const HISTORIC_BRIDES = { khwarezm: 'Khanzada' };
-const SON_TITLE = { temur: ' Mirza', moghul: ' Khoja', white: ' Oghlan', golden: ' Oghlan', khwarezm: ' Sufi', kart: '', sarbadar: '' };
+const SON_TITLE = { temur: ' Mirza', moghul: ' Khoja', white: ' Oghlan', golden: ' Oghlan', khwarezm: ' Sufi', kart: '', sarbadar: '', ottoman: ' Chelebi', mamluk: '', jalayir: '', muzaffar: '', delhi: ' Khan' };
 
 function addPerson(o) { G.people = G.people || {}; G.people[o.name] = o; return o; }
 function personBy(name) { return (G && G.people && G.people[name]) || null; }

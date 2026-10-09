@@ -273,7 +273,7 @@ HOOKS.offer = async o => {
 
 let dipSel = null;
 function openDiplomacy(f) {
-  const others = PLAYABLE.filter(x => x !== G.player && G.factions[x].alive);
+  const others = POWERS.filter(x => x !== G.player && G.factions[x].alive);
   dipSel = f && others.includes(f) ? f : (others.includes(dipSel) ? dipSel : others[0]);
   const render = () => {
     const rows = others.map(x => {
@@ -372,7 +372,7 @@ function openCourt(tab = 'mine') {
     if (tab === 'mine') {
       body = '<div class="people">' + courtOf(pl).map(p => personCard(p.name, pl, { ...p, alive: !p.child })).join('') + '</div>';
     } else if (tab === 'rulers') {
-      body = '<div class="people">' + PLAYABLE.filter(f => G.factions[f].alive && f !== pl).map(f => {
+      body = '<div class="people">' + POWERS.filter(f => G.factions[f].alive && f !== pl).map(f => {
         const st = G.factions[f];
         const ga = armiesOf(f).find(a => a.general && a.general.name === st.leader);
         return personCard(st.leader, f, { leader: true, age: ga ? ga.general.age : undefined, alive: true });

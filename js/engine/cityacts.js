@@ -37,7 +37,7 @@ function transferProvince(p, to, unrest = 20) {
 }
 
 // Rulers who could receive a city: alive, and not you
-const otherRulers = () => PLAYABLE.filter(f => f !== G.player && G.factions[f].alive);
+const otherRulers = () => POWERS.filter(f => f !== G.player && G.factions[f].alive);
 const neighbourRulers = p => otherRulers().filter(f => p.adj.some(n => G.provinces[n].owner === f) || provsOf(f).some(q => q.adj.includes(p.id)));
 
 const isCapital = p => p.owner !== 'rebels' && G.factions[p.owner].capital === p.id;

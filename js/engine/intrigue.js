@@ -43,7 +43,7 @@ function shiftLoyalty(g, f, d) { courtier(g, f); g.loyal = clampN(g.loyal + d, 0
 
 // Each turn: hearts drift, and in the rival courts the most bitter men sometimes rebel
 function intrigueTurn() {
-  for (const f of PLAYABLE) {
+  for (const f of POWERS) {
     if (!G.factions[f].alive) continue;
     for (const { a, g } of generalsOf(f)) {
       const target = loyaltyTarget(g, f);
@@ -156,7 +156,7 @@ function pickIntrigue() {
   if (!st.alive || G.turn < 6 || (G.lastIntrigue !== undefined && G.turn - G.lastIntrigue < 4)) return null;
   const gs = generalsOf(f);
   if (!gs.length) return null;
-  const rivals = PLAYABLE.filter(g => g !== f && G.factions[g].alive);
+  const rivals = POWERS.filter(g => g !== f && G.factions[g].alive);
   const hostile = rivals.filter(g => rel(f, g).war || rel(f, g).att < -10);
   const c = storyContext(f);
   const pickOne = list => list.sort((x, y) => x.g.loyal - y.g.loyal)[0];

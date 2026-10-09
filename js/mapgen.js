@@ -2,7 +2,7 @@
 // Builds the campaign map from province coordinates: a Voronoi diagram of the cities, clipped to the map frame,
 // with seas and mountain ranges as cells of their own and wobbly borders shared exactly between neighbours.
 
-const MAP = { LON0: 45.5, LON1: 85.0, LAT0: 31.0, LAT1: 52.5, K: 52, COS: Math.cos(42 * Math.PI / 180) };
+const MAP = { LON0: 25.5, LON1: 85.0, LAT0: 25.0, LAT1: 52.5, K: 52, COS: Math.cos(42 * Math.PI / 180) };
 MAP.W = Math.round((MAP.LON1 - MAP.LON0) * MAP.COS * MAP.K);
 MAP.H = Math.round((MAP.LAT1 - MAP.LAT0) * MAP.K);
 

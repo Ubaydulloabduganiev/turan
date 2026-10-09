@@ -199,7 +199,7 @@ function sackProvince(p) {
   const extra = Math.round(p.pop * 17);
   G.factions[p.owner].gold += extra;
   p.pop *= 0.8; p.unrest = 55; p.sacked = 6;
-  for (const g of PLAYABLE) if (g !== p.owner && G.factions[g].alive) rel(p.owner, g).att -= 3;
+  for (const g of POWERS) if (g !== p.owner && G.factions[g].alive) rel(p.owner, g).att -= 3;
   log(t('{nation} sacked {city}.', { nation: fName(p.owner), city: cityOf(p) }), 'big');
   return extra;
 }
@@ -210,7 +210,7 @@ function sackProvince(p) {
 function dealValue(from, to, type, gold = 0) {
   const r = rel(from, to);
   const pf = factionPower(from) + 40, pt = factionPower(to) + 40, pr = pf / pt;
-  const common = PLAYABLE.filter(x => x !== from && x !== to && G.factions[x].alive && rel(from, x).war && rel(to, x).war).length;
+  const common = POWERS.filter(x => x !== from && x !== to && G.factions[x].alive && rel(from, x).war && rel(to, x).war).length;
   switch (type) {
     case 'peace': {
       if (!r.war) return -999;
@@ -303,7 +303,7 @@ function annex(winner, loser) {
   G.factions[winner].gold += Math.max(0, G.factions[loser].gold);
   G.factions[loser].gold = 0;
   G.factions[loser].alive = false;
-  for (const g of PLAYABLE) if (g !== loser) { const r = rel(loser, g); r.war = false; r.alliance = false; r.trade = false; }
+  for (const g of POWERS) if (g !== loser) { const r = rel(loser, g); r.war = false; r.alliance = false; r.trade = false; }
   log(dateText() + ': ' + t('{ruler} submits to {ruler2}. The {nation} is no more.', { ruler: pn(G.factions[loser].leader), ruler2: pn(G.factions[winner].leader), nation: fFull(loser) }), 'big');
   HOOKS.notify({ title: t('The {nation} submits', { nation: fName(loser) }), text: t('{ruler} has bowed before {ruler2}. All the lands of the {nation} now belong to the {nation2}.', { ruler: pn(G.factions[loser].leader), ruler2: pn(G.factions[winner].leader), nation: fFull(loser), nation2: fFull(winner) }) });
 }
@@ -356,14 +356,14 @@ function declareWar(from, to, quiet) {
   if (r.war) return;
   const perfidy = r.alliance || r.truce > 0;
   r.war = true; r.alliance = false; r.trade = false; r.att = Math.min(r.att, 0) - 40; r.warTurns = 0; r.truce = 0;
-  if (perfidy) { shiftTrust(from, -25); for (const g of PLAYABLE) if (g !== from && g !== to && G.factions[g].alive) rel(from, g).att -= 15; }
+  if (perfidy) { shiftTrust(from, -25); for (const g of POWERS) if (g !== from && g !== to && G.factions[g].alive) rel(from, g).att -= 15; }
   log(dateText() + ': ' + t('the {nation} declares war on the {nation2}.', { nation: fFull(from), nation2: fFull(to) }), from === G.player || to === G.player ? 'war' : '');
   if (isHuman(to) && !quiet) tell(to, perfidy
     ? { sound: 'horn', title: t('Betrayed!'), text: t('The {nation} has broken its oath to us and declared war. Every ruler in Turan will hear of this treachery.', { nation: fFull(from) }) }
     : { sound: 'horn', title: t('War!'), text: t('The {nation} has declared war on us.', { nation: fFull(from) }) });
   else if (perfidy && !isHuman(from)) HOOKS.notify({ minor: true, title: t('Betrayal'), text: t('The {nation} has broken its alliance with the {nation2}.', { nation: fName(from), nation2: fName(to) }) });
   // Allies of the victim may come to its aid
-  for (const g of PLAYABLE) {
+  for (const g of POWERS) {
     if (g === from || g === to || !G.factions[g].alive || !rel(g, to).alliance || rel(g, from).war) continue;
     if (isHuman(g)) continue; // people decide for themselves
     if (rel(g, to).att > 20) { declareWar(g, from, true); log(t('{nation} honours its alliance and joins the war.', { nation: fName(g) }), 'war'); }

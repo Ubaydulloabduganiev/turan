@@ -544,5 +544,21 @@ const CREDITS = [
   "date": "",
   "license": "CC-BY 4.0",
   "page": "https://opengameart.org/content/breeze"
+ },
+ {
+  "use": "Portrait of Bayezid",
+  "title": "Bayezid I. Semailname (Millet Library, Ali Emîrî Collection, History, MS no. 1216).jpg",
+  "author": "Nakkaş Osman (16th century)",
+  "date": "1579",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Bayezid_I._Semailname_(Millet_Library,_Ali_Emîrî_Collection,_History,_MS_no._1216).jpg"
+ },
+ {
+  "use": "Portrait of Murad I",
+  "title": "Murad I. Semailname (Millet Library, Ali Emîrî Collection, History, MS no. 1216).jpg",
+  "author": "Nakkaş Osman (16th century)",
+  "date": "1579",
+  "license": "Public domain",
+  "page": "https://commons.wikimedia.org/wiki/File:Murad_I._Semailname_(Millet_Library,_Ali_Emîrî_Collection,_History,_MS_no._1216).jpg"
  }
 ];

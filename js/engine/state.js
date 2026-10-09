@@ -31,7 +31,8 @@ const humansAlive = () => (G.humans || [G.player]).filter(f => G.factions[f] && 
 // A message for one human ruler (in a hot-seat game it waits until they hold the device)
 function tell(f, n) { HOOKS.notify({ ...n, for: f }); }
 
-const AGGRESSION = { temur: 0.95, golden: 0.6, white: 0.65, moghul: 0.55, khwarezm: 0.45, kart: 0.35, sarbadar: 0.45, rebels: 0 };
+const AGGRESSION = { temur: 0.95, golden: 0.6, white: 0.65, moghul: 0.55, khwarezm: 0.45, kart: 0.35, sarbadar: 0.45,
+  ottoman: 0.7, mamluk: 0.35, jalayir: 0.5, muzaffar: 0.45, delhi: 0.3, rebels: 0 };
 
 function rng() { // seeded, so a saved game continues the same way
   G.seed = (G.seed + 0x6D2B79F5) | 0;
@@ -84,6 +85,18 @@ function rel(a, b) {
 const atWar = (a, b) => a !== b && (a === 'rebels' || b === 'rebels' || rel(a, b).war);
 const allied = (a, b) => a === b || (a !== 'rebels' && b !== 'rebels' && rel(a, b).alliance);
 
+function provinceFromData(d, i) {
+  const site = MAPDATA.sites[i];
+  const [walls, barracks, stables, market, farms, madrasa] = d[9];
+  return {
+    id: d[0], name: d[1], city: d[2], owner: d[5], pop: d[6], terrain: d[7], silk: !!d[8],
+    b: { walls, barracks, stables, market, farms, madrasa, library: 0 }, build: null, queue: [],
+    unrest: 0, x: site.x, y: site.y, idx: i,
+    adj: [...MAPDATA.adj[i]].filter(j => MAPDATA.sites[j].kind === 'province').map(j => MAPDATA.sites[j].id),
+    siege: null, sacked: 0,
+  };
+}
+
 function newGame(player, seed, humans) {
   MAPDATA = MAPDATA || buildMap();
   G = {
@@ -100,17 +113,7 @@ function newGame(player, seed, humans) {
     G.stats[id] = { won: 0, lost: 0, taken: 0 };
   }
   G.factions.temur.gold = 3000;
-  PROVINCE_DATA.forEach((d, i) => {
-    const site = MAPDATA.sites[i];
-    const [walls, barracks, stables, market, farms, madrasa] = d[9];
-    G.provinces[d[0]] = {
-      id: d[0], name: d[1], city: d[2], owner: d[5], pop: d[6], terrain: d[7], silk: !!d[8],
-      b: { walls, barracks, stables, market, farms, madrasa, library: 0 }, build: null, queue: [],
-      unrest: 0, x: site.x, y: site.y, idx: i,
-      adj: [...MAPDATA.adj[i]].filter(j => MAPDATA.sites[j].kind === 'province').map(j => MAPDATA.sites[j].id),
-      siege: null, sacked: 0,
-    };
-  });
+  PROVINCE_DATA.forEach((d, i) => { G.provinces[d[0]] = provinceFromData(d, i); });
   for (const d of PROVINCE_DATA) {
     if (!d[10]) continue;
     const owner = d[5], F = FACTIONS[owner];
@@ -120,7 +123,7 @@ function newGame(player, seed, humans) {
     addArmy(owner, d[0], d[10].split(' '), general);
   }
   // Other named generals start with a field army near the capital
-  for (const id of PLAYABLE) {
+  for (const id of POWERS) {
     const F = FACTIONS[id];
     F.generals.slice(1).forEach((g, i) => {
       const cap = G.provinces[F.capital];
@@ -130,7 +133,7 @@ function newGame(player, seed, humans) {
     });
   }
   // The state of the world in 1370
-  for (const a of PLAYABLE) for (const b of PLAYABLE) if (a < b) rel(a, b).att = 0;
+  for (const a of POWERS) for (const b of POWERS) if (a < b) rel(a, b).att = 0;
   const war = (a, b, att) => { const r = rel(a, b); r.war = true; r.att = att; };
   war('temur', 'moghul', -40);
   war('white', 'golden', -40);
@@ -138,7 +141,11 @@ function newGame(player, seed, humans) {
   rel('kart', 'sarbadar').att = -35;
   rel('temur', 'white').att = -10;
   rel('kart', 'temur').att = 10;
-  for (const a of PLAYABLE) for (const b of PLAYABLE) if (a < b && !rel(a, b).war && rel(a, b).att >= 0) rel(a, b).trade = (a === 'temur' && b === 'kart');
+  // The wider world: Jalayirids and Muzaffarids fight over Persia, the Mamluks watch the Ottomans
+  rel('jalayir', 'muzaffar').att = -40;
+  rel('ottoman', 'mamluk').att = -10;
+  rel('jalayir', 'golden').att = -20;
+  for (const a of POWERS) for (const b of POWERS) if (a < b && !rel(a, b).war && rel(a, b).att >= 0) rel(a, b).trade = (a === 'temur' && b === 'kart');
   for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
   log(dateText() + ': ' + t('you take command of the {nation}.', { nation: fFull(player) }));
   runEvents();
@@ -257,7 +264,7 @@ function factionUpkeep(f) {
 
 function tradeIncome(f) {
   let s = 0;
-  for (const g of PLAYABLE) {
+  for (const g of POWERS) {
     if (g === f || !G.factions[g].alive || !rel(f, g).trade) continue;
     if (routeRaided(f, g)) continue; // this season's caravans were robbed
     const silk = provsOf(g).filter(p => p.silk).length + provsOf(f).filter(p => p.silk).length;
@@ -297,7 +304,7 @@ function checkFactionAlive(f) {
   if (provsOf(f).length) return;
   G.factions[f].alive = false;
   for (const a of armiesOf(f)) delete G.armies[a.id];
-  for (const g of PLAYABLE) if (g !== f) { const r = rel(f, g); r.war = false; r.alliance = false; r.trade = false; }
+  for (const g of POWERS) if (g !== f) { const r = rel(f, g); r.war = false; r.alliance = false; r.trade = false; }
   log(t('The {nation} has been destroyed.', { nation: fFull(f) }), 'big');
   HOOKS.notify({ title: t('{nation} destroyed', { nation: fFull(f) }), text: t('The last lands of the {nation} have fallen.', { nation: fFull(f) }) });
 }
@@ -314,10 +321,35 @@ function loadGame(slot) {
     if (!data) return false;
     MAPDATA = MAPDATA || buildMap();
     G = JSON.parse(data);
+    migrateMap();
     migrateProgress();
     return true;
   } catch (e) { return false; }
 }
+// A game saved on a smaller map: the places keep their state, the new lands of the wider world are added
+// as they were in 1370, and every city takes its place on the new map.
+function migrateMap() {
+  const known = new Set(Object.keys(G.provinces));
+  for (const id in FACTIONS) if (!G.factions[id]) {
+    const F = FACTIONS[id];
+    G.factions[id] = { id, alive: true, gold: 2000, tax: 1, capital: F.capital, leader: F.leader || null, heir: F.heir || null, orderBonus: 0, orderBonusT: 0 };
+    G.stats[id] = { won: 0, lost: 0, taken: 0 };
+  }
+  PROVINCE_DATA.forEach((d, i) => {
+    if (!G.provinces[d[0]]) {
+      G.provinces[d[0]] = provinceFromData(d, i);
+      if (d[10]) addArmy(d[5], d[0], d[10].split(' '), null);
+    }
+    const p = G.provinces[d[0]], site = MAPDATA.sites[i];
+    p.x = site.x; p.y = site.y; p.idx = i;
+    p.adj = [...MAPDATA.adj[i]].filter(j => MAPDATA.sites[j].kind === 'province').map(j => MAPDATA.sites[j].id);
+  });
+  if (known.size < PROVINCE_DATA.length) for (const id of FAR) {
+    const F = FACTIONS[id];
+    F.generals.forEach((g, i) => addArmy(id, F.capital, F.nomad ? ['horsearch', 'lancer'] : ['spear', 'archer'], makeGeneral(id, g[0], g[1], g[2], i === 0)));
+  }
+}
+
 // ---------- Save files: a campaign carried to another device ----------
 
 function gameToText() {
@@ -332,6 +364,7 @@ function gameFromText(text) {
   if (Object.keys(g.provinces).some(id => !PROVINCE_DATA.some(p => p[0] === id))) return 'This save file is from a different version of the map.';
   MAPDATA = MAPDATA || buildMap();
   G = g;
+  migrateMap();
   migrateProgress();
   return null;
 }
