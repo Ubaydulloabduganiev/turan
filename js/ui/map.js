@@ -71,8 +71,8 @@ function initMap() {
     svg.parentNode.insertBefore(tc, svg);
   }
   const root = svgEl('g', { id: 'cam' }, svg);
-  for (const name of ['hit', 'owners', 'borders', 'fog', 'routes', 'sel', 'reach', 'labels', 'places', 'cities', 'armies']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
-  for (const n of ['labels', 'borders', 'owners', 'sel', 'routes', 'fog']) layers[n].setAttribute('pointer-events', 'none');
+  for (const name of ['hit', 'owners', 'flow', 'borders', 'fog', 'routes', 'sel', 'reach', 'labels', 'places', 'cities', 'armies', 'names']) layers[name] = svgEl('g', { id: 'l-' + name }, root);
+  for (const n of ['labels', 'borders', 'owners', 'flow', 'sel', 'routes', 'fog', 'names']) layers[n].setAttribute('pointer-events', 'none');
   layers.fogKey = null;
 
   // Invisible province shapes catch clicks
@@ -89,9 +89,24 @@ function initMap() {
     t.textContent = geoName(name);
     t.dataset.geo = name;
   }
+  renderFlow();
   bindMapInput();
   fitMap();
   initLife();
+}
+
+// Light running down the great rivers, so the water seems to move
+function renderFlow() {
+  layers.flow.innerHTML = '';
+  if (typeof GFX !== 'undefined' && GFX.low) return;
+  for (const r of RIVERS) {
+    if (r.w < 1.4) continue;
+    const p = r.pts.map(([lon, lat]) => project(lon, lat));
+    let d = 'M' + p[0].x.toFixed(1) + ' ' + p[0].y.toFixed(1);
+    for (let i = 1; i < p.length - 1; i++) d += `Q${p[i].x.toFixed(1)} ${p[i].y.toFixed(1)} ${((p[i].x + p[i + 1].x) / 2).toFixed(1)} ${((p[i].y + p[i + 1].y) / 2).toFixed(1)}`;
+    d += 'L' + p[p.length - 1].x.toFixed(1) + ' ' + p[p.length - 1].y.toFixed(1);
+    svgEl('path', { d, class: 'river-flow', 'stroke-width': (r.w * 0.55).toFixed(2), style: `animation-duration:${(9 + r.w * 2).toFixed(1)}s` }, layers.flow);
+  }
 }
 
 function provPath(pid) { return outlinePath(MAPDATA.outlines[G.provinces[pid].idx]); }
@@ -119,16 +134,48 @@ function renderMap() {
   }
   for (const pid in bands) {
     const F = FACTIONS[G.provinces[pid].owner];
-    svgEl('path', { d: bands[pid].join(''), fill: 'none', stroke: F.color, 'stroke-width': 11, 'stroke-opacity': 0.55, 'stroke-linejoin': 'round', 'clip-path': `url(#cp-${pid})`, filter: 'url(#soft)' }, layers.borders);
-    svgEl('path', { d: bands[pid].join(''), fill: 'none', stroke: F.color, 'stroke-width': 3.2, 'stroke-opacity': 0.9, 'stroke-linejoin': 'round', 'clip-path': `url(#cp-${pid})` }, layers.borders);
+    const mine = G.provinces[pid].owner === G.player;
+    svgEl('path', { d: bands[pid].join(''), fill: 'none', stroke: F.color, 'stroke-width': mine ? 18 : 14, 'stroke-opacity': mine ? 0.7 : 0.55, 'stroke-linejoin': 'round', 'clip-path': `url(#cp-${pid})`, filter: 'url(#soft)' }, layers.borders);
+    svgEl('path', { d: bands[pid].join(''), fill: 'none', stroke: F.color, 'stroke-width': 4, 'stroke-opacity': 0.95, 'stroke-linejoin': 'round', 'clip-path': `url(#cp-${pid})` }, layers.borders);
+    if (mine) svgEl('path', { d: bands[pid].join(''), fill: 'none', stroke: '#fff4cf', 'stroke-width': 1.2, 'stroke-opacity': 0.55, 'stroke-linejoin': 'round', 'clip-path': `url(#cp-${pid})`, class: 'my-border' }, layers.borders);
   }
   svgEl('path', { d: inner, fill: 'none', stroke: '#2a1d0e', 'stroke-width': 0.9, 'stroke-opacity': 0.4, 'stroke-dasharray': '2 3' }, layers.borders);
-  svgEl('path', { d: outer, fill: 'none', stroke: '#1a1208', 'stroke-width': 1.7, 'stroke-opacity': 0.85, 'stroke-linejoin': 'round' }, layers.borders);
+  svgEl('path', { d: outer, fill: 'none', stroke: '#1a1208', 'stroke-width': 2.4, 'stroke-opacity': 0.9, 'stroke-linejoin': 'round' }, layers.borders);
+  svgEl('path', { d: outer, fill: 'none', stroke: '#e9cf86', 'stroke-width': 0.7, 'stroke-opacity': 0.45, 'stroke-linejoin': 'round' }, layers.borders);
 
   renderSelection();
   renderCities();
   renderPlaces();
   renderArmies();
+  declutterLabels();
+}
+
+// Names never sit on top of each other: the more important city keeps its name, the lesser one hides it.
+// Names of special places give way to every city.
+let declutterQueued = false;
+function declutterLabels() {
+  if (declutterQueued) return;
+  declutterQueued = true;
+  requestAnimationFrame(() => {
+    declutterQueued = false;
+    if (!layers.cities) return;
+    const items = [];
+    for (const el of layers.names.querySelectorAll('.city-label')) items.push({ el, pri: +el.getAttribute('data-pri') || 0 });
+    for (const el of layers.places.querySelectorAll('.place-label')) items.push({ el, pri: -1 });
+    for (const it of items) { it.el.classList.remove('lbl-hide'); it.r = it.el.getBoundingClientRect(); }
+    items.sort((a, b) => b.pri - a.pri);
+    const kept = [];
+    // Special places also give way to the cities' pictures and to the banners
+    const things = [...layers.cities.querySelectorAll('.city > use'), ...layers.armies.querySelectorAll('.army')].map(e => e.getBoundingClientRect());
+    for (const it of items) {
+      const r = it.r;
+      if (!r.width) continue;
+      if (it.pri < 0 && things.some(k => r.left < k.right && r.right > k.left && r.top < k.bottom && r.bottom > k.top)) { it.el.classList.add('lbl-hide'); continue; }
+      const pad = 2;
+      if (kept.some(k => r.left < k.right + pad && r.right > k.left - pad && r.top < k.bottom - 1 && r.bottom > k.top + 1)) it.el.classList.add('lbl-hide');
+      else kept.push(r);
+    }
+  });
 }
 
 function renderSelection() {
@@ -177,6 +224,7 @@ function renderRoutes() {
 
 function renderCities() {
   layers.cities.innerHTML = '';
+  layers.names.innerHTML = '';
   for (const p of Object.values(G.provinces)) {
     const g = svgEl('g', { transform: `translate(${p.x.toFixed(1)} ${p.y.toFixed(1)}) scale(${UI.k.toFixed(3)})`, 'data-prov': p.id, class: 'city' }, layers.cities);
     const k = cityKind(p);
@@ -200,7 +248,10 @@ function renderCities() {
     svgEl('path', { d: `M2 ${k.top - 9}h8l-2 2.2 2 2.2h-8z`, fill: F.color, stroke: F.dark, 'stroke-width': 0.5, class: 'pennant', style: `animation-delay:-${(p.idx * 0.53) % 1.6}s` }, g);
     // Zoomed far out, only the great cities keep their names
     if (UI.k < 1.15 || isCap || p.pop >= 20) {
-      const label = svgEl('text', { y: 19, 'text-anchor': 'middle', class: 'city-label' + (isCap ? ' cap' : ''), 'font-size': isCap ? 13.5 : p.pop >= 25 ? 12 : 10.5 }, g);
+      // Names stand above the banners so they can always be read
+      const ng = svgEl('g', { transform: g.getAttribute('transform') }, layers.names);
+      const label = svgEl('text', { y: 19, 'text-anchor': 'middle', class: 'city-label' + (isCap ? ' cap' : ''), 'font-size': isCap ? 13.5 : p.pop >= 25 ? 12 : 10.5,
+        'data-pri': (isCap ? 1000 : 0) + (p.owner === G.player ? 300 : 0) + (UI.selProv === p.id ? 5000 : 0) + p.pop }, ng);
       label.textContent = cityOf(p);
     }
     if (p.siege && (provVisible(p.id) || p.owner === G.player || p.siege.by === G.player)) {
@@ -237,9 +288,17 @@ function renderArmies() {
   for (const a of Object.values(G.armies)) if (armyVisible(a)) (byProv[a.prov] = byProv[a.prov] || []).push(a);
   for (const pid in byProv) {
     const p = G.provinces[pid];
-    const home = byProv[pid].filter(a => a.owner === p.owner), away = byProv[pid].filter(a => a.owner !== p.owner);
-    for (const a of home.concat(away)) {
-      if (UI.hidden && UI.hidden.has(a.id)) continue; // drawn marching on the life layer instead
+    // Several armies on one side stand as one banner with the others furled behind it; the selected or strongest leads
+    const shown = byProv[pid].filter(a => !(UI.hidden && UI.hidden.has(a.id))); // marching ones are drawn on the life layer
+    const lead = list => list.slice().sort((x, y) => (y.id === UI.selArmy) - (x.id === UI.selArmy) || (!!(y.general && y.general.leader) - !!(x.general && x.general.leader)) || armyPower(y) - armyPower(x));
+    const stacks = [];
+    for (const side of [shown.filter(a => a.owner === p.owner), shown.filter(a => a.owner !== p.owner)]) {
+      const owners = [...new Set(side.map(a => a.owner))];
+      for (const o of owners) { const l = lead(side.filter(a => a.owner === o)); stacks.push({ a: l[0], n: l.length, men: l.reduce((m, x) => m + x.units.length, 0) }); }
+    }
+    const home = stacks.filter(x => x.a.owner === p.owner).map(x => x.a), away = stacks.filter(x => x.a.owner !== p.owner).map(x => x.a);
+    for (const st of stacks) {
+      const a = st.a;
       const F = FACTIONS[a.owner];
       const besieger = a.owner !== p.owner;
       const k = besieger ? away.indexOf(a) : home.indexOf(a);
@@ -247,6 +306,12 @@ function renderArmies() {
       const s = UI.k, x = besieger ? p.x - (34 + k * 15) * s : p.x + (20 + k * 15) * s, y = besieger ? p.y + 4 * s : p.y - 2 * s;
       const g = svgEl('g', { transform: `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${s.toFixed(3)})`, 'data-army': a.id, class: 'army' + (UI.selArmy === a.id ? ' selected' : '') }, layers.armies);
       if (UI.selArmy === a.id) svgEl('ellipse', { cx: 0, cy: 10, rx: 13, ry: 4.5, class: 'army-ring' }, g);
+      // The furled banners of the rest of the stack
+      for (let i = Math.min(st.n - 1, 2); i >= 1; i--) {
+        const b = svgEl('g', { transform: `translate(${-4.5 * i} ${-2.5 * i})`, opacity: 0.85 }, g);
+        svgEl('path', { d: 'M0 10V-24', stroke: '#2a1a0a', 'stroke-width': 1.4 }, b);
+        svgEl('path', { d: 'M0-22h14v15l-7-3-7 3z', fill: F.dark, stroke: '#1a1208', 'stroke-width': 0.7 }, b);
+      }
       svgEl('ellipse', { cx: 2, cy: 10, rx: 9, ry: 2.8, fill: '#000', 'fill-opacity': 0.35 }, g);
       svgEl('path', { d: 'M0 10V-24', stroke: '#3b2410', 'stroke-width': 1.6, 'stroke-linecap': 'round' }, g);
       svgEl('path', { d: 'M-1-22h17', stroke: '#3b2410', 'stroke-width': 1.2 }, g);
@@ -257,7 +322,12 @@ function renderArmies() {
       em.innerHTML = (EMBLEMS[a.owner] || EMBLEMS.rebels)(a.owner === 'white' ? '#5b4a2c' : a.owner === 'golden' ? '#7a1f12' : '#f6e7b8');
       svgEl('circle', { cx: 15, cy: 4, r: 5.6, fill: '#1a1208', stroke: '#d8b45a', 'stroke-width': 1 }, g);
       const t = svgEl('text', { x: 15, y: 6.8, 'text-anchor': 'middle', class: 'army-count' }, g);
-      t.textContent = a.units.length;
+      t.textContent = st.n > 1 ? st.men : a.units.length;
+      if (st.n > 1) {
+        svgEl('rect', { x: -15, y: -36, width: 13, height: 9, rx: 4.5, fill: '#d8b45a', stroke: '#3b2410', 'stroke-width': 0.6 }, g);
+        const n = svgEl('text', { x: -8.5, y: -29.4, 'text-anchor': 'middle', class: 'army-stack' }, g);
+        n.textContent = '×' + st.n;
+      }
       if (a.general) svgEl('path', { d: 'M0-34l1.6 3.3h3.6l-2.9 2.2 1.1 3.5L0-27.1l-3.4 2.1 1.1-3.5-2.9-2.2h3.6z', fill: a.general.leader ? '#ffd75a' : '#f3eee0', stroke: '#3b2410', 'stroke-width': 0.5 }, g);
       if (a.owner === G.player && a.moves > 0) svgEl('circle', { cx: -4, cy: 7, r: 2.4, fill: '#8ff07a', stroke: '#1d4a12', 'stroke-width': 0.7, class: 'ready' }, g);
     }
@@ -296,7 +366,7 @@ function updateIconScale() {
   const k = clampN(Math.pow(1.3 / cam.s, 0.6), 0.62, 1.45);
   if (Math.abs(k - UI.k) / UI.k < 0.06 || iconsQueued) return;
   iconsQueued = true;
-  requestAnimationFrame(() => { iconsQueued = false; UI.k = clampN(Math.pow(1.3 / cam.s, 0.6), 0.62, 1.45); if (G) { renderCities(); renderPlaces(); renderArmies(); } });
+  requestAnimationFrame(() => { iconsQueued = false; UI.k = clampN(Math.pow(1.3 / cam.s, 0.6), 0.62, 1.45); if (G) { renderCities(); renderPlaces(); renderArmies(); declutterLabels(); } });
 }
 
 function applyCam() {
@@ -398,7 +468,11 @@ function mapClick(el, right) {
   }
   if (right) return;
   if (t.army) {
-    const a = G.armies[t.army];
+    let a = G.armies[t.army];
+    if (UI.selArmy === a.id) {
+      const same = armiesIn(a.prov).filter(x => x.owner === a.owner && armyVisible(x));
+      if (same.length > 1) a = same[(same.indexOf(a) + 1) % same.length];
+    }
     UI.selArmy = a.id; UI.selProv = a.prov;
   } else if (t.prov) {
     UI.selArmy = null; UI.selProv = t.prov;
@@ -420,7 +494,7 @@ function hoverAt(e) {
   } else {
     const p = G.provinces[tg.prov];
     html = `<b>${cityOf(p)}</b> · ${regionOf(p)}<br>${fFull(p.owner)}<br>${terrName(p.terrain)} · ${t('{n}k people', { n: Math.round(p.pop) })}${p.silk ? ' · ' + t('Silk Road') : ''}`;
-    if (landmarkIn(p.id)) html += `<br><span class="gold">★ ${t(LANDMARKS[landmarkIn(p.id)].name)}</span>`;
+    if (landmarkIn(p.id)) html += `<br><span class="gold">${icon('star')} ${t(LANDMARKS[landmarkIn(p.id)].name)}</span>`;
     if (p.siege && provVisible(p.id)) html += `<br><span class="bad">${t('Besieged by {nation}', { nation: fName(p.siege.by) })}</span>`;
     if (!provVisible(p.id)) html += `<br><i class="muted">${t('Hidden by the fog of war')}</i>`;
     if (UI.reach && UI.reach[p.id]) {

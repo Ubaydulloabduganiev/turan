@@ -82,7 +82,7 @@ async function showStory({ story, ctx }) {
   const title = t(story.title);
   const who = story.who ? story.who(ctx) : null;
   const pic = who ? portraitSVG(who, { faction: story.whoFaction ? story.whoFaction(ctx) : ctx.f }) : '';
-  const kick = story.kicker ? `<div class="camp-year whatif-kick">✦ ${t(story.kicker)}</div>` : '';
+  const kick = story.kicker ? `<div class="camp-year whatif-kick">${icon('star')} ${t(story.kicker)}</div>` : '';
   if (story.kicker) narrate([title, story.text(ctx)]);
   const i = await showModal(`${kick}<h3>${title}</h3><div class="with-portrait">${pic}<p>${story.text(ctx)}</p></div><div class="choices story">${opts}</div>`, [], { cls: 'parch', cancel: 0, pickIndex: true });
   hush();
@@ -117,7 +117,7 @@ function battleHTML(b, title, intro) {
   const word = t(mine > 0.8 ? 'Decisive advantage' : mine > 0.6 ? 'Favourable' : mine > 0.4 ? 'Even' : mine > 0.2 ? 'Unfavourable' : 'Hopeless');
   const side = (s, g) => `<div class="side"><h4>${flagSVG(s.faction, 'flag')}${fName(s.faction)}</h4><div class="p-sub">${g ? pn(g.name) + ' ' + stars(Math.min(5, g.cmd)) : t('No general')}</div><ul>${sideList(s)}</ul><div class="p-sub">${t('{n} men', { n: menOf(s) })}</div></div>`;
   return `<h3>${title}</h3><p>${intro || ''} ${b.kind === 'naval' ? t('{kind}: the {sea}, off {city}.', { kind: kindText, sea: geoName(b.sea), city: cityOf(p) }) : t('{kind} at {city}, {terrain}.', { kind: kindText, city: cityOf(p), terrain: terrName(p.terrain).toLowerCase() })}</p>
-    <div class="vs">${side(b.att, g1)}<div class="mid">⚔</div>${side(b.def, g2)}</div>
+    <div class="vs">${side(b.att, g1)}<div class="mid">${icon('swords')}</div>${side(b.def, g2)}</div>
     <div class="odds"><div style="width:${odds * 100}%;background:${FACTIONS[b.att.faction].color}"></div><div style="flex:1;background:${FACTIONS[b.def.faction].color}"></div></div>
     <p class="note">${t('Your chances: {word}.', { word: `<b>${word}</b>` })}${b.walls ? ' ' + t('Defenders on the walls fight much harder; siege engineers help.') : ''}</p>`;
 }
@@ -143,7 +143,7 @@ async function showBattleResult(out, b, before) {
   await showModal(`<h3>${head}</h3>
     <p>${out.text}</p>
     <div class="vs"><div class="side"><h4>${flagSVG(b.att.faction, 'flag')}${fName(b.att.faction)}</h4><p>${lost(lossA, before.att)}</p></div>
-    <div class="mid">⚔</div><div class="side"><h4>${flagSVG(b.def.faction, 'flag')}${fName(b.def.faction)}</h4><p>${lost(lossD, before.def)}</p></div></div>`,
+    <div class="mid">${icon('swords')}</div><div class="side"><h4>${flagSVG(b.def.faction, 'flag')}${fName(b.def.faction)}</h4><p>${lost(lossD, before.def)}</p></div></div>`,
     [{ label: t('Continue'), value: true, cls: 'big' }], { cancel: true });
 }
 
@@ -335,7 +335,7 @@ function traitChips(name) {
 // A general's manoeuvres on the battlefield
 function abilChips(g, faction) {
   const list = generalAbilities(g, faction);
-  return list.length ? `<div class="traits abils"><small>${t('In battle')}:</small>${list.map(k => `<span class="trait abil-chip" title="${t(ABILITIES[k].desc)}" data-abil="${k}">${ABILITIES[k].icon} ${t(ABILITIES[k].name)}</span>`).join('')}</div>` : '';
+  return list.length ? `<div class="traits abils"><small>${t('In battle')}:</small>${list.map(k => `<span class="trait abil-chip" title="${t(ABILITIES[k].desc)}" data-abil="${k}">${glyphIcon(ABILITIES[k].icon)} ${t(ABILITIES[k].name)}</span>`).join('')}</div>` : '';
 }
 
 function personCard(name, faction, o = {}) {
@@ -359,8 +359,8 @@ function courtStatus(g, f) {
   const lw = t(g.loyal >= 85 ? 'devoted' : g.loyal >= 70 ? 'loyal' : g.loyal >= 40 ? 'wavering' : g.loyal >= 20 ? 'resentful' : 'treacherous');
   const aw = t(g.amb >= 70 ? 'burning' : g.amb >= 45 ? 'great' : g.amb >= 25 ? 'modest' : 'none');
   const why = honourCheck(f, g);
-  return `<div class="court-heart"><div><span>❤ ${t('Loyalty')}</span><b class="${lc}">${lw}</b><div class="meter"><div class="${lc}" style="width:${Math.round(g.loyal)}%"></div></div></div>
-    <div><span>♛ ${t('Ambition')}</span><b>${aw}</b><div class="meter"><div class="amb" style="width:${Math.round(g.amb)}%"></div></div></div>
+  return `<div class="court-heart"><div><span>${icon('heart')} ${t('Loyalty')}</span><b class="${lc}">${lw}</b><div class="meter"><div class="${lc}" style="width:${Math.round(g.loyal)}%"></div></div></div>
+    <div><span>${icon('crown')} ${t('Ambition')}</span><b>${aw}</b><div class="meter"><div class="amb" style="width:${Math.round(g.amb)}%"></div></div></div>
     <button class="small" data-honour="${g.name.replace(/"/g, '&quot;')}" ${why ? `disabled title="${t(why)}"` : ''}>${t('Honour him · {n}g', { n: HONOUR_COST })}</button></div>`;
 }
 const honourCheck = (f, g) => G.factions[f].gold < HONOUR_COST ? 'Not enough gold' : g.honoured && G.turn - g.honoured < 3 ? 'He was honoured recently' : null;
@@ -417,7 +417,7 @@ function openRealm() {
     const income = factionIncome(pl), upkeep = factionUpkeep(pl);
     const rows = provs.map(p => {
       const o = provinceOrder(p, dist), [w, c] = orderInfo(o);
-      return `<tr data-p="${p.id}"><td>${cityOf(p)}${G.factions[pl].capital === p.id ? ' ♛' : ''}</td><td>${fmt(p.pop * 1000)}</td><td class="${c}">${Math.min(100, o)}%</td><td>${fmt(provinceIncome(p, o))}</td>
+      return `<tr data-p="${p.id}"><td>${cityOf(p)}${G.factions[pl].capital === p.id ? ' ' + icon('crown', 'gold') : ''}</td><td>${fmt(p.pop * 1000)}</td><td class="${c}">${Math.min(100, o)}%</td><td>${fmt(provinceIncome(p, o))}</td>
         <td>${p.build ? buildName(p) + ' (' + p.build.turns + ')' : `<span class="warn">${t('idle')}</span>`}</td><td>${p.queue.length ? t('{n} units', { n: p.queue.length }) : ''}</td></tr>`;
     }).join('');
     const tax = ['Low', 'Normal', 'High'].map((x, i) => `<button data-tax="${i}" class="${st.tax === i ? 'big' : ''}">${t(x)}</button>`).join('');

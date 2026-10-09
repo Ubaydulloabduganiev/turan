@@ -499,7 +499,7 @@ function renderAbilities() {
   el.innerHTML = `<div class="ab-gen">${pn(A.g.name)}</div>` + A.list.map((id, i) => {
     const why = abilBlock(TB.playerSide, id), cd = (A.cd[id] || 0) - TB.t, ab = ABILITIES[id];
     const pct = cd > 0 ? Math.round(cd / ab.cd * 100) : 0;
-    return `<button class="abil ${why ? 'off' : ''}" data-ab="${id}" title="${t(ab.desc)}${why ? ' — ' + why : ''}"><span class="ab-i">${ab.icon}</span><span class="ab-n">${t(ab.name)}</span>${TB.touch ? '' : `<kbd>${i + 1}</kbd>`}<i style="height:${pct}%"></i></button>`;
+    return `<button class="abil ${why ? 'off' : ''}" data-ab="${id}" title="${t(ab.desc)}${why ? ' — ' + why : ''}"><span class="ab-i">${glyphIcon(ab.icon)}</span><span class="ab-n">${t(ab.name)}</span>${TB.touch ? '' : `<kbd>${i + 1}</kbd>`}<i style="height:${pct}%"></i></button>`;
   }).join('');
   placeAbilities();
 }

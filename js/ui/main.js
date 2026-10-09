@@ -74,7 +74,7 @@ function renderPick() {
   $('pick-list').innerHTML = PLAYABLE.map(f => {
     const F = FACTIONS[f];
     const on = pickMulti ? pickMulti.has(f) : f === pickSel;
-    return `<div class="nation ${on ? 'active' : ''}" data-f="${f}">${pickMulti && on ? '<span class="n-check">✓</span>' : ''}${flagSVG(f)}<div class="n-name">${fName(f)}</div><div class="n-diff">${t(F.difficulty)}</div></div>`;
+    return `<div class="nation ${on ? 'active' : ''}" data-f="${f}">${pickMulti && on ? '<span class="n-check">' + icon('check') + '</span>' : ''}${flagSVG(f)}<div class="n-name">${fName(f)}</div><div class="n-diff">${t(F.difficulty)}</div></div>`;
   }).join('');
   const F = FACTIONS[pickSel];
   const provs = PROVINCE_DATA.filter(d => d[5] === pickSel);
@@ -328,6 +328,13 @@ $('title-langs').addEventListener('click', e => {
   if (l) { setLang(l.dataset.lang); applyLang(); }
 });
 
+// The icon set in the top bar
+(() => {
+  const stat = { gold: 'coin', flagi: 'flag', crown: 'crown' };
+  for (const k in stat) { const e = document.querySelector('#topbar .ico.' + k); if (e) e.outerHTML = icon(stat[k], 'tb-ic ' + k); }
+  const btn = { 'btn-court': 'crown', 'btn-dip': 'letter', 'btn-realm': 'castle', 'btn-dev': 'astrolabe', 'btn-chron': 'scroll', 'btn-code': 'star' };
+  for (const id in btn) $(id).insertAdjacentHTML('afterbegin', icon(btn[id]));
+})();
 applyLang();
 toTitle();
 

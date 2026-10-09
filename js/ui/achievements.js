@@ -69,7 +69,7 @@ function achBanner(a) {
   sfx('fanfare', { vol: 0.6 });
   const d = document.createElement('div');
   d.className = 'ach-banner';
-  d.innerHTML = `<span class="ach-medal">${a.icon}</span><div><small>${t('Achievement unlocked')}</small><b>${t(a.name)}</b><span>${t(a.desc)}</span></div>`;
+  d.innerHTML = `<span class="ach-medal">${glyphIcon(a.icon)}</span><div><small>${t('Achievement unlocked')}</small><b>${t(a.name)}</b><span>${t(a.desc)}</span></div>`;
   document.body.appendChild(d);
   setTimeout(() => d.classList.add('out'), 4200);
   setTimeout(() => d.remove(), 5000);
@@ -79,7 +79,7 @@ function openAchievements() {
   const got = achLoad(), n = ACH.filter(a => got[a.id]).length;
   const cards = ACH.map(a => {
     const g = got[a.id];
-    return `<div class="ach ${g ? 'got' : ''}"><span class="ach-medal">${a.icon}</span><div><b>${t(a.name)}</b><span>${t(a.desc)}</span>${g ? `<small>${g.date ? g.date + ' · ' : ''}${g.nation && FACTIONS[g.nation] ? fName(g.nation) : ''}</small>` : ''}</div></div>`;
+    return `<div class="ach ${g ? 'got' : ''}"><span class="ach-medal">${glyphIcon(a.icon)}</span><div><b>${t(a.name)}</b><span>${t(a.desc)}</span>${g ? `<small>${g.date ? g.date + ' · ' : ''}${g.nation && FACTIONS[g.nation] ? fName(g.nation) : ''}</small>` : ''}</div></div>`;
   }).join('');
   const note = G && G.cheated ? `<p class="note warn">${t('A secret code was used in this campaign, so it earns no achievements.')}</p>` : '';
   return showModal(`<button class="modal-x small" data-close="1">${t('Close')}</button><h3>${t('Achievements')}</h3>

@@ -31,6 +31,7 @@ function renderPlaces() {
     g.innerHTML = placeGlyph(id).replace(/<svg[^>]*>|<\/svg>/g, '');
     if (UI.k < 0.85) { const tx = svgEl('text', { x: 0, y: 21, 'text-anchor': 'middle', class: 'place-label' }, g); tx.textContent = t(LANDMARKS[id].name); }
   }
+  if (typeof declutterLabels === 'function') declutterLabels();
 }
 
 function placeSection(p) {

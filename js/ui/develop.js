@@ -10,7 +10,7 @@ function devTrackHTML(k) {
   const pat = PATRONAGE.map((P, i) => `<button class="small ${d.pat === i ? 'on' : ''}" data-pat="${k}" data-i="${i}" title="${t('{n} gold a turn', { n: P.gold })}">${t(P.name)}${P.gold ? ` · ${P.gold}` : ''}</button>`).join('');
   const advs = T.advances.map((A, i) => {
     const cls = i < d.lvl ? 'done' : i === d.lvl ? 'next' : '';
-    return `<li class="${cls}"><b>${i < d.lvl ? '✓ ' : ''}${t(A.name)}</b><small>${t(A.desc)}</small></li>`;
+    return `<li class="${cls}"><b>${i < d.lvl ? icon('check') + ' ' : ''}${t(A.name)}</b><small>${t(A.desc)}</small></li>`;
   }).join('');
   return `<div class="dev-track" style="--tc:${T.color}">
     <div class="dev-head"><h4>${t(T.name)}</h4><span class="dev-lvl">${d.lvl}/5</span></div>

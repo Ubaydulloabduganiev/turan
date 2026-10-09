@@ -15,7 +15,7 @@ async function openSail(a) {
     return `<button class="choice ${x.kind === 'land' ? 'warwarn' : ''}" data-to="${x.prov}" ${x.kind === 'blocked' ? 'disabled' : ''}><b>${flagSVG(q.owner, 'flag')} ${cityOf(q)}</b>
       <small>${fName(q.owner)} · ${word[x.kind]}${danger && provVisible(danger.prov) ? ' · ' + t('enemy boats at {city}', { city: cityOf(G.provinces[danger.prov]) }) : ''}</small></button>`;
   }).join('') + '</div>').join('');
-  const to = await showModal(`<h3>⛵ ${t('Where shall the army sail?')}</h3><p class="note">${t('Hiring the boats costs {n} gold. The crossing takes the whole turn. An enemy army in another port of the same water may row out to meet you.', { n: fmt(sailCost(a)) })}</p>${html}`,
+  const to = await showModal(`<h3>${icon('sail')} ${t('Where shall the army sail?')}</h3><p class="note">${t('Hiring the boats costs {n} gold. The crossing takes the whole turn. An enemy army in another port of the same water may row out to meet you.', { n: fmt(sailCost(a)) })}</p>${html}`,
     [{ label: t('Cancel'), value: null }], { cancel: null, cls: 'wide', onClick: e => { const b = e.target.closest('[data-to]'); if (b && !b.disabled) closeModal(b.dataset.to); } });
   if (!to) return;
   const ownerBefore = G.provinces[to].owner;

@@ -51,8 +51,8 @@ function openReign(final) {
   const rulers = rulersOf(pl);
   const wonders = Object.keys(WONDERS).filter(id => hasWonder(pl, id)).map(id => wName(id));
   const sages = sagesOf(pl).map(id => pn(CHAR_BY_ID[id].name));
-  const marriages = (G.marriages || []).filter(m => m.gF === pl || m.bF === pl).map(m => `${pn(m.groom)} ❦ ${pn(m.bride)}`);
-  const turns = (G.altLog || []).map(x => `${t(x.title)}: <i>${x.label}</i>${x.i > 0 ? ' ✦' : ''}`);
+  const marriages = (G.marriages || []).filter(m => m.gF === pl || m.bF === pl).map(m => `${pn(m.groom)} ${icon('rings')} ${pn(m.bride)}`);
+  const turns = (G.altLog || []).map(x => `${t(x.title)}: <i>${x.label}</i>${x.i > 0 ? ' ' + icon('star') : ''}`);
   const map = reignMapCanvas(Math.min(900, Math.round(innerWidth * 0.8)));
   const verdict = G.over === 'win' ? t('The last nation standing') : G.over === 'lose' ? t('The realm has fallen') : G.goldenAge ? t('A golden age') : G.scenario && G.scenario.result === 'win' ? t('Campaign won') : t('The reign goes on');
   const list = (title, items) => items.length ? `<div class="reign-list"><h4>${title}</h4><p>${items.join(' · ')}</p></div>` : '';

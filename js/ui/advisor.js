@@ -141,7 +141,7 @@ HOOKS.deed = (cur, f) => {
   const next = currentDeed(f);
   const d = document.createElement('div');
   d.className = 'ach-banner deed-banner';
-  d.innerHTML = `<span class="ach-medal">⚑</span><div><small>${t('First deed done')} · +${fmt(cur.deed.reward)} ${t('gold')}</small><b>${cur.deed.text(cur.ctx).split('. ')[0].replace(/\.$/, '')}</b><span>${next ? t('Next: {deed}', { deed: next.deed.text(next.ctx) }) : t('Your reign has begun well. From now on the council will bring you its requests.')}</span></div>`;
+  d.innerHTML = `<span class="ach-medal">${icon('banner')}</span><div><small>${t('First deed done')} · +${fmt(cur.deed.reward)} ${t('gold')}</small><b>${cur.deed.text(cur.ctx).split('. ')[0].replace(/\.$/, '')}</b><span>${next ? t('Next: {deed}', { deed: next.deed.text(next.ctx) }) : t('Your reign has begun well. From now on the council will bring you its requests.')}</span></div>`;
   document.body.appendChild(d);
   setTimeout(() => d.classList.add('out'), 5200);
   setTimeout(() => d.remove(), 6000);

@@ -156,13 +156,13 @@ function openNarration() {
     const modes = `<div class="btnrow"><button data-v="mode-recorded" class="${VOICE.mode === 'recorded' ? 'big' : ''}">${t('Recorded voices')}</button><button data-v="mode-device" class="${VOICE.mode === 'device' ? 'big' : ''}">${t('This device’s voice')}</button></div>`;
     if (VOICE.mode === 'recorded') return `<h3>${t('Narration')}</h3><p>${t('A storyteller reads the painted scenes, the turning points of history and the great events aloud.')}</p>${modes}
       <p class="note">${t('Recorded voices: a storyteller, Amir Temur, the other rulers and the queens each have their own voice. They need an internet connection the first time each line is played.')}</p>
-      <div class="btnrow"><button data-v="toggle" class="${VOICE.on ? 'big' : ''}">${narrationLabel()}</button><button data-v="test">▶ ${t('Test the voice')}</button></div>`;
+      <div class="btnrow"><button data-v="toggle" class="${VOICE.on ? 'big' : ''}">${narrationLabel()}</button><button data-v="test">${icon('play')} ${t('Test the voice')}</button></div>`;
     if (!hasSpeech()) return `<h3>${t('Narration')}</h3>${modes}<p>${t('This browser cannot speak. Try Google Chrome, Microsoft Edge or Safari.')}</p>`;
     if (!list.length) return `<h3>${t('Narration')}</h3>${modes}<p>${t('This device has no voice for this language.')}</p><p class="note">${t('On a computer, Microsoft Edge has Uzbek, Russian, Turkish and English voices built in. In other browsers, add a voice in your system’s speech settings (text-to-speech), then open the game again. You can also switch the game to another language.')}</p>`;
     const opts = list.map(v => `<option value="${v.name.replace(/"/g, '&quot;')}" ${v === cur ? 'selected' : ''}>${v.name} (${v.lang})</option>`).join('');
     const stand = voiceLang(cur) !== LANG ? `<p class="note">${t('There is no voice for this language on this device, so a voice of another language reads it. Microsoft Edge has Uzbek voices built in.')}</p>` : '';
     return `<h3>${t('Narration')}</h3><p>${t('A storyteller reads the painted scenes, the turning points of history and the great events aloud.')}</p>${modes}
-      <div class="btnrow"><button data-v="toggle" class="${VOICE.on ? 'big' : ''}">${narrationLabel()}</button><button data-v="test">▶ ${t('Test the voice')}</button></div>
+      <div class="btnrow"><button data-v="toggle" class="${VOICE.on ? 'big' : ''}">${narrationLabel()}</button><button data-v="test">${icon('play')} ${t('Test the voice')}</button></div>
       <p><label>${t('Voice')}: <select data-v="pick">${opts}</select></label></p>${stand}`;
   };
   const sample = () => VOICE.mode === 'recorded' ? narrate([narr('temur.coronation'), narr('scene.siege')], true) : narrate(t('A storyteller will read the great scenes and the turning points of history aloud.'), true);

@@ -29,12 +29,13 @@ function refresh() {
   renderPanel();
   updateHint();
   renderAdvisor();
+  juiceCheck();
 }
 
 function renderTopbar() {
   const pl = G.player, st = G.factions[pl];
   $('tb-faction').innerHTML = flagSVG(pl) + rulerPortrait(pl, 'tb-portrait') + `<span>${pn(st.leader)}<small>${fTitle(pl)}</small></span>`;
-  $('tb-gold').textContent = fmt(st.gold);
+  if (!JUICE.counting) $('tb-gold').textContent = fmt(st.gold);
   const net = factionIncome(pl) - factionUpkeep(pl) - treasuryLoss(pl);
   $('tb-net').textContent = (net >= 0 ? '+' : '') + fmt(net);
   $('tb-net').className = net < 0 ? 'neg' : '';
@@ -72,21 +73,21 @@ function provincePanel(p) {
   const [ow, oc] = orderInfo(order);
   let h = `<div class="p-head">${flagSVG(p.owner)}<div><div class="p-title">${cityOf(p)}</div><div class="p-sub">${regionOf(p)} · ${fFull(p.owner)}</div></div></div>`;
   h += `<div class="kv">
-    <div><span>${t('Population')}</span>${fmt(p.pop * 1000)}</div>
-    <div><span>${t('Terrain')}</span>${terrName(p.terrain)}</div>
-    <div><span>${t('Walls')}</span>${bLevel('walls', p.b.walls)}</div>
-    <div><span>${t('Silk Road')}</span>${p.silk ? t('Yes') : t('No')}</div>`;
-  if (mine) h += `<div><span>${t('Public order')}</span><b class="${oc}">${Math.min(100, order)}% ${ow}</b></div><div><span>${t('Income')}</span>${fmt(provinceIncome(p, order))}</div>`;
+    <div><span>${icon('people')}${t('Population')}</span>${fmt(p.pop * 1000)}</div>
+    <div><span>${icon('terrain')}${t('Terrain')}</span>${terrName(p.terrain)}</div>
+    <div><span>${icon('walls')}${t('Walls')}</span>${bLevel('walls', p.b.walls)}</div>
+    <div><span>${icon('silk')}${t('Silk Road')}</span>${p.silk ? t('Yes') : t('No')}</div>`;
+  if (mine) h += `<div><span>${icon('order')}${t('Public order')}</span><b class="${oc}">${Math.min(100, order)}% ${ow}</b></div><div><span>${icon('coin')}${t('Income')}</span>${fmt(provinceIncome(p, order))}</div>`;
   h += '</div>';
   if (p.siege) h += `<p class="note bad">${t('Besieged by: {faction}. The city can hold out for about {n} more turns.', { faction: fFull(p.siege.by), n: siegeTurns(p) })}</p>`;
   if (mine && order < 35) h += `<p class="note bad">${t('The people are close to revolt. Lower taxes, build a mosque or station troops here.')}</p>`;
   if (p.sacked > 0) h += `<p class="note warn">${t('The city is still recovering from a sack.')}</p>`;
 
   // Tabs: for your city Rule / Army / Build; for another's War / Diplomacy / Dealings
-  const tabs = mine ? [['rule', t('Rule')], ['army', t('Army')], ['build', t('Build')]] : [['war', t('War')], ['dip', t('Diplomacy')], ['deal', t('Dealings')]];
+  const tabs = mine ? [['rule', t('Rule'), 'seal'], ['army', t('Army'), 'swords'], ['build', t('Build'), 'hammer']] : [['war', t('War'), 'swords'], ['dip', t('Diplomacy'), 'letter'], ['deal', t('Dealings'), 'scales']];
   if (!tabs.some(([k]) => k === UI.ptab)) UI.ptab = tabs[0][0];
   if (!mine && p.owner === 'rebels' && UI.ptab === 'dip') UI.ptab = 'war';
-  h += `<div class="ptabs">${tabs.map(([k, l]) => `<button data-act="ptab" data-k="${k}" class="${UI.ptab === k ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  h += `<div class="ptabs">${tabs.map(([k, l, ic]) => `<button data-act="ptab" data-k="${k}" class="${UI.ptab === k ? 'on' : ''}">${icon(ic)}${l}</button>`).join('')}</div>`;
   const tab = UI.ptab;
 
   if (mine && tab === 'rule') {
@@ -286,17 +287,17 @@ function armyPanel(a) {
   }).join('') + `</div><p class="note">${t('Click units to select them for splitting or disbanding.')}</p></div>`;
 
   const btns = [];
-  if (a.besieging && p.siege) btns.push(`<button data-act="assault" class="danger">${t('Storm the walls')}</button>`);
-  if (p.siege && p.owner === G.player) btns.push(`<button data-act="sally" class="danger">${t('Sally out')}</button>`);
+  if (a.besieging && p.siege) btns.push(`<button data-act="assault" class="danger">${icon('castle')}${t('Storm the walls')}</button>`);
+  if (p.siege && p.owner === G.player) btns.push(`<button data-act="sally" class="danger">${icon('swords')}${t('Sally out')}</button>`);
   if (unitPick.size && unitPick.size < a.units.length) btns.push(`<button data-act="split">${t('Split off {n}', { n: unitPick.size })}</button>`);
   if (unitPick.size && ![...unitPick].some(i => a.units[i].type === 'general')) btns.push(`<button data-act="disband">${t('Disband {n}', { n: unitPick.size })}</button>`);
   const others = armiesIn(a.prov).filter(o => o !== a && o.owner === a.owner);
   for (const o of others) btns.push(`<button data-act="merge" data-id="${o.id}">${t('Merge with {name} ({n})', { name: o.general ? pn(o.general.name) : t('army'), n: o.units.length })}</button>`);
-  if (!a.general) btns.push(`<button data-act="appoint" ${G.factions[a.owner].gold < GENERAL_COST ? 'disabled' : ''}>${t('Appoint a general · {n}g', { n: GENERAL_COST })}</button>`);
-  if (!raidCheck(a)) btns.unshift(`<button data-act="raid" class="danger" title="${t('Burn villages and seize their grain and silver. The army cannot move again this turn.')}">${t('Plunder the countryside · +{n} gold', { n: fmt(raidGold(a)) })}</button>`);
+  if (!a.general) btns.push(`<button data-act="appoint" ${G.factions[a.owner].gold < GENERAL_COST ? 'disabled' : ''}>${icon('banner')}${t('Appoint a general · {n}g', { n: GENERAL_COST })}</button>`);
+  if (!raidCheck(a)) btns.unshift(`<button data-act="raid" class="danger" title="${t('Burn villages and seize their grain and silver. The army cannot move again this turn.')}">${icon('flame')}${t('Plunder the countryside · +{n} gold', { n: fmt(raidGold(a)) })}</button>`);
   if (a.owner === G.player && seasAt(a.prov).length) {
     const why = sailCheck(a);
-    btns.push(`<button data-act="sail" ${why ? 'disabled' : ''} title="${why ? t(why) : t('Hire boats and sail to another shore of the same water. An enemy army in another port may row out to fight you.')}">⛵ ${t('Sail across the {sea}', { sea: seasAt(a.prov).map(s => geoName(s)).join(' / ') })} · ${fmt(sailCost(a))}g</button>`);
+    btns.push(`<button data-act="sail" ${why ? 'disabled' : ''} title="${why ? t(why) : t('Hire boats and sail to another shore of the same water. An enemy army in another port may row out to fight you.')}">${icon('sail')}${t('Sail across the {sea}', { sea: seasAt(a.prov).map(s => geoName(s)).join(' / ') })} · ${fmt(sailCost(a))}g</button>`);
   }
   btns.push(`<button data-act="selprov" data-id="${a.prov}">${t('Province: {city}', { city: cityOf(p) })}</button>`);
   h += '<div class="btnrow">' + btns.join('') + '</div>';
@@ -395,7 +396,7 @@ $('panel').addEventListener('click', async e => {
       return;
     }
     case 'assault': await doAssault(a.prov); return;
-    case 'raid': { const r = raid(a); if (r.why) err = r.why; else toast(t('Plunder'), t('Your army returns laden with loot: {n} gold.', { n: fmt(r.gold) }), 'good'); break; }
+    case 'raid': { juiceFrom(a.prov); const r = raid(a); if (r.why) err = r.why; else toast(t('Plunder'), t('Your army returns laden with loot: {n} gold.', { n: fmt(r.gold) }), 'good'); break; }
     case 'viewplace': { const ctx = storyContext(G.player); ctx.lp = p; playScene({ kind: 'place', id: el.dataset.k, ctx, replay: true }); return; }
     case 'wonder': err = startWonder(p); if (!err) toast(t('The work begins'), t('Masons gather in {city} to raise the {wonder}.', { city: cityOf(p), wonder: wName(p.build.id) }), 'good'); break;
     case 'sally': await doSally(a.prov); return;

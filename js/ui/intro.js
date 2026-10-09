@@ -30,7 +30,7 @@ function playIntro() {
     const el = document.createElement('div');
     el.id = 'intro';
     el.innerHTML = `<canvas></canvas><div class="intro-sub"></div>
-      <div class="intro-gate"><div class="intro-mark">TURAN</div><button class="big intro-play">▶ ${t('Begin the story')}</button><button class="intro-pass">${t('Skip the opening')}</button></div>
+      <div class="intro-gate"><div class="intro-mark">TURAN</div><button class="big intro-play">${icon('play')} ${t('Begin the story')}</button><button class="intro-pass">${t('Skip the opening')}</button></div>
       <button class="intro-skip hidden">${t('Skip')} ›</button>`;
     document.body.appendChild(el);
     INTRO.el = el;

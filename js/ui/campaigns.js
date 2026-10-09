@@ -26,8 +26,8 @@ function challengeCard(S) {
   return `<div class="camp chal ${daily ? 'daily' : 'weekly'}" data-camp="${S.id}">${flagSVG(S.faction)}<div class="camp-body">
     <div class="camp-year">${t(daily ? 'Daily challenge' : 'Weekly challenge')} · ${when} · ${fName(S.faction)}</div>
     <h3>${t(S.title)}</h3><p class="camp-goal"><b>${t('Goal')}:</b> ${challengeGoalText(S)}</p>
-    <p class="chal-stats">${r.best ? `<b class="good">★ ${t('Your best: {n}', { n: fmt(r.best) })}</b>` : r.tries ? t('Tries: {n}', { n: r.tries }) : t('The same challenge for every player. Win fast for a high score.')}
-    ${streak ? ` · <b>🔥 ${t('{n}-day streak', { n: streak })}</b>` : ''}${daily ? ` · <span class="muted">${untilTomorrow()}</span>` : ''}</p></div></div>`;
+    <p class="chal-stats">${r.best ? `<b class="good">${icon('star')} ${t('Your best: {n}', { n: fmt(r.best) })}</b>` : r.tries ? t('Tries: {n}', { n: r.tries }) : t('The same challenge for every player. Win fast for a high score.')}
+    ${streak ? ` · <b>${icon('flame')} ${t('{n}-day streak', { n: streak })}</b>` : ''}${daily ? ` · <span class="muted">${untilTomorrow()}</span>` : ''}</p></div></div>`;
 }
 
 function renderCampaigns() {
@@ -38,7 +38,7 @@ function renderCampaigns() {
   const cards = SCENARIOS.map(s => {
     const done = got['sc_' + s.id];
     return `<div class="camp" data-camp="${s.id}">${flagSVG(s.faction)}<div class="camp-body">
-      <div class="camp-year">${dateText(s.start)} · ${fName(s.faction)} · ${t(s.difficulty)}${done ? ` · <b class="good">✓ ${t('Completed')}</b>` : ''}</div>
+      <div class="camp-year">${dateText(s.start)} · ${fName(s.faction)} · ${t(s.difficulty)}${done ? ` · <b class="good">${icon('check')} ${t('Completed')}</b>` : ''}</div>
       <h3>${t(s.title)}</h3><p>${t(s.blurb)}</p><p class="camp-goal"><b>${t('Goal')}:</b> ${goalTextOf(s)}</p></div></div>`;
   }).join('');
   const hot = `<div class="camp hot" data-camp="hotseat"><div class="camp-flags">${PLAYABLE.slice(0, 4).map(f => flagSVG(f)).join('')}</div>
@@ -129,7 +129,7 @@ async function challengeEndUI(S, s) {
   const turns = (s.wonTurn !== undefined ? s.wonTurn : G.turn) - S.start;
   const body = won
     ? `<p>${t('Done in {n} turns.', { n: turns })}</p><div class="chal-score">${fmt(score)}</div>
-       <p class="note">${newBest ? '★ ' + t('A new best score!') : t('Your best: {n}', { n: fmt(best) })}${streak ? ' · 🔥 ' + t('{n}-day streak', { n: streak }) : ''}</p>
+       <p class="note">${newBest ? icon('star') + ' ' + t('A new best score!') : t('Your best: {n}', { n: fmt(best) })}${streak ? ' · ' + icon('flame') + ' ' + t('{n}-day streak', { n: streak }) : ''}</p>
        ${counted ? '' : `<p class="note warn">${t('A secret code was used, so this score is not kept.')}</p>`}`
     : `<p>${t('The goal was not reached in time: {goal}', { goal: goalTextOf(S) })}</p><p class="note">${t('Try again: the challenge stays the same all day, so what you learned counts.')}</p>`;
   const v = await showModal(`<div class="camp-year">${t(S.kind === 'daily' ? 'Daily challenge' : 'Weekly challenge')} · ${fName(S.faction)}</div><h3>${t(won ? 'Challenge won' : 'Challenge lost')}</h3>${body}`,
