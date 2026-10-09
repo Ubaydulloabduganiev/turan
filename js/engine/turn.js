@@ -69,7 +69,7 @@ function upkeepPhase() {
     // The garrison goes hungry
     for (const a of armiesIn(p.id)) if (a.owner === p.owner) for (const u of a.units) u.men = Math.round(u.men * 0.93);
     if (siegeTurns(p) <= 0 || p.siege.turns >= 1 + p.b.walls * 2 + 2) {
-      log(t('{city} surrenders after a long siege.', { city: cityOf(p) }), p.owner === G.player || p.siege.by === G.player ? 'big' : '');
+      log(() => t('{city} surrenders after a long siege.', { city: cityOf(p) }), p.owner === G.player || p.siege.by === G.player ? 'big' : '');
       captureProvince(p, p.siege.by, besiegers[0]);
     }
   }
@@ -172,7 +172,7 @@ function finishQueues(p) {
       p.build = null;
     } else if (p.build.turns <= 0) {
       p.b[p.build.key]++;
-      if (isHuman(p.owner)) { log(t('{city}: {building} completed.', { city: cityOf(p), building: bLevel(p.build.key, p.b[p.build.key]) }), 'good'); feat('built'); }
+      if (isHuman(p.owner)) { log(() => t('{city}: {building} completed.', { city: cityOf(p), building: bLevel(p.build.key, p.b[p.build.key]) }), 'good'); feat('built'); }
       p.build = null;
     }
   }
@@ -193,7 +193,7 @@ function revolt(p) {
   for (const a of armiesIn(p.id)) if (a.owner === old) { const to = retreatTarget(a); if (to) a.prov = to; else delete G.armies[a.id]; }
   p.owner = 'rebels'; p.unrest = 0; p.queue = []; p.build = null; p.siege = null;
   addArmy('rebels', p.id, units, null);
-  log(dateText() + ': ' + t('{city} rises in revolt against the {nation}!', { city: cityOf(p), nation: fFull(old) }), old === G.player ? 'big' : '');
+  log(() => dateText() + ': ' + t('{city} rises in revolt against the {nation}!', { city: cityOf(p), nation: fFull(old) }), old === G.player ? 'big' : '');
   if (isHuman(old)) tell(old, { title: t('Revolt in {city}', { city: cityOf(p) }), text: t('The people of {city} have risen against us and declared their independence. Keep public order high with low taxes, mosques and garrisons.', { city: cityOf(p) }), prov: p.id });
   if (G.factions[old].capital === p.id) {
     const rest = provsOf(old).sort((x, y) => y.pop - x.pop);
@@ -212,8 +212,8 @@ function randomEvent() {
   ev.apply(p, G, G.factions[p.owner]);
   p.unrest = Math.max(-30, p.unrest);
   if (isHuman(p.owner)) {
-    const text = t(ev.text).replace('{p}', cityOf(p));
-    log(dateText() + ': ' + text, 'event');
+    const say = () => t(ev.text).replace('{p}', cityOf(p)), text = say();
+    log(() => dateText() + ': ' + say(), 'event');
     tell(p.owner, { title: t(ev.title), text, prov: p.id, minor: true });
   }
 }
@@ -227,7 +227,7 @@ function runEvents() {
     G.fired.push(i);
     // A choice made at a turning point may change what happens
     const v = eventVariant(e);
-    if (v.skip) { log(dateText() + ': ' + t(v.title) + '. ' + t(v.text), 'history'); HOOKS.notify({ title: t(v.title), text: t(v.text), history: true }); continue; }
+    if (v.skip) { log(() => dateText() + ': ' + t(v.title) + '. ' + t(v.text), 'history'); HOOKS.notify({ title: t(v.title), text: t(v.text), history: true }); continue; }
     e = { ...e, effect: v.effect, title: v.title, text: v.text };
     const x = e.effect;
     if (x.faction && !G.factions[x.faction].alive) continue;
@@ -248,7 +248,7 @@ function runEvents() {
       const p = G.provinces[x.holder];
       if (p.owner !== 'rebels') { G.factions[p.owner].gold += x.gold || 0; p.unrest = Math.max(0, p.unrest - (x.order || 0)); }
     }
-    log(dateText() + ': ' + t(e.title) + '. ' + t(e.text), 'history');
+    log(() => dateText() + ': ' + t(e.title) + '. ' + t(e.text), 'history');
     HOOKS.notify({ title: t(e.title), text: t(e.text), history: true });
   }
 }

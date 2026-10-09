@@ -56,10 +56,10 @@ const CITY_ACTIONS = [
     act: p => { p.grain = G.turn; p.unrest = Math.max(-20, p.unrest - 12); p.pop *= 1.02; return t('Bread and rice are handed out at the city gates of {city}.', { city: cityOf(p) }); } },
   { id: 'fair', group: 'Treasury', own: true, name: 'Hold a great fair', desc: 'Invite merchants from every land. If the city is calm, the fair pays back half again what it cost in two turns; if not, you may lose money.',
     cost: () => 200, check: p => myGold() < 200 ? 'Not enough gold' : p.fair > G.turn ? 'A fair is already being held' : null,
-    act: p => { const ok = provinceOrder(p, distancesFrom(p.owner)) >= 50; p.fair = G.turn + 2; later(p.owner, 2, ok ? 300 + (p.silk ? 150 : 0) : 120, t('The fair at {city} closes. The merchants pay their fees.', { city: cityOf(p) })); return t(ok ? 'Merchants from far and wide set up their stalls in {city}.' : 'Merchants come to {city}, but the unrest keeps many away.', { city: cityOf(p) }); } },
+    act: p => { const ok = provinceOrder(p, distancesFrom(p.owner)) >= 50; p.fair = G.turn + 2; later(p.owner, 2, ok ? 300 + (p.silk ? 150 : 0) : 120, () => t('The fair at {city} closes. The merchants pay their fees.', { city: cityOf(p) })); return t(ok ? 'Merchants from far and wide set up their stalls in {city}.' : 'Merchants come to {city}, but the unrest keeps many away.', { city: cityOf(p) }); } },
   { id: 'loan', sub: () => t('+500 now · −700 in 4 turns'), group: 'Treasury', own: true, name: 'Borrow from the merchants', desc: 'The merchants of the city lend you 500 gold now. You repay 700 in four turns.',
     cost: () => 0, check: p => p.pop < 12 ? 'The city is too small to lend so much' : (G.factions[p.owner].pending || []).some(x => x.loan) ? 'You already owe the merchants' : null,
-    act: p => { const st = G.factions[p.owner]; st.gold += 500; st.pending = st.pending || []; st.pending.push({ t: G.turn + 4, gold: -700, text: t('You repay the merchants of {city}: 700 gold.', { city: cityOf(p) }), loan: true }); return t('The merchants of {city} count out 500 gold for you.', { city: cityOf(p) }); } },
+    act: p => { const st = G.factions[p.owner]; st.gold += 500; st.pending = st.pending || []; st.pending.push({ t: G.turn + 4, gold: -700, text: allLangs(() => t('You repay the merchants of {city}: 700 gold.', { city: cityOf(p) })), loan: true }); return t('The merchants of {city} count out 500 gold for you.', { city: cityOf(p) }); } },
 
   // ---------- Your city: government ----------
   { id: 'governor', group: 'Government', own: true, name: 'Appoint a governor', desc: 'A trusted amir runs the city: +8 order and +10% income, for 30 gold a turn.',
@@ -127,7 +127,7 @@ const CITY_ACTIONS = [
     } },
   { id: 'caravan', group: 'Dealings', own: false, name: 'Send a trade caravan', desc: 'Send goods to the city’s bazaar. Profit in two turns, and the ruler thinks better of you.',
     cost: () => 100, check: p => p.owner !== 'rebels' && rel(G.player, p.owner).war ? 'You are at war' : myGold() < 100 ? 'Not enough gold' : p.caravan > G.turn - 4 ? 'A caravan went there recently' : null,
-    act: p => { p.caravan = G.turn; later(G.player, 2, 160 + (p.silk ? 80 : 0) + Math.round(p.pop * 2), t('Your caravan returns from {city} with its profits.', { city: cityOf(p) })); if (p.owner !== 'rebels') rel(G.player, p.owner).att += 3; return t('Camels laden with cloth and dried fruit set out for {city}.', { city: cityOf(p) }); } },
+    act: p => { p.caravan = G.turn; later(G.player, 2, 160 + (p.silk ? 80 : 0) + Math.round(p.pop * 2), () => t('Your caravan returns from {city} with its profits.', { city: cityOf(p) })); if (p.owner !== 'rebels') rel(G.player, p.owner).att += 3; return t('Camels laden with cloth and dried fruit set out for {city}.', { city: cityOf(p) }); } },
 
   // ---------- Someone else's city: in secret ----------
   { id: 'spy', group: 'Secret work', own: false, sub: () => t('See through the fog for 8 turns'), name: 'Plant a spy', desc: 'A merchant in your pay settles in the city and sends word of every army in it and on the roads around it.',

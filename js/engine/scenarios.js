@@ -303,7 +303,7 @@ function newScenarioGame(id) {
     const c = a.general && charByName(a.general.name);
     if (c && c.died <= year() && G.factions[a.owner].leader !== a.general.name) { a.general.name = newGeneralName(a.owner); a.general.age = 30 + Math.floor(rng() * 20); a.general.leader = false; }
   }
-  log(dateText() + ': ' + t(S.title) + '. ' + goalTextOf(S), 'history');
+  log(() => dateText() + ': ' + t(S.title) + '. ' + goalTextOf(S), 'history');
   return G;
 }
 

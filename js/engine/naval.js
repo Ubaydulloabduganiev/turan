@@ -154,6 +154,6 @@ function finishNaval(b, res) {
   for (const id of b.att.armies.concat(b.def.armies)) { const a = G.armies[id]; if (a) cleanArmy(a); }
   if (L === b.att) for (const id of L.armies) { const a = G.armies[id]; if (a) { a.prov = b.from; a.moves = 0; } }
   const text = t('{nation} won the battle on the {sea}.', { nation: fName(wf), sea: geoName(b.sea) });
-  log(dateText() + ': ' + t('battle on the {sea}: {nation} against {nation2}. {nation3} won.', { sea: geoName(b.sea), nation: fName(b.att.faction), nation2: fName(b.def.faction), nation3: fName(wf) }), isHuman(wf) || isHuman(lf) ? 'battle' : '');
+  log(() => dateText() + ': ' + t('battle on the {sea}: {nation} against {nation2}. {nation3} won.', { sea: geoName(b.sea), nation: fName(b.att.faction), nation2: fName(b.def.faction), nation3: fName(wf) }), isHuman(wf) || isHuman(lf) ? 'battle' : '');
   return { text, wf, lf };
 }

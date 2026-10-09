@@ -42,7 +42,7 @@ function startWonder(p) {
 function completeWonder(p, id) {
   G.wonders = G.wonders || {};
   G.wonders[id] = true;
-  log(dateText() + ': ' + t('the {wonder} is completed in {city}.', { wonder: wName(id), city: cityOf(p) }), 'big');
+  log(() => dateText() + ': ' + t('the {wonder} is completed in {city}.', { wonder: wName(id), city: cityOf(p) }), 'big');
   HOOKS.notify({ title: wName(id), text: t('After years of work by masons, tile-cutters and calligraphers, the {wonder} rises over {city}.', { wonder: wName(id), city: cityOf(p) }) + ' ' + t(WONDERS[id].desc), history: true, prov: p.id });
 }
 
@@ -67,7 +67,7 @@ function raid(a) {
   p.pop *= 0.95; p.unrest += 12; p.raided = G.turn;
   a.moves = 0;
   if (p.owner !== 'rebels') rel(a.owner, p.owner).att -= 5;
-  log(dateText() + ': ' + t('{nation} plundered the countryside of {city}.', { nation: fName(a.owner), city: cityOf(p) }), a.owner === G.player || p.owner === G.player ? 'war' : '');
+  log(() => dateText() + ': ' + t('{nation} plundered the countryside of {city}.', { nation: fName(a.owner), city: cityOf(p) }), a.owner === G.player || p.owner === G.player ? 'war' : '');
   if (isHuman(p.owner)) tell(p.owner, { title: t('Our villages burn'), text: t('{nation} raiders are plundering the countryside around {city}.', { nation: fAdj(a.owner), city: cityOf(p) }), prov: p.id, minor: true });
   return { gold };
 }
@@ -77,14 +77,14 @@ function raid(a) {
 function later(f, turns, gold, text) {
   const st = G.factions[f];
   st.pending = st.pending || [];
-  st.pending.push({ t: G.turn + turns, gold, text });
+  st.pending.push({ t: G.turn + turns, gold, text: typeof text === 'function' ? allLangs(text) : text });
 }
 function payPending(f) {
   const st = G.factions[f];
   if (!st.pending) return;
   for (const x of st.pending.filter(x => x.t <= G.turn)) {
     st.gold += x.gold;
-    if (isHuman(f) && x.text) tell(f, { title: x.gold >= 0 ? 'Gold arrives' : 'A debt is paid', text: x.text, minor: true });
+    if (isHuman(f) && x.text) tell(f, { title: t(x.gold >= 0 ? 'Gold arrives' : 'A debt is paid'), text: inLang(x.text), minor: true });
   }
   st.pending = st.pending.filter(x => x.t > G.turn);
 }
@@ -108,22 +108,22 @@ function newMission(f) {
   if (targets.length) {
     const q = targets.sort((a, b) => (a.b.walls * 10 - a.pop) - (b.b.walls * 10 - b.pop))[0];
     opts.push({ type: 'conquer', target: q.id, turns: 6, reward: 900 + Math.round(q.pop * 25),
-      text: t('Take {city} from the {nation}.', { city: cityOf(q), nation: fFull(q.owner) }) });
+      text: allLangs(() => t('Take {city} from the {nation}.', { city: cityOf(q), nation: fFull(q.owner) })) });
   }
   // Build up the realm
   const site = mine.filter(p => !p.build && !buildCheck(p, 'market') ).sort((a, b) => b.pop - a.pop)[0];
   if (site) opts.push({ type: 'build', target: site.id, key: 'market', level: site.b.market + 1, turns: 4, reward: 700,
-    text: t('Build a {building} in {city}, so the merchants prosper.', { building: bLevel('market', site.b.market + 1), city: cityOf(site) }) });
+    text: allLangs(() => t('Build a {building} in {city}, so the merchants prosper.', { building: bLevel('market', site.b.market + 1), city: cityOf(site) })) });
   // Trade
   const partner = POWERS.find(g => g !== f && G.factions[g].alive && !rel(f, g).war && !rel(f, g).trade && rel(f, g).att > -15);
-  if (partner) opts.push({ type: 'trade', target: partner, turns: 4, reward: 500, text: t('Sign a trade agreement with the {nation}.', { nation: fFull(partner) }) });
+  if (partner) opts.push({ type: 'trade', target: partner, turns: 4, reward: 500, text: allLangs(() => t('Sign a trade agreement with the {nation}.', { nation: fFull(partner) })) });
   // A stronger army
   const units = armiesOf(f).reduce((n, a) => n + a.units.length, 0);
-  opts.push({ type: 'army', target: units + 4, turns: 4, reward: 600, text: t('Raise the army to {n} units. The amirs want to see banners.', { n: units + 4 }) });
+  opts.push({ type: 'army', target: units + 4, turns: 4, reward: 600, text: allLangs(() => t('Raise the army to {n} units. The amirs want to see banners.', { n: units + 4 })) });
   // A wonder
   for (const id in WONDERS) {
     const p = G.provinces[WONDERS[id].prov];
-    if (p.owner === f && !(G.wonders && G.wonders[id])) opts.push({ type: 'wonder', target: id, turns: 6, reward: 1200, text: t('Begin building the {wonder} in {city}.', { wonder: wName(id), city: cityOf(p) }) });
+    if (p.owner === f && !(G.wonders && G.wonders[id])) opts.push({ type: 'wonder', target: id, turns: 6, reward: 1200, text: allLangs(() => t('Begin building the {wonder} in {city}.', { wonder: wName(id), city: cityOf(p) })) });
   }
   const m = pick(opts);
   return { ...m, giver, deadline: G.turn + m.turns, start: G.turn };
@@ -153,8 +153,8 @@ function checkMission() {
     st.gold += m.reward;
     st.orderBonus = Math.max(st.orderBonus, 6); st.orderBonusT = Math.max(st.orderBonusT, 3);
     st.mission = null; st.nextMission = G.turn + 2;
-    log(dateText() + ': ' + t("the council's request is fulfilled. {n} gold.", { n: m.reward }), 'good');
-    HOOKS.notify({ title: t('The council is pleased'), text: t('{name} reports: "{request}" It is done. The treasury receives {gold} gold and the amirs praise your name.', { name: pn(m.giver), request: m.text, gold: m.reward }) });
+    log(() => dateText() + ': ' + t("the council's request is fulfilled. {n} gold.", { n: m.reward }), 'good');
+    HOOKS.notify({ title: t('The council is pleased'), text: t('{name} reports: "{request}" It is done. The treasury receives {gold} gold and the amirs praise your name.', { name: pn(m.giver), request: inLang(m.text), gold: m.reward }) });
     return;
   }
   if (m && G.turn > m.deadline) {
@@ -165,7 +165,7 @@ function checkMission() {
   }
   if (!m && G.turn >= (st.nextMission || 1)) {
     st.mission = newMission(f);
-    HOOKS.notify({ title: t('A request from the council'), text: t('{name}: "{request}" Reward: {gold} gold, by {date}.', { name: pn(st.mission.giver), request: st.mission.text, gold: st.mission.reward, date: dateText(st.mission.deadline) }), minor: true });
+    HOOKS.notify({ title: t('A request from the council'), text: t('{name}: "{request}" Reward: {gold} gold, by {date}.', { name: pn(st.mission.giver), request: inLang(st.mission.text), gold: st.mission.reward, date: dateText(st.mission.deadline) }), minor: true });
   }
 }
 
@@ -228,7 +228,7 @@ const STORIES = [
       { label: c => t('Accept (+{n} gold)', { n: cost(c, 500) }), hint: 'Gold now; the locals dislike the foreigners.',
         act: c => { c.st.gold += cost(c, 500); c.silk.unrest += 12; return t('The Franks unload their bales and their silver.'); } },
       { label: () => t('Tax them at the gates instead'), hint: 'A steady trickle of gold over the coming years.',
-        act: c => { for (let i = 1; i <= 4; i++) later(c.f, i * 2, cost(c, 160), t('The Genoese pay their gate taxes.')); return t('The merchants grumble, but pay.'); } },
+        act: c => { for (let i = 1; i <= 4; i++) later(c.f, i * 2, cost(c, 160), () => t('The Genoese pay their gate taxes.')); return t('The merchants grumble, but pay.'); } },
       { label: () => t('Send them away'), hint: 'Nothing changes.', act: () => t('The Genoese sail back to Tana.') },
     ],
   },
@@ -261,7 +261,7 @@ const STORIES = [
     text: () => t('An envoy of the Hongwu Emperor of Ming China arrives with a letter calling you his loyal vassal, who owes tribute to the Son of Heaven.'),
     options: [
       { label: c => t('Send horses as "gifts" (−{n} gold)', { n: cost(c, 300) }), hint: 'Chinese caravans will favour your markets later.',
-        act: c => { c.st.gold -= cost(c, 300); later(c.f, 3, cost(c, 900), t('A great caravan arrives from China, laden with silk and porcelain.')); return t('The envoy departs, satisfied.'); } },
+        act: c => { c.st.gold -= cost(c, 300); later(c.f, 3, cost(c, 900), () => t('A great caravan arrives from China, laden with silk and porcelain.')); return t('The envoy departs, satisfied.'); } },
       { label: () => t('Throw the envoys into prison'), hint: 'As Temur did in 1395. Your amirs will love it.',
         act: c => { c.st.orderBonus = 12; c.st.orderBonusT = 4; return t('Your court roars with approval. No one calls you a vassal.'); } },
     ],
@@ -412,7 +412,7 @@ const STORIES = [
     text: c => t('Ruy González de Clavijo, envoy of the King of Castile, has crossed half the world to reach {city}, with gifts of scarlet cloth.', { city: cityOf(c.cap) }),
     options: [
       { label: c => t('Feast them for a week (−{n} gold)', { n: cost(c, 250) }), hint: 'Foreign merchants will follow, bringing trade.',
-        act: c => { c.st.gold -= cost(c, 250); later(c.f, 2, cost(c, 700), t('Merchants from the West arrive in your bazaars.')); return t('The Castilians are amazed by your gardens, your wine and your elephants.'); } },
+        act: c => { c.st.gold -= cost(c, 250); later(c.f, 2, cost(c, 700), () => t('Merchants from the West arrive in your bazaars.')); return t('The Castilians are amazed by your gardens, your wine and your elephants.'); } },
       { label: () => t('Receive them coolly'), hint: 'Nothing changes.', act: () => t('They leave with a polite letter and little else.') },
     ],
   },

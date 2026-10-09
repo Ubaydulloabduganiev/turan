@@ -147,7 +147,7 @@ function newGame(player, seed, humans) {
   rel('jalayir', 'golden').att = -20;
   for (const a of POWERS) for (const b of POWERS) if (a < b && !rel(a, b).war && rel(a, b).att >= 0) rel(a, b).trade = (a === 'temur' && b === 'kart');
   for (const a of Object.values(G.armies)) a.moves = armyMoves(a);
-  log(dateText() + ': ' + t('you take command of the {nation}.', { nation: fFull(player) }));
+  log(() => dateText() + ': ' + t('you take command of the {nation}.', { nation: fFull(player) }));
   runEvents();
   return G;
 }
@@ -160,7 +160,7 @@ function feat(k, n = 1) {
 }
 
 function log(text, kind) {
-  G.log.push({ t: G.turn, text, kind: kind || '' });
+  G.log.push({ t: G.turn, text: typeof text === 'function' ? allLangs(text) : text, kind: kind || '' });
   if (G.log.length > 300) G.log.splice(0, G.log.length - 300);
 }
 
@@ -305,7 +305,7 @@ function checkFactionAlive(f) {
   G.factions[f].alive = false;
   for (const a of armiesOf(f)) delete G.armies[a.id];
   for (const g of POWERS) if (g !== f) { const r = rel(f, g); r.war = false; r.alliance = false; r.trade = false; }
-  log(t('The {nation} has been destroyed.', { nation: fFull(f) }), 'big');
+  log(() => t('The {nation} has been destroyed.', { nation: fFull(f) }), 'big');
   HOOKS.notify({ title: t('{nation} destroyed', { nation: fFull(f) }), text: t('The last lands of the {nation} have fallen.', { nation: fFull(f) }) });
 }
 
@@ -322,12 +322,30 @@ function loadGame(slot) {
     MAPDATA = MAPDATA || buildMap();
     G = JSON.parse(data);
     migrateMap();
+    migrateTexts();
     migrateProgress();
     return true;
   } catch (e) { return false; }
 }
 // A game saved on a smaller map: the places keep their state, the new lands of the wider world are added
 // as they were in 1370, and every city takes its place on the new map.
+// A council request kept as a plain string (older saves) is written again in every language
+function migrateTexts() {
+  for (const f in G.factions) {
+    const m = G.factions[f].mission;
+    if (!m || typeof m.text !== 'string') continue;
+    const P = id => G.provinces[id];
+    const say = {
+      conquer: () => P(m.target) && t('Take {city} from the {nation}.', { city: cityOf(P(m.target)), nation: P(m.target).owner === 'rebels' ? t('Independent lords and tribes') : fFull(P(m.target).owner) }),
+      build: () => P(m.target) && t('Build a {building} in {city}, so the merchants prosper.', { building: bLevel(m.key || 'market', m.level || 1), city: cityOf(P(m.target)) }),
+      trade: () => FACTIONS[m.target] && t('Sign a trade agreement with the {nation}.', { nation: fFull(m.target) }),
+      army: () => t('Raise the army to {n} units. The amirs want to see banners.', { n: m.target }),
+      wonder: () => WONDERS[m.target] && t('Begin building the {wonder} in {city}.', { wonder: wName(m.target), city: cityOf(P(WONDERS[m.target].prov)) }),
+    }[m.type];
+    if (say && say()) m.text = allLangs(say);
+  }
+}
+
 function migrateMap() {
   const known = new Set(Object.keys(G.provinces));
   for (const id in FACTIONS) if (!G.factions[id]) {
@@ -365,6 +383,7 @@ function gameFromText(text) {
   MAPDATA = MAPDATA || buildMap();
   G = g;
   migrateMap();
+  migrateTexts();
   migrateProgress();
   return null;
 }

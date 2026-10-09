@@ -51,8 +51,9 @@ function intrigueTurn() {
       // Ambition grows in idle men with armies of their own
       if (a.units.length >= 6 && rng() < 0.15) g.amb = Math.min(100, g.amb + 2);
       if (!isHuman(f) && g.loyal < 15 && g.amb > 50 && a.units.length >= 4 && rng() < 0.04) {
-        const text = generalRebels(a);
-        log(dateText() + ': ' + fName(f) + ': ' + text, '');
+        const name = g.name, p = G.provinces[a.prov];
+        generalRebels(a);
+        log(() => dateText() + ': ' + fName(f) + ': ' + t('{name} refuses to come and raises his own banner at {city}, with all his men.', { name: pn(name), city: cityOf(p) }), '');
       }
     }
   }

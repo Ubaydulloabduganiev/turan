@@ -92,7 +92,7 @@ function renderAdvisor() {
   if (m) {
     const left = m.deadline - G.turn;
     const where = m.type === 'conquer' || m.type === 'build' ? m.target : m.type === 'wonder' ? WONDERS[m.target].prov : null;
-    mission = `<div class="mission ${where ? 'link' : ''}" data-mission="${where || ''}"><div class="m-head">${t('Council request')} · ${left <= 0 ? t('last turn') : t('turns left: {n}', { n: left })}</div>${m.text}<div class="m-reward">${t('Reward: {n} gold', { n: fmt(m.reward) })}</div></div>`;
+    mission = `<div class="mission ${where ? 'link' : ''}" data-mission="${where || ''}"><div class="m-head">${t('Council request')} · ${left <= 0 ? t('last turn') : t('turns left: {n}', { n: left })}</div>${inLang(m.text)}<div class="m-reward">${t('Reward: {n} gold', { n: fmt(m.reward) })}</div></div>`;
   }
   box.innerHTML = `<div class="adv-head" data-adv="toggle"><span>${t('Your vizier advises')}</span><span>${advisorOpen ? '–' : '+'}</span></div>` +
     (advisorOpen ? '' : scenarioCard() + deedCard()) + // the campaign goal stays in sight even when the vizier is folded

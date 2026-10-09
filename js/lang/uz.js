@@ -1981,4 +1981,6 @@ Object.assign(I18N.uz, {
   "Tughluq": "Tugʻluqiy",
   "Two conquerors who have never lost a battle. Bayezid the Thunderbolt has crushed the crusaders at Nicopolis and holds Constantinople in a stranglehold. He has answered Temur’s letters with insults. Now Temur has taken Sivas and marches into Anatolia, and Bayezid lifts the siege of Constantinople to meet him near Ankara.": "Hech qachon jangda yengilmagan ikki jahongir. Boyazid Yildirim Nikopolda salibchilarni tor-mor qilgan va Qustantiniyani qamalda ushlab turibdi. U Temurning maktublariga haqoratlar bilan javob berdi. Endi Temur Sivasni olib, Anadoluga kirib kelmoqda, Boyazid esa Qustantiniya qamalini tashlab, u bilan Anqara yonida uchrashishga yoʻl oladi.",
   "War Elephants": "Jangovar fillar",
+  "Gold arrives": "Oltin keldi",
+  "A debt is paid": "Qarz toʻlandi",
 });

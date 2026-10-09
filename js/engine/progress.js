@@ -172,7 +172,7 @@ function advance(f, k) {
   const d = devOf(f)[k];
   d.lvl++;
   const A = TRACKS[k].advances[d.lvl - 1];
-  log(dateText() + ': ' + t('{nation}: a new advance in {field}: {name}.', { nation: fName(f), field: t(TRACKS[k].name), name: t(A.name) }), f === G.player ? 'history' : '');
+  log(() => dateText() + ': ' + t('{nation}: a new advance in {field}: {name}.', { nation: fName(f), field: t(TRACKS[k].name), name: t(A.name) }), f === G.player ? 'history' : '');
   if (isHuman(f)) {
     tell(f, { sound: 'fanfare', title: t(A.name), text: t('A new advance in {field}.', { field: t(TRACKS[k].name) }) + ' ' + t(A.desc), history: true });
     if (TRACK_ORDER.every(x => devOf(f)[x].lvl >= 5)) G.goldenAge = G.goldenAge || G.turn;
@@ -218,7 +218,7 @@ function sagesTurn() {
     if (!free.length) continue;
     const id = pick(free);
     sagesOf(f).push(id);
-    log(t('{name} joins the court of {nation}.', { name: pn(CHAR_BY_ID[id].name), nation: fName(f) }), '');
+    log(() => t('{name} joins the court of {nation}.', { name: pn(CHAR_BY_ID[id].name), nation: fName(f) }), '');
   }
 }
 
@@ -231,7 +231,7 @@ function sageStory(id) {
       t('At your court he would advance {field} (+{k} a turn), for a stipend of {n} gold a turn.', { field: t(TRACKS[S.track].name), n: SAGE_UPKEEP, k: SAGE_PTS }),
     options: [
       { label: ctx => t('Welcome him with a robe of honour (−{n} gold)', { n: 150 }), hint: 'He joins your court.',
-        act: ctx => { ctx.st.gold -= 150; sagesOf(ctx.f).push(id); HOOKS.notify({ scene: { kind: 'scholar', id } }); log(dateText() + ': ' + t('{name} joins your court.', { name: pn(c.name) }), 'history'); return t('{name} bows and kisses the carpet before your throne.', { name: pn(c.name) }); } },
+        act: ctx => { ctx.st.gold -= 150; sagesOf(ctx.f).push(id); HOOKS.notify({ scene: { kind: 'scholar', id } }); log(() => dateText() + ': ' + t('{name} joins your court.', { name: pn(c.name) }), 'history'); return t('{name} bows and kisses the carpet before your throne.', { name: pn(c.name) }); } },
       { label: () => t('Send him on his way'), hint: 'He will look for another patron.',
         act: () => { const rivals = POWERS.filter(f => !isHuman(f) && G.factions[f].alive); if (rivals.length) sagesOf(pick(rivals)).push(id); return t('{name} takes the road to another court.', { name: pn(c.name) }); } },
     ],

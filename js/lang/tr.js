@@ -1981,4 +1981,6 @@ Object.assign(I18N.tr, {
   "Tughluq": "Tuğluklu",
   "Two conquerors who have never lost a battle. Bayezid the Thunderbolt has crushed the crusaders at Nicopolis and holds Constantinople in a stranglehold. He has answered Temur’s letters with insults. Now Temur has taken Sivas and marches into Anatolia, and Bayezid lifts the siege of Constantinople to meet him near Ankara.": "Hiç savaş kaybetmemiş iki fatih. Yıldırım Bayezid Niğbolu'da haçlıları ezdi ve Kostantiniyye'yi kıskaca aldı. Timur'un mektuplarına hakaretle cevap verdi. Şimdi Timur Sivas'ı aldı ve Anadolu'ya yürüyor; Bayezid de onu Ankara yakınlarında karşılamak için Kostantiniyye kuşatmasını kaldırıyor.",
   "War Elephants": "Savaş Filleri",
+  "Gold arrives": "Altın geldi",
+  "A debt is paid": "Borç ödendi",
 });

@@ -1981,4 +1981,6 @@ Object.assign(I18N.ru, {
   "Tughluq": "Туглакский",
   "Two conquerors who have never lost a battle. Bayezid the Thunderbolt has crushed the crusaders at Nicopolis and holds Constantinople in a stranglehold. He has answered Temur’s letters with insults. Now Temur has taken Sivas and marches into Anatolia, and Bayezid lifts the siege of Constantinople to meet him near Ankara.": "Два завоевателя, не знавшие поражений. Баязид Молниеносный разгромил крестоносцев при Никополе и держит Константинополь мёртвой хваткой. На письма Тимура он ответил оскорблениями. Теперь Тимур взял Сивас и идёт в Анатолию, и Баязид снимает осаду Константинополя, чтобы встретить его у Анкары.",
   "War Elephants": "Боевые слоны",
+  "Gold arrives": "Поступило золото",
+  "A debt is paid": "Долг уплачен",
 });

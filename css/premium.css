@@ -169,3 +169,8 @@ body.quake #game { animation: quake 0.6s cubic-bezier(.36, .07, .19, .97); }
   #topbar { gap: 4px; }
   #topbar button.has-ic, #topbar #btn-menu { padding: 5px 6px; }
 }
+
+/* Buttons always stand above the engraved titles (their shadow filter makes them a layer of their own) */
+#modal button, #panel button { position: relative; z-index: 2; }
+#modal h3, .p-title { pointer-events: none; }
+#modal h3 button, #modal h3 a { pointer-events: auto; }

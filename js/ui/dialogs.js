@@ -441,7 +441,7 @@ function openRealm() {
 }
 
 function openChronicle() {
-  const items = G.log.slice().reverse().map(l => `<div class="${l.kind}">${l.text}</div>`).join('');
+  const items = G.log.slice().reverse().map(l => `<div class="${l.kind}">${inLang(l.text)}</div>`).join('');
   showModal(`<h3>${t('Chronicle')}</h3><div class="chron">${items}</div>`, [{ label: t('Close'), value: null }], { cls: 'wide', cancel: null });
 }
 

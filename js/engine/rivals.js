@@ -72,7 +72,7 @@ function coalitionTurn(L) {
     if (!G.factions[c.target].alive || dominance(c.target) < 0.22 || G.turn - c.turn > 20 || c.members.filter(m => G.factions[m].alive).length < 1) {
       G.coalition = null;
       if (isHuman(c.target) && G.factions[c.target].alive) feat('coalition');
-      log(dateText() + ': ' + t('The coalition against the {nation} breaks up.', { nation: fFull(c.target) }), c.target === G.player ? 'dip' : '');
+      log(() => dateText() + ': ' + t('The coalition against the {nation} breaks up.', { nation: fFull(c.target) }), c.target === G.player ? 'dip' : '');
       if (isHuman(c.target)) tell(c.target, { minor: true, title: t('The coalition breaks up'), text: t('Our enemies no longer fight as one.') });
     }
     return;
@@ -98,7 +98,7 @@ function coalitionTurn(L) {
     if (!rel(m, L).war) declareWar(m, L, true);
   }
   const names = members.map(m => fName(m)).join(', ');
-  log(dateText() + ': ' + t('{list} form a grand coalition against the {nation}.', { list: names, nation: fFull(L) }), 'war');
+  log(() => dateText() + ': ' + t('{list} form a grand coalition against the {nation}.', { list: names, nation: fFull(L) }), 'war');
   if (isHuman(L)) tell(L, { sound: 'horn', title: t('A grand coalition!'), text: t('Our power frightens the other rulers. {list} have sworn an alliance and declared war on us together. Hold your borders and break them one by one: offer peace to the weakest.', { list: names }) });
   else HOOKS.notify({ minor: true, title: t('A grand coalition'), text: t('{list} have joined together against the {nation}.', { list: names, nation: fFull(L) }) });
 }
@@ -129,7 +129,7 @@ function aiCallAllies(f) {
       if (g === f || g === e || isHuman(g) || !G.factions[g].alive || !rel(f, g).alliance || rel(g, e).war || rel(g, e).alliance || rel(g, e).truce > 0) continue;
       if (dealValue(f, g, 'joinwar', e) > 0 && rng() < 0.2) {
         declareWar(g, e, true);
-        log(t('{nation} answers the call of its ally {nation2} and joins the war.', { nation: fName(g), nation2: fName(f) }), 'war');
+        log(() => t('{nation} answers the call of its ally {nation2} and joins the war.', { nation: fName(g), nation2: fName(f) }), 'war');
       }
     }
   }
@@ -155,7 +155,7 @@ function aiSpecialOffer(f, chance, pl = G.player) {
 function answerSpecialOffer(f, o, yes, pl = G.player) {
   const r = rel(f, pl);
   if (o.type === 'joinwar') {
-    if (yes) { declareWar(pl, o.enemy, true); r.att += 12; shiftTrust(pl, 6); log(t('{nation} answers the call of its ally {nation2} and joins the war.', { nation: fName(pl), nation2: fName(f) }), 'war'); }
+    if (yes) { declareWar(pl, o.enemy, true); r.att += 12; shiftTrust(pl, 6); log(() => t('{nation} answers the call of its ally {nation2} and joins the war.', { nation: fName(pl), nation2: fName(f) }), 'war'); }
     else { r.att -= 12; shiftTrust(pl, -6); }
   } else if (o.type === 'demandcity') {
     if (yes) { transferProvince(o.city, f, 10); r.att += 6; r.truce = Math.max(r.truce, 6); }

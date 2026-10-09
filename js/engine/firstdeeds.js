@@ -62,7 +62,7 @@ function checkDeeds(f) {
   G.factions[f].gold += cur.deed.reward;
   const st = G.factions[f];
   st.orderBonus = Math.max(st.orderBonus, 4); st.orderBonusT = Math.max(st.orderBonusT, 2);
-  log(dateText() + ': ' + t('A first deed is done: {deed} {n} gold.', { deed: cur.deed.text(cur.ctx), n: cur.deed.reward }), 'good');
+  log(() => dateText() + ': ' + t('A first deed is done: {deed} {n} gold.', { deed: cur.deed.text(cur.ctx), n: cur.deed.reward }), 'good');
   nextDeed(f);
   return cur;
 }

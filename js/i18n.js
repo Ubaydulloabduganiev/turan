@@ -15,6 +15,16 @@ function t(s, v) {
   return r;
 }
 
+// Texts kept in a saved game (the chronicle, the council's requests) are written in every language at once,
+// so that they follow the player when the language is changed. fn builds the text in the current language.
+function allLangs(fn) {
+  const keep = LANG, out = {};
+  try { for (const l in LANGS) { LANG = l; out[l] = fn(); } } finally { LANG = keep; }
+  return out;
+}
+// Shows such a text in the current language (older saves hold a plain string)
+const inLang = x => x == null ? '' : typeof x === 'string' ? x : (x[LANG] || x.en || '');
+
 function setLang(l) {
   if (!LANGS[l]) return;
   LANG = l;

@@ -225,7 +225,7 @@ function whatifStory(w) {
     options: w.options.map((o, i) => ({ label: o.label, hint: o.hint, act: c => {
       G.altDone = G.altDone || {}; G.altDone[w.id] = i;
       const out = o.act(c);
-      G.altLog = G.altLog || []; G.altLog.push({ id: w.id, title: w.title, i, turn: G.turn, label: o.label(c) });
+      G.altLog = G.altLog || []; G.altLog.push({ id: w.id, title: w.title, i, turn: G.turn, label: allLangs(() => o.label(c)) });
       if (i > 0) feat('alt');
       return out;
     } })),
@@ -248,8 +248,8 @@ function whatifTurn() {
     G.altDone[w.id] = i;
     w.options[i].act(c);
     if (w.aiText) {
-      const text = t(w.aiText[i]);
-      log(dateText() + ': ' + text, 'history');
+      const text = t(w.aiText[i]), ai = w.aiText[i];
+      log(() => dateText() + ': ' + t(ai), 'history');
       HOOKS.notify({ title: (i === 0 ? '' : t('History takes another path') + ': ') + t(w.title), text: text + (i > 0 ? ' ' + t('This is not what happened in our history.') : ''), history: true, minor: i === 0 });
     }
   }
@@ -263,7 +263,7 @@ function whatifTurn() {
     const e = ALT_EVENTS[q.id];
     if (e && e.ok()) {
       e.apply();
-      log(dateText() + ': ' + t(e.title) + '. ' + t(e.text), 'history');
+      log(() => dateText() + ': ' + t(e.title) + '. ' + t(e.text), 'history');
       HOOKS.notify({ title: t(e.title), text: t(e.text), history: true });
     }
   }

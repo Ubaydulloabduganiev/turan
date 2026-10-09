@@ -87,7 +87,7 @@ function peopleComeOfAge() {
     const units = FACTIONS[p.faction].nomad ? ['horsearch', 'horsearch', 'lancer'] : ['spear', 'archer', 'lancer'];
     addArmy(p.faction, cap.id, units, makeGeneral(p.faction, p.name, 2, year() - p.born, false));
     if (isHuman(p.faction)) {
-      log(dateText() + ': ' + t('{name} joins your court and takes command of an army.', { name: pn(p.name) }), 'big');
+      log(() => dateText() + ': ' + t('{name} joins your court and takes command of an army.', { name: pn(p.name) }), 'big');
       tell(p.faction, { title: pn(p.name), text: t('{name} has come of age and rides out to serve you at the head of his own troops in {city}.', { name: pn(p.name), city: cityOf(cap) }), who: p.name, whoFaction: p.faction, prov: cap.id });
     }
   }

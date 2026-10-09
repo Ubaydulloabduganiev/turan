@@ -71,14 +71,14 @@ function caravansTurn() {
     for (const pl of [r.a, r.b]) {
       if (!isHuman(pl)) continue;
       const partner = r.a === pl ? r.b : r.a;
-      log(dateText() + ': ' + t('Our caravans to {nation} were robbed near {city}.', { nation: fName(partner), city }), 'war');
+      log(() => dateText() + ': ' + t('Our caravans to {nation} were robbed near {city}.', { nation: fName(partner), city }), 'war');
       tell(pl, { minor: true, title: t('Caravans robbed'), text: hit.by === 'rebels'
         ? t('Bandits from {city} robbed our caravans to {nation}. We lose {n} gold of trade this season. Take the city to make the road safe.', { city, nation: fName(partner), n: value })
         : t('An army of the {raider} plundered our caravans to {nation} near {city}. We lose {n} gold of trade this season. Drive it off the road.', { raider: fFull(hit.by), city, nation: fName(partner), n: value }) });
     }
     if (isHuman(hit.by)) {
       feat('caravan');
-      log(dateText() + ': ' + t('Our army plundered a caravan of {nation} and {nation2} near {city}.', { nation: fName(r.a), nation2: fName(r.b), city }), 'big');
+      log(() => dateText() + ': ' + t('Our army plundered a caravan of {nation} and {nation2} near {city}.', { nation: fName(r.a), nation2: fName(r.b), city }), 'big');
       tell(hit.by, { minor: true, sound: 'coins', title: t('A caravan plundered'), text: t('Our army near {city} fell on a caravan of {nation} and {nation2} and carried off {n} gold.', { city, nation: fName(r.a), nation2: fName(r.b), n: loot }) });
     }
   }

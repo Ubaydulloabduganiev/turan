@@ -33,7 +33,7 @@ const LANDMARKS = {
       { label: c => t('Forge the gates (−{n} gold)', { n: cost(c, 300) }), hint: 'The walls of the province grow stronger.',
         act: c => { c.st.gold -= cost(c, 300); if (c.lp.b.walls < 3) c.lp.b.walls++; return t('Iron-bound gates now close the gorge. No army will pass without your leave.'); } },
       { label: () => t('Raise the toll instead'), hint: 'Extra gold over the coming turns; merchants grumble.',
-        act: c => { for (let i = 1; i <= 3; i++) later(c.f, i * 2, cost(c, 150), t('The toll from the Iron Gate is paid.')); c.lp.unrest += 10; return t('Your toll collectors take their places in the gorge.'); } },
+        act: c => { for (let i = 1; i <= 3; i++) later(c.f, i * 2, cost(c, 150), () => t('The toll from the Iron Gate is paid.')); c.lp.unrest += 10; return t('Your toll collectors take their places in the gorge.'); } },
     ],
   },
   horses: {
@@ -63,7 +63,7 @@ const LANDMARKS = {
     text: 'At Tash Rabat, a stone caravanserai high in the mountains on the road to China, a snowstorm has trapped a great caravan. Its merchants send a rider down to beg for help.',
     options: [
       { label: c => t('Send men and food up the pass (−{n} gold)', { n: cost(c, 120) }), hint: 'The grateful merchants will repay you later.',
-        act: c => { c.st.gold -= cost(c, 120); later(c.f, 2, cost(c, 450), t('The merchants rescued at Tash Rabat repay your kindness.')); return t('Your men dig the caravan out of the snow. The merchants swear they will not forget.'); } },
+        act: c => { c.st.gold -= cost(c, 120); later(c.f, 2, cost(c, 450), () => t('The merchants rescued at Tash Rabat repay your kindness.')); return t('Your men dig the caravan out of the snow. The merchants swear they will not forget.'); } },
       { label: () => t('The mountains take their toll'), hint: 'Nothing changes.', act: () => t('The storm passes. Not every camel survives it.') },
     ],
   },

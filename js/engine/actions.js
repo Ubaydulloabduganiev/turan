@@ -58,7 +58,7 @@ function leaveSiege(a) {
   const p = G.provinces[a.prov];
   if (p.siege && !armiesIn(p.id).some(o => o.owner === p.siege.by && o.besieging)) {
     p.siege = null;
-    log(t('The siege of {city} is lifted.', { city: cityOf(p) }));
+    log(() => t('The siege of {city} is lifted.', { city: cityOf(p) }));
   }
 }
 
@@ -200,7 +200,7 @@ function sackProvince(p) {
   G.factions[p.owner].gold += extra;
   p.pop *= 0.8; p.unrest = 55; p.sacked = 6;
   for (const g of POWERS) if (g !== p.owner && G.factions[g].alive) rel(p.owner, g).att -= 3;
-  log(t('{nation} sacked {city}.', { nation: fName(p.owner), city: cityOf(p) }), 'big');
+  log(() => t('{nation} sacked {city}.', { nation: fName(p.owner), city: cityOf(p) }), 'big');
   return extra;
 }
 
@@ -264,22 +264,22 @@ function applyDeal(from, to, type, gold = 0) {
         }
       }
       for (const p of Object.values(G.provinces)) if (p.siege && ((p.siege.by === from && p.owner === to) || (p.siege.by === to && p.owner === from))) p.siege = null;
-      log(dateText() + ': ' + t('the {nation} and the {nation2} make peace.', { nation: fFull(from), nation2: fFull(to) }), from === G.player || to === G.player ? 'dip' : '');
+      log(() => dateText() + ': ' + t('the {nation} and the {nation2} make peace.', { nation: fFull(from), nation2: fFull(to) }), from === G.player || to === G.player ? 'dip' : '');
       for (const h of [from, to]) if (isHuman(h)) tell(h, { scene: { kind: 'treaty', f: h === from ? to : from } });
       break;
-    case 'alliance': r.alliance = true; r.att += 15; log(t('{nation} and {nation2} form an alliance.', { nation: fName(from), nation2: fName(to) }), 'dip'); break;
-    case 'trade': r.trade = true; r.att += 8; log(t('{nation} and {nation2} sign a trade agreement.', { nation: fName(from), nation2: fName(to) }), from === G.player || to === G.player ? 'dip' : ''); break;
+    case 'alliance': r.alliance = true; r.att += 15; log(() => t('{nation} and {nation2} form an alliance.', { nation: fName(from), nation2: fName(to) }), 'dip'); break;
+    case 'trade': r.trade = true; r.att += 8; log(() => t('{nation} and {nation2} sign a trade agreement.', { nation: fName(from), nation2: fName(to) }), from === G.player || to === G.player ? 'dip' : ''); break;
     case 'tribute': {
       const amt = tributeAmount(to);
       G.factions[to].gold -= amt; G.factions[from].gold += amt; r.att -= 20;
-      log(t('{nation} pays {n} gold in tribute to {nation2}.', { nation: fName(to), n: amt, nation2: fName(from) }), 'dip');
+      log(() => t('{nation} pays {n} gold in tribute to {nation2}.', { nation: fName(to), n: amt, nation2: fName(from) }), 'dip');
       return amt;
     }
     case 'gift':
       G.factions[from].gold -= gold; G.factions[to].gold += gold;
       r.att = Math.min(100, r.att + Math.min(35, gold / 25));
       break;
-    case 'marriage': r.married = true; r.att += 30; arrangeMarriage(from, to); log(t('A marriage binds the houses of {nation} and {nation2}.', { nation: fName(from), nation2: fName(to) }), 'dip'); break;
+    case 'marriage': r.married = true; r.att += 30; arrangeMarriage(from, to); log(() => t('A marriage binds the houses of {nation} and {nation2}.', { nation: fName(from), nation2: fName(to) }), 'dip'); break;
     case 'joinwar': declareWar(to, gold, true); break;
     case 'submit': annex(from, to); return 0;
   }
@@ -304,7 +304,7 @@ function annex(winner, loser) {
   G.factions[loser].gold = 0;
   G.factions[loser].alive = false;
   for (const g of POWERS) if (g !== loser) { const r = rel(loser, g); r.war = false; r.alliance = false; r.trade = false; }
-  log(dateText() + ': ' + t('{ruler} submits to {ruler2}. The {nation} is no more.', { ruler: pn(G.factions[loser].leader), ruler2: pn(G.factions[winner].leader), nation: fFull(loser) }), 'big');
+  log(() => dateText() + ': ' + t('{ruler} submits to {ruler2}. The {nation} is no more.', { ruler: pn(G.factions[loser].leader), ruler2: pn(G.factions[winner].leader), nation: fFull(loser) }), 'big');
   HOOKS.notify({ title: t('The {nation} submits', { nation: fName(loser) }), text: t('{ruler} has bowed before {ruler2}. All the lands of the {nation} now belong to the {nation2}.', { ruler: pn(G.factions[loser].leader), ruler2: pn(G.factions[winner].leader), nation: fFull(loser), nation2: fFull(winner) }) });
 }
 
@@ -357,7 +357,7 @@ function declareWar(from, to, quiet) {
   const perfidy = r.alliance || r.truce > 0;
   r.war = true; r.alliance = false; r.trade = false; r.att = Math.min(r.att, 0) - 40; r.warTurns = 0; r.truce = 0;
   if (perfidy) { shiftTrust(from, -25); for (const g of POWERS) if (g !== from && g !== to && G.factions[g].alive) rel(from, g).att -= 15; }
-  log(dateText() + ': ' + t('the {nation} declares war on the {nation2}.', { nation: fFull(from), nation2: fFull(to) }), from === G.player || to === G.player ? 'war' : '');
+  log(() => dateText() + ': ' + t('the {nation} declares war on the {nation2}.', { nation: fFull(from), nation2: fFull(to) }), from === G.player || to === G.player ? 'war' : '');
   if (isHuman(to) && !quiet) tell(to, perfidy
     ? { sound: 'horn', title: t('Betrayed!'), text: t('The {nation} has broken its oath to us and declared war. Every ruler in Turan will hear of this treachery.', { nation: fFull(from) }) }
     : { sound: 'horn', title: t('War!'), text: t('The {nation} has declared war on us.', { nation: fFull(from) }) });
@@ -366,7 +366,7 @@ function declareWar(from, to, quiet) {
   for (const g of POWERS) {
     if (g === from || g === to || !G.factions[g].alive || !rel(g, to).alliance || rel(g, from).war) continue;
     if (isHuman(g)) continue; // people decide for themselves
-    if (rel(g, to).att > 20) { declareWar(g, from, true); log(t('{nation} honours its alliance and joins the war.', { nation: fName(g) }), 'war'); }
+    if (rel(g, to).att > 20) { declareWar(g, from, true); log(() => t('{nation} honours its alliance and joins the war.', { nation: fName(g) }), 'war'); }
   }
 }
 
